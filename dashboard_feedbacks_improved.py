@@ -923,32 +923,31 @@ def show_routes_analysis(df, merged_df):
         contratista_rutas = merged_df.groupby(['CONTRATISTA', 'ruta']).size().reset_index()
         contratista_rutas.columns = ['contratista', 'ruta', 'registros']
         
-        # Top 3 rutas por cada contratista
+        # Mejor ruta por cada contratista
         top_rutas_contratista = contratista_rutas.groupby('contratista').apply(
-            lambda x: x.nlargest(3, 'registros')
+            lambda x: x.nlargest(1, 'registros')
         ).reset_index(drop=True)
         
         # Ordenar por contratista para mejor visualización
         top_rutas_contratista = top_rutas_contratista.sort_values(['contratista', 'registros'], ascending=[True, False])
-          # Crear paleta de colores distintiva para cada contratista
-        contratistas_unicos = top_rutas_contratista['contratista'].unique()        # Usar colores más vibrantes como en la imagen 2
-        colors = ['#FFD700', '#32CD32', '#1E90FF', '#FF6347', '#DA70D6', '#40E0D0', '#FF8C00', '#9370DB', '#00CED1', '#FF1493']
-        if len(contratistas_unicos) > len(colors):
-            colors = colors * (len(contratistas_unicos) // len(colors) + 1)
-        color_map = dict(zip(contratistas_unicos, colors[:len(contratistas_unicos)]))
         
+        # Crear etiquetas más descriptivas para mejor organización
+        top_rutas_contratista['etiqueta_completa'] = (
+            top_rutas_contratista['contratista'].astype(str) + ' → ' + 
+            top_rutas_contratista['ruta'].astype(str)
+        )        
         fig_contratista_rutas = px.bar(
             top_rutas_contratista,
             x='registros',
-            y='ruta',
-            color='contratista',
-            title="🏢 Top 3 Rutas por Contratista - Análisis Detallado",
+            y='etiqueta_completa',
+            title="🏢 Mejor Ruta por Contratista - Análisis Detallado",
             orientation='h',
             height=900,  # Aumentar altura
             text='registros',
-            color_discrete_map=color_map,
-            category_orders={'contratista': sorted(contratistas_unicos)}
+            color='registros',
+            color_continuous_scale='Plasma'
         )
+        
         fig_contratista_rutas.update_traces(
             texttemplate='<b>%{text}</b>',
             textposition='outside',
@@ -957,17 +956,14 @@ def show_routes_analysis(df, merged_df):
             textfont_color='white',
             textfont_family='Arial Black'
         )
+        
         fig_contratista_rutas.update_layout(
-            yaxis={'categoryorder': 'total ascending'},
-            margin=dict(l=200, r=100, t=100, b=80),  # Mejores márgenes
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=-0.15,  # Posicionar leyenda abajo
-                xanchor="center",
-                x=0.5,
-                font=dict(size=12)
-            ),
+            yaxis={
+                'categoryorder': 'total ascending',
+                'tickfont_size': 12,
+                'tickfont_color': 'white'
+            },
+            margin=dict(l=350, r=100, t=100, b=80),  # Más espacio para etiquetas descriptivas
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(size=12),
@@ -976,47 +972,44 @@ def show_routes_analysis(df, merged_df):
             yaxis_title="<b>Ruta</b>"
         )
         st.plotly_chart(fig_contratista_rutas, use_container_width=True)
-        
-        # Segunda fila - Top 5 rutas por supervisor (fila completa)
+          # Segunda fila - Top 3 rutas por supervisor (fila completa)
         st.markdown(
             """
             <div class="top-performance">
-                <h3 style="color: white; margin: 0;">🏆 Top 5 Rutas por Supervisor</h3>
+                <h3 style="color: white; margin: 0;">🏆 Top 3 Rutas por Supervisor</h3>
             </div>
             """, 
             unsafe_allow_html=True
         )
-        
-        # Análisis por supervisor
+          # Análisis por supervisor
         supervisor_rutas = merged_df.groupby(['SUPERVISOR', 'ruta']).size().reset_index()
         supervisor_rutas.columns = ['supervisor', 'ruta', 'registros']
         
-        # Top 5 rutas por cada supervisor
+        # Top 3 rutas por cada supervisor
         top_rutas_supervisor = supervisor_rutas.groupby('supervisor').apply(
-            lambda x: x.nlargest(5, 'registros')
+            lambda x: x.nlargest(3, 'registros')
         ).reset_index(drop=True)
         
         # Ordenar por supervisor para mejor visualización
         top_rutas_supervisor = top_rutas_supervisor.sort_values(['supervisor', 'registros'], ascending=[True, False])
-          # Crear paleta de colores distintiva para cada supervisor
-        supervisores_unicos = top_rutas_supervisor['supervisor'].unique()        # Usar colores más vibrantes como en la imagen 2
-        colors_supervisor = ['#FFD700', '#32CD32', '#1E90FF', '#FF6347', '#DA70D6', '#40E0D0', '#FF8C00', '#9370DB', '#00CED1', '#FF1493']
-        if len(supervisores_unicos) > len(colors_supervisor):
-            colors_supervisor = colors_supervisor * (len(supervisores_unicos) // len(colors_supervisor) + 1)
-        color_map_supervisor = dict(zip(supervisores_unicos, colors_supervisor[:len(supervisores_unicos)]))
         
+        # Crear etiquetas más descriptivas para mejor organización
+        top_rutas_supervisor['etiqueta_completa'] = (
+            top_rutas_supervisor['supervisor'].astype(str) + ' → ' + 
+            top_rutas_supervisor['ruta'].astype(str)
+        )        
         fig_supervisor_rutas = px.bar(
             top_rutas_supervisor,
             x='registros',
-            y='ruta',
-            color='supervisor',
-            title="👨‍💼 Top 5 Rutas por Supervisor - Análisis Detallado",
+            y='etiqueta_completa',
+            title="👨‍💼 Top 3 Rutas por Supervisor - Análisis Detallado",
             orientation='h',
             height=900,  # Aumentar altura
             text='registros',
-            color_discrete_map=color_map_supervisor,
-            category_orders={'supervisor': sorted(supervisores_unicos)}
+            color='registros',
+            color_continuous_scale='Plasma'
         )
+        
         fig_supervisor_rutas.update_traces(
             texttemplate='<b>%{text}</b>',
             textposition='outside',
@@ -1025,17 +1018,14 @@ def show_routes_analysis(df, merged_df):
             textfont_color='white',
             textfont_family='Arial Black'
         )
+        
         fig_supervisor_rutas.update_layout(
-            yaxis={'categoryorder': 'total ascending'},
-            margin=dict(l=200, r=100, t=100, b=80),  # Mejores márgenes
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=-0.15,  # Posicionar leyenda abajo
-                xanchor="center",
-                x=0.5,
-                font=dict(size=12)
-            ),
+            yaxis={
+                'categoryorder': 'total ascending',
+                'tickfont_size': 12,
+                'tickfont_color': 'white'
+            },
+            margin=dict(l=350, r=100, t=100, b=80),  # Más espacio para etiquetas descriptivas
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(size=12),
@@ -1151,8 +1141,7 @@ def show_routes_analysis(df, merged_df):
         title="📊 Eficiencia Integral por Ruta: Volumen vs Calidad vs Tasa de Cierre",
         color='tasa_cierre',
         color_continuous_scale='RdYlGn',
-        height=800,
-        labels={
+        height=800,        labels={
             'total_registros': 'Total de Registros de Feedback',
             'puntos_promedio': 'Calidad Promedio (Puntos 1-10)',
             'tasa_cierre': 'Tasa de Cierre (%)',
@@ -1250,59 +1239,183 @@ def show_routes_analysis(df, merged_df):
         offenders_details.columns = ['Ruta', 'Total Registros', 'Puntos Promedio', 'Tasa Cierre (%)']
         st.dataframe(clean_dataframe_for_display(offenders_details), use_container_width=True)
     else:
-        st.info("✅ No hay rutas con baja actividad (todas tienen más de 5 registros)")
-
-    # Sexta fila - Análisis de cierres por supervisor
+        st.info("✅ No hay rutas con baja actividad (todas tienen más de 5 registros)")    # Sexta fila - Análisis completo de supervisores y contratistas
     if 'SUPERVISOR' in merged_df.columns:
         st.markdown(
             """
             <div class="analysis-card">
-                <h3 style="color: white; margin: 0;">👨‍💼 Análisis de Cierres por Supervisor</h3>
+                <h3 style="color: white; margin: 0;">👨‍💼 Análisis Completo de Supervisores - Total vs Cerrados</h3>
             </div>
             """, 
             unsafe_allow_html=True
         )
         
-        # Análisis de supervisores y sus tasas de cierre
+        # Análisis detallado de supervisores
         supervisor_analysis = merged_df.groupby('SUPERVISOR').agg({
             'id_tema': 'count',
             'puntos': 'mean',
-            'fecha_cierre': lambda x: x.notna().sum()
+            'fecha_cierre': lambda x: x.notna().sum(),
+            'ruta': 'nunique',
+            'codigo_cliente': 'nunique'
         }).round(2).reset_index()
-        supervisor_analysis.columns = ['supervisor', 'total_casos', 'puntos_promedio', 'casos_cerrados']
+        supervisor_analysis.columns = ['supervisor', 'total_casos', 'puntos_promedio', 'casos_cerrados', 'rutas_supervisadas', 'clientes_unicos']
         supervisor_analysis['tasa_cierre'] = (supervisor_analysis['casos_cerrados'] / supervisor_analysis['total_casos']) * 100
-        supervisor_analysis = supervisor_analysis.sort_values('tasa_cierre', ascending=False)
+        supervisor_analysis['casos_pendientes'] = supervisor_analysis['total_casos'] - supervisor_analysis['casos_cerrados']
+        supervisor_analysis = supervisor_analysis.sort_values('total_casos', ascending=False)
+          # Gráfico de casos totales vs cerrados - Una línea completa
+        supervisor_top = supervisor_analysis.head(10)
+        fig_supervisor_comparison = px.bar(
+            supervisor_top,
+            x=['casos_cerrados', 'casos_pendientes'],
+            y='supervisor',
+            orientation='h',
+            title="📊 Casos Cerrados vs Pendientes por Supervisor (Top 10)",
+            labels={'value': 'Número de Casos', 'variable': 'Estado', 'supervisor': 'Supervisor'},
+            color_discrete_map={'casos_cerrados': '#32CD32', 'casos_pendientes': '#FF6347'},
+            height=700,
+            text='value'
+        )
+        fig_supervisor_comparison.update_traces(
+            texttemplate='<b>%{text}</b>',
+            textposition='outside',
+            marker_line_width=0,
+            textfont_size=12,
+            textfont_color='white'
+        )
+        fig_supervisor_comparison.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            margin=dict(l=200, r=100, t=80, b=50),
+            xaxis_title="<b>Número de Casos</b>",
+            yaxis_title="<b>Supervisor</b>",
+            legend_title="Estado del Caso"
+        )
+        st.plotly_chart(fig_supervisor_comparison, use_container_width=True)
         
-        # Gráfico de tasa de cierre por supervisor
+        # Gráfico de tasa de cierre por supervisor - Una línea completa
         fig_supervisor_cierre = px.bar(
-            supervisor_analysis.head(15),
+            supervisor_analysis.head(10),
             x='tasa_cierre',
             y='supervisor',
             orientation='h',
-            title="👨‍💼 Tasa de Cierre por Supervisor (Top 15)",
+            title="📈 Tasa de Cierre por Supervisor (Top 10)",
             color='puntos_promedio',
             color_continuous_scale='RdYlGn',
-            height=600,
+            height=700,
             text='tasa_cierre'
         )
         fig_supervisor_cierre.update_traces(
-            texttemplate='%{text:.1f}%',
+            texttemplate='<b>%{text:.1f}%</b>',
             textposition='outside',
-            marker_line_width=0
+            marker_line_width=0,
+            textfont_size=12,
+            textfont_color='white'
         )
         fig_supervisor_cierre.update_layout(
             yaxis={'categoryorder': 'total ascending'},
-            margin=dict(l=150, r=50, t=80, b=50),
+            margin=dict(l=200, r=100, t=80, b=50),
             xaxis_title="<b>Tasa de Cierre (%)</b>",
             yaxis_title="<b>Supervisor</b>"
         )
         st.plotly_chart(fig_supervisor_cierre, use_container_width=True)
         
         # Tabla con análisis detallado de supervisores
-        st.markdown("#### 📊 Análisis Detallado de Supervisores")
-        supervisor_details = supervisor_analysis[['supervisor', 'total_casos', 'puntos_promedio', 'tasa_cierre', 'casos_cerrados']].copy()
-        supervisor_details.columns = ['Supervisor', 'Total Casos', 'Puntos Promedio', 'Tasa Cierre (%)', 'Casos Cerrados']
+        st.markdown("#### 📊 Análisis Completo de Supervisores")
+        supervisor_details = supervisor_analysis[['supervisor', 'total_casos', 'casos_cerrados', 'casos_pendientes', 'tasa_cierre', 'puntos_promedio', 'rutas_supervisadas', 'clientes_unicos']].copy()
+        supervisor_details.columns = ['Supervisor', 'Total Casos', 'Casos Cerrados', 'Casos Pendientes', 'Tasa Cierre (%)', 'Puntos Promedio', 'Rutas Supervisadas', 'Clientes Únicos']
         st.dataframe(clean_dataframe_for_display(supervisor_details), use_container_width=True)
+
+    # Análisis completo de contratistas
+    if 'CONTRATISTA' in merged_df.columns:
+        st.markdown(
+            """
+            <div class="analysis-card">
+                <h3 style="color: white; margin: 0;">🏢 Análisis Detallado de Contratistas - Tipos de Casos</h3>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        # Análisis detallado de contratistas
+        contratista_analysis = merged_df.groupby('CONTRATISTA').agg({
+            'id_tema': 'count',
+            'puntos': 'mean',
+            'fecha_cierre': lambda x: x.notna().sum(),
+            'ruta': 'nunique',
+            'motivo_retro': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
+            'respuesta_sub': 'nunique'
+        }).round(2).reset_index()
+        contratista_analysis.columns = ['contratista', 'total_casos', 'puntos_promedio', 'casos_cerrados', 'rutas_trabajadas', 'motivo_principal', 'tipos_respuesta']
+        contratista_analysis['tasa_cierre'] = (contratista_analysis['casos_cerrados'] / contratista_analysis['total_casos']) * 100
+        contratista_analysis['casos_pendientes'] = contratista_analysis['total_casos'] - contratista_analysis['casos_cerrados']
+        contratista_analysis = contratista_analysis.sort_values('total_casos', ascending=False)
+        
+        # Análisis de tipos de casos por contratista
+        contratista_motivos = merged_df.groupby(['CONTRATISTA', 'motivo_retro']).size().reset_index()
+        contratista_motivos.columns = ['contratista', 'motivo_retro', 'cantidad']
+        
+        # Top 3 motivos por contratista
+        top_motivos_contratista = contratista_motivos.groupby('contratista').apply(
+            lambda x: x.nlargest(3, 'cantidad')
+        ).reset_index(drop=True)
+          # Gráfico de casos por contratista - Una línea completa
+        fig_contratista_casos = px.bar(
+            contratista_analysis.head(10),
+            x=['casos_cerrados', 'casos_pendientes'],
+            y='contratista',
+            orientation='h',
+            title="📊 Casos Cerrados vs Pendientes por Contratista (Top 10)",
+            labels={'value': 'Número de Casos', 'variable': 'Estado', 'contratista': 'Contratista'},
+            color_discrete_map={'casos_cerrados': '#1E90FF', 'casos_pendientes': '#FFD700'},
+            height=700,
+            text='value'
+        )
+        fig_contratista_casos.update_traces(
+            texttemplate='<b>%{text}</b>',
+            textposition='outside',
+            marker_line_width=0,
+            textfont_size=12,
+            textfont_color='white'
+        )
+        fig_contratista_casos.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            margin=dict(l=250, r=100, t=80, b=50),
+            xaxis_title="<b>Número de Casos</b>",
+            yaxis_title="<b>Contratista</b>",
+            legend_title="Estado del Caso"
+        )
+        st.plotly_chart(fig_contratista_casos, use_container_width=True)
+        
+        # Gráfico de tipos de motivos por contratista - Una línea completa
+        fig_motivos_contratista = px.bar(
+            top_motivos_contratista.head(15),
+            x='cantidad',
+            y='motivo_retro',
+            color='contratista',
+            orientation='h',
+            title="🎯 Top Motivos por Contratista",
+            height=700,
+            text='cantidad'
+        )
+        fig_motivos_contratista.update_traces(
+            texttemplate='<b>%{text}</b>',
+            textposition='outside',
+            marker_line_width=0,
+            textfont_size=12,
+            textfont_color='white'
+        )
+        fig_motivos_contratista.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            margin=dict(l=300, r=100, t=80, b=50),
+            xaxis_title="<b>Número de Casos</b>",
+            yaxis_title="<b>Motivo</b>"
+        )
+        st.plotly_chart(fig_motivos_contratista, use_container_width=True)
+        
+        # Tabla con análisis detallado de contratistas
+        st.markdown("#### 📊 Análisis Completo de Contratistas")
+        contratista_details = contratista_analysis[['contratista', 'total_casos', 'casos_cerrados', 'casos_pendientes', 'tasa_cierre', 'puntos_promedio', 'rutas_trabajadas', 'motivo_principal', 'tipos_respuesta']].copy()
+        contratista_details.columns = ['Contratista', 'Total Casos', 'Casos Cerrados', 'Casos Pendientes', 'Tasa Cierre (%)', 'Puntos Promedio', 'Rutas Trabajadas', 'Motivo Principal', 'Tipos de Respuesta']
+        st.dataframe(clean_dataframe_for_display(contratista_details), use_container_width=True)
 
     # Séptima fila - Análisis de motivos específicos en lugar de números
     st.markdown(
