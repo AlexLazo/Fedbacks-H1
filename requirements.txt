@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+plotly
+openpyxl
+xlrd
+seaborn
+matplotlib
+altair
+streamlit-aggrid
+streamlit-option-menu
+datetime
