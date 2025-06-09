@@ -1137,11 +1137,11 @@ def show_routes_analysis(df, merged_df):
             'categoria_rendimiento': True,
             'total_registros': True,
             'puntos_promedio': ':.2f'
-        },
-        title="📊 Eficiencia Integral por Ruta: Volumen vs Calidad vs Tasa de Cierre",
+        },        title="📊 Eficiencia Integral por Ruta: Volumen vs Calidad vs Tasa de Cierre",
         color='tasa_cierre',
         color_continuous_scale='RdYlGn',
-        height=800,        labels={
+        height=800,
+        labels={
             'total_registros': 'Total de Registros de Feedback',
             'puntos_promedio': 'Calidad Promedio (Puntos 1-10)',
             'tasa_cierre': 'Tasa de Cierre (%)',
@@ -1155,7 +1155,7 @@ def show_routes_analysis(df, merged_df):
             size=20,
             line_width=0
         )
-    )
+    )    
     fig_eficiencia.update_layout(
         margin=dict(l=20, r=20, t=80, b=20),
         xaxis_title="<b>Total de Registros de Feedback</b>",
@@ -1163,21 +1163,7 @@ def show_routes_analysis(df, merged_df):
         coloraxis_colorbar=dict(
             title="Tasa de Cierre (%)",
             titleside="right"
-        ),
-        annotations=[
-            dict(
-                x=0.02,
-                y=0.98,
-                xref="paper",
-                yref="paper",
-                text="<b>📍 Busca rutas en la esquina superior derecha con burbujas grandes y verdes</b>",
-                showarrow=False,
-                font=dict(size=12, color="darkblue"),
-                bgcolor="rgba(255,255,255,0.8)",
-                bordercolor="darkblue",
-                borderwidth=1
-            )
-        ]
+        )
     )
     st.plotly_chart(fig_eficiencia, use_container_width=True)
     
