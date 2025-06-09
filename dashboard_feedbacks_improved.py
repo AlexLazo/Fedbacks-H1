@@ -1159,10 +1159,9 @@ def show_routes_analysis(df, merged_df):
     fig_eficiencia.update_layout(
         margin=dict(l=20, r=20, t=80, b=20),
         xaxis_title="<b>Total de Registros de Feedback</b>",
-        yaxis_title="<b>Calidad Promedio (Puntos 1-10)</b>",
+        yaxis_title="<b>Calidad Promedio (Puntos 1-10)</b>",        
         coloraxis_colorbar=dict(
-            title="Tasa de Cierre (%)",
-            titleside="right"
+            title="Tasa de Cierre (%)"
         )
     )
     st.plotly_chart(fig_eficiencia, use_container_width=True)
@@ -2218,7 +2217,6 @@ def show_detailed_data(df, merged_df):
     
     if motivo_filtro != 'Todos':
         df_tabla = df_tabla[df_tabla['motivo_retro'] == motivo_filtro]
-    
     df_tabla = df_tabla[
         (df_tabla['puntos'] >= puntos_filtro[0]) & 
         (df_tabla['puntos'] <= puntos_filtro[1])
