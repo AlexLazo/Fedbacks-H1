@@ -10,3 +10,6 @@ altair
 streamlit-aggrid
 streamlit-option-menu
 datetime
+reportlab
+kaleido
+fpdf2

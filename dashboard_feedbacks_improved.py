@@ -11,12 +11,19 @@ import warnings
 from streamlit_option_menu import option_menu
 import calendar
 import io
+from io import BytesIO
 import base64
+import plotly.io as pio
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
 warnings.filterwarnings('ignore')
 
 # Configuración de página
 st.set_page_config(
-    page_title="Dashboard Feedbacks H1 - Análisis Profesional Completo",
+    page_title="Seguimiento Feedbacks - DS00",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -128,15 +135,45 @@ def clean_dataframe_for_display(df):
     
     # Convertir todas las columnas a tipos seguros para Streamlit
     for col in df_clean.columns:
+        try:
+            if col == 'check_supervisor':
+                # Manejo especial para la columna check_supervisor
+                # Convertir todos los valores a numéricos primero, luego a int, luego a string
+                df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0).astype(int).astype(str)
+            elif col in ['codigo_cliente', 'id_tema']:
+                # Manejar códigos como strings para evitar formateo científico
+                df_clean[col] = df_clean[col].astype(str)
+            elif df_clean[col].dtype == 'object':
+                # Convertir valores NaN a string antes de convertir toda la columna
+                df_clean[col] = df_clean[col].fillna('').astype(str)
+            elif pd.api.types.is_numeric_dtype(df_clean[col]):
+                # Redondear números flotantes para mejor visualización
+                if df_clean[col].dtype in ['float64', 'float32']:
+                    df_clean[col] = df_clean[col].round(2)
+                    # Convertir NaN a 0 para evitar problemas
+                    df_clean[col] = df_clean[col].fillna(0)
+            elif pd.api.types.is_datetime64_any_dtype(df_clean[col]):
+                # Convertir fechas a string
+                df_clean[col] = df_clean[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+                df_clean[col] = df_clean[col].fillna('')
+        except Exception as e:
+            # En caso de error, convertir toda la columna a string
+            print(f"Warning: Error processing column {col}: {e}")
+            df_clean[col] = df_clean[col].fillna('').astype(str)
+    
+    # Reemplazar cualquier valor NaN restante con strings vacíos
+    df_clean = df_clean.fillna('')
+    
+    # Verificación final: asegurar que todas las columnas problemáticas sean strings
+    problematic_columns = ['check_supervisor', 'codigo_cliente', 'id_tema']
+    for col in problematic_columns:
+        if col in df_clean.columns:
+            df_clean[col] = df_clean[col].astype(str)
+    
+    # Asegurar que todas las columnas de objeto sean strings
+    for col in df_clean.columns:
         if df_clean[col].dtype == 'object':
             df_clean[col] = df_clean[col].astype(str)
-        elif pd.api.types.is_numeric_dtype(df_clean[col]):
-            # Redondear números flotantes para mejor visualización
-            if df_clean[col].dtype in ['float64', 'float32']:
-                df_clean[col] = df_clean[col].round(2)
-    
-    # Reemplazar valores NaN con strings vacíos
-    df_clean = df_clean.fillna('')
     
     return df_clean
 
@@ -286,6 +323,220 @@ Fecha: {datetime.now().strftime('%d/%m/%Y')}
 - Respuesta principal: {df['respuesta_sub'].value_counts().index[0]} ({df['respuesta_sub'].value_counts().iloc[0]} casos)
 """
 
+def generate_pdf_report(df, merged_df, report_type="completo"):
+    """Genera un reporte PDF profesional con gráficas"""
+    try:
+        # Crear buffer para PDF
+        pdf_buffer = BytesIO()
+        
+        # Crear documento PDF
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, 
+                              leftMargin=0.75*inch, rightMargin=0.75*inch,
+                              topMargin=1*inch, bottomMargin=1*inch)
+        
+        # Obtener estilos
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=20,
+            textColor=colors.blue,
+            spaceAfter=30,
+            alignment=1  # Center
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=colors.darkblue,
+            spaceAfter=12,
+            spaceBefore=20
+        )
+        
+        # Lista de elementos para el PDF
+        story = []
+        
+        # Título principal
+        story.append(Paragraph("📊 REPORTE FEEDBACKS H1 - ANÁLISIS COMPLETO", title_style))
+        story.append(Paragraph(f"Generado el {datetime.now().strftime('%d/%m/%Y a las %H:%M:%S')}", styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Resumen ejecutivo
+        story.append(Paragraph("📋 RESUMEN EJECUTIVO", heading_style))
+        
+        # Crear tabla de métricas principales
+        metrics_data = [
+            ['Métrica', 'Valor'],
+            ['Total de Registros', f"{len(df):,}"],
+            ['Rutas Únicas', f"{df['ruta'].nunique()}"],
+            ['Usuarios Activos', f"{df['usuario'].nunique()}"],
+            ['Clientes Únicos', f"{df['codigo_cliente'].nunique()}"],
+            ['Promedio de Puntos', f"{df['puntos'].mean():.2f}"],
+            ['Tasa de Cierre', f"{(df['fecha_cierre'].notna().sum() / len(df)) * 100:.1f}%"]
+        ]
+        
+        metrics_table = Table(metrics_data, colWidths=[3*inch, 2*inch])
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(metrics_table)
+        story.append(Spacer(1, 20))
+        
+        # Generar gráficas como imágenes
+        try:
+            # Gráfica 1: Top 10 Rutas
+            story.append(Paragraph("🚚 TOP 10 RUTAS MÁS ACTIVAS", heading_style))
+            
+            top_rutas = df['ruta'].value_counts().head(10)
+            fig_rutas = px.bar(
+                x=top_rutas.values, 
+                y=top_rutas.index, 
+                orientation='h',
+                title="Top 10 Rutas por Número de Registros",
+                labels={'x': 'Número de Registros', 'y': 'Ruta'}
+            )
+            fig_rutas.update_layout(height=500, width=700, showlegend=False)
+            
+            # Convertir gráfica a imagen
+            img_buffer = BytesIO()
+            fig_rutas.write_image(img_buffer, format='png', engine='kaleido')
+            img_buffer.seek(0)
+            
+            # Agregar imagen al PDF
+            img = Image(img_buffer, width=5*inch, height=3*inch)
+            story.append(img)
+            story.append(Spacer(1, 20))
+            
+        except Exception as e:
+            story.append(Paragraph(f"⚠️ Error generando gráfica de rutas: {str(e)}", styles['Normal']))
+            story.append(Spacer(1, 10))
+        
+        try:
+            # Gráfica 2: Distribución de Puntos
+            story.append(Paragraph("⭐ DISTRIBUCIÓN DE PUNTUACIONES", heading_style))
+            
+            fig_puntos = px.histogram(
+                df, x='puntos', 
+                title="Distribución de Puntuaciones",
+                labels={'puntos': 'Puntuación', 'count': 'Frecuencia'}
+            )
+            fig_puntos.update_layout(height=400, width=700, showlegend=False)
+            
+            img_buffer2 = BytesIO()
+            fig_puntos.write_image(img_buffer2, format='png', engine='kaleido')
+            img_buffer2.seek(0)
+            
+            img2 = Image(img_buffer2, width=5*inch, height=2.5*inch)
+            story.append(img2)
+            story.append(Spacer(1, 20))
+            
+        except Exception as e:
+            story.append(Paragraph(f"⚠️ Error generando gráfica de puntos: {str(e)}", styles['Normal']))
+            story.append(Spacer(1, 10))
+        
+        # Top Usuarios
+        story.append(Paragraph("👥 TOP 10 USUARIOS MÁS ACTIVOS", heading_style))
+        
+        top_usuarios_data = [['Usuario', 'Registros']]
+        for usuario, count in df['usuario'].value_counts().head(10).items():
+            top_usuarios_data.append([str(usuario), str(count)])
+        
+        usuarios_table = Table(top_usuarios_data, colWidths=[3*inch, 1.5*inch])
+        usuarios_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(usuarios_table)
+        story.append(Spacer(1, 20))
+        
+        # Análisis de Supervisores (si existe)
+        if 'SUPERVISOR' in merged_df.columns:
+            story.append(Paragraph("👨‍💼 ANÁLISIS DE SUPERVISORES", heading_style))
+            
+            supervisor_stats = merged_df.groupby('SUPERVISOR').agg({
+                'id_tema': 'count',
+                'puntos': 'mean'
+            }).round(2).reset_index()
+            
+            supervisor_data = [['Supervisor', 'Total Casos', 'Puntos Promedio']]
+            for _, row in supervisor_stats.head(10).iterrows():
+                supervisor_data.append([
+                    str(row['SUPERVISOR']), 
+                    str(row['id_tema']), 
+                    str(row['puntos'])
+                ])
+            
+            supervisor_table = Table(supervisor_data, colWidths=[2.5*inch, 1.5*inch, 1.5*inch])
+            supervisor_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.green),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightgreen),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            
+            story.append(supervisor_table)
+            story.append(Spacer(1, 20))
+        
+        # Información adicional
+        story.append(Paragraph("📈 INSIGHTS PRINCIPALES", heading_style))
+        
+        insights = [
+            f"• Ruta más activa: {df['ruta'].value_counts().index[0]} ({df['ruta'].value_counts().iloc[0]} registros)",
+            f"• Usuario más activo: {df['usuario'].value_counts().index[0]} ({df['usuario'].value_counts().iloc[0]} registros)",
+            f"• Respuesta más común: {df['respuesta_sub'].value_counts().index[0]} ({df['respuesta_sub'].value_counts().iloc[0]} casos)",
+            f"• Período de análisis: {df['fecha_registro'].min().strftime('%d/%m/%Y')} - {df['fecha_registro'].max().strftime('%d/%m/%Y')}"
+        ]
+        
+        for insight in insights:
+            story.append(Paragraph(insight, styles['Normal']))
+            story.append(Spacer(1, 6))
+        
+        # Pie de página
+        story.append(Spacer(1, 30))
+        story.append(Paragraph("Reporte generado automáticamente por Dashboard Feedbacks H1", styles['Italic']))
+        
+        # Construir PDF
+        doc.build(story)
+        pdf_buffer.seek(0)
+        
+        return pdf_buffer.getvalue()
+        
+    except Exception as e:
+        # Si hay error, crear un PDF simple con el error
+        simple_buffer = BytesIO()
+        simple_doc = SimpleDocTemplate(simple_buffer, pagesize=A4)
+        simple_story = []
+        
+        styles = getSampleStyleSheet()
+        simple_story.append(Paragraph("Error en la generación del PDF", styles['Title']))
+        simple_story.append(Paragraph(f"Error: {str(e)}", styles['Normal']))
+        simple_story.append(Paragraph("Por favor, verifique que todas las dependencias estén instaladas correctamente.", styles['Normal']))
+        
+        simple_doc.build(simple_story)
+        simple_buffer.seek(0)
+        
+        return simple_buffer.getvalue()
+
 # Función principal mejorada
 def main():
     # Título principal
@@ -419,8 +670,7 @@ def main():
         # También filtrar df_filtrado basado en las rutas que tienen ese contratista
         rutas_contratista = merged_df_filtrado['ruta'].unique()
         df_filtrado = df_filtrado[df_filtrado['ruta'].isin(rutas_contratista)]
-    
-    # Sección de reportes en sidebar
+      # Sección de reportes en sidebar
     st.sidebar.markdown("### 📄 Generación de Reportes")
     
     tipo_reporte = st.sidebar.selectbox(
@@ -428,19 +678,51 @@ def main():
         ["Completo", "Ejecutivo", "Por Supervisor", "Por Contratista"]
     )
     
-    if st.sidebar.button("📥 Generar Reporte"):
+    # Botón para reporte de texto
+    if st.sidebar.button("📥 Generar Reporte TXT"):
         if tipo_reporte == "Completo":
             reporte = generate_report(df_filtrado, merged_df_filtrado, "completo")
         else:
             reporte = generate_report(df_filtrado, merged_df_filtrado, "ejecutivo")
         
         st.sidebar.download_button(
-            label="💾 Descargar Reporte",
+            label="💾 Descargar Reporte TXT",
             data=reporte,
             file_name=f"reporte_feedbacks_{tipo_reporte.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
             mime="text/plain"
         )
-        st.sidebar.success("✅ Reporte generado exitosamente!")
+        st.sidebar.success("✅ Reporte TXT generado exitosamente!")
+    
+    # Botón para reporte PDF con gráficas
+    if st.sidebar.button("📊 Generar Reporte PDF"):
+        with st.sidebar.spinner("📊 Generando PDF con gráficas..."):
+            try:
+                pdf_data = generate_pdf_report(df_filtrado, merged_df_filtrado, tipo_reporte.lower())
+                
+                st.sidebar.download_button(
+                    label="📄 Descargar Reporte PDF",
+                    data=pdf_data,
+                    file_name=f"reporte_feedbacks_PDF_{tipo_reporte.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                    mime="application/pdf"
+                )
+                st.sidebar.success("✅ Reporte PDF generado exitosamente!")
+            except Exception as e:
+                st.sidebar.error(f"❌ Error generando PDF: {str(e)}")
+                st.sidebar.info("💡 Asegúrese de que todas las dependencias estén instaladas.")
+    
+    # Información sobre los reportes
+    with st.sidebar.expander("ℹ️ Información sobre Reportes"):
+        st.write("""
+        **Reporte TXT**: Archivo de texto plano con estadísticas y análisis detallado.
+        
+        **Reporte PDF**: Documento profesional con gráficas, tablas y análisis visual completo.
+        
+        - Incluye gráficas de barras
+        - Histogramas de distribución
+        - Tablas con datos clave
+        - Análisis de supervisores
+        - Insights principales
+        """)
     
     # Métricas KPI mejoradas
     create_advanced_kpi_metrics(df_filtrado, merged_df_filtrado)
@@ -2355,22 +2637,56 @@ def show_detailed_data(df, merged_df):
             clean_dataframe_for_display(df_tabla_enriquecido[columnas_existentes].sort_values('fecha_registro', ascending=False)),
             use_container_width=True,
             height=500
-        )
-          # Opciones de descarga mejoradas
-        col_download1, col_download2, col_download3 = st.columns(3)
-        
+        )        # Opciones de descarga mejoradas
+        col_download1, col_download2, col_download3, col_download4 = st.columns(4)        
         with col_download1:
-            if st.button("📥 Descargar CSV"):
+            if st.button("📥 Descargar XLSX"):
                 # Usar la tabla enriquecida para descarga
                 if 'df_tabla_enriquecido' in locals():
-                    csv = df_tabla_enriquecido.to_csv(index=False)
+                    excel_data = df_tabla_enriquecido
                 else:
-                    csv = df_tabla.to_csv(index=False)
+                    excel_data = df_tabla
+                
+                # Crear un buffer para el archivo Excel
+                excel_buffer = BytesIO()
+                
+                # Crear el archivo Excel con múltiples hojas
+                with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                    # Hoja principal con datos filtrados
+                    excel_data.to_excel(writer, sheet_name='Datos_Filtrados', index=False)
+                    
+                    # Hoja de resumen estadístico
+                    resumen_stats = pd.DataFrame({
+                        'Métrica': ['Total Registros', 'Rutas Únicas', 'Usuarios Únicos', 'Clientes Únicos', 
+                                   'Promedio Puntos', 'Tasa de Cierre (%)'],
+                        'Valor': [
+                            len(excel_data),
+                            excel_data['ruta'].nunique(),
+                            excel_data['usuario'].nunique(),
+                            excel_data['codigo_cliente'].nunique(),
+                            round(excel_data['puntos'].mean(), 2),
+                            round((excel_data['fecha_cierre'].notna().sum() / len(excel_data)) * 100, 1)
+                        ]
+                    })
+                    resumen_stats.to_excel(writer, sheet_name='Resumen_Estadistico', index=False)
+                    
+                    # Hoja de Top 10 motivos
+                    top_motivos_df = excel_data['motivo_retro'].value_counts().head(10).reset_index()
+                    top_motivos_df.columns = ['Motivo', 'Cantidad']
+                    top_motivos_df.to_excel(writer, sheet_name='Top_Motivos', index=False)
+                    
+                    # Hoja de Top 10 rutas
+                    top_rutas_df = excel_data['ruta'].value_counts().head(10).reset_index()
+                    top_rutas_df.columns = ['Ruta', 'Cantidad']
+                    top_rutas_df.to_excel(writer, sheet_name='Top_Rutas', index=False)
+                
+                excel_buffer.seek(0)
+                
                 st.download_button(
-                    label="💾 Descargar Datos Filtrados (CSV)",
-                    data=csv,
-                    file_name=f"feedbacks_filtrados_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv",
+                    label="💾 Descargar Datos Filtrados (XLSX)",
+                    data=excel_buffer.getvalue(),
+                    file_name=f"feedbacks_filtrados_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 )
         
         with col_download2:
@@ -2382,7 +2698,29 @@ def show_detailed_data(df, merged_df):
                     file_name=f"reporte_filtrado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain"
                 )
+        
         with col_download3:
+            if st.button("📋 Generar PDF Filtrado"):
+                with st.spinner("📊 Generando PDF con gráficas filtradas..."):
+                    try:
+                        # Usar la tabla enriquecida para el PDF
+                        if 'df_tabla_enriquecido' in locals():
+                            pdf_data = generate_pdf_report(df_tabla_enriquecido, merged_df, "completo")
+                        else:
+                            pdf_data = generate_pdf_report(df_tabla, merged_df, "completo")
+                        
+                        st.download_button(
+                            label="📄 Descargar PDF Filtrado",
+                            data=pdf_data,
+                            file_name=f"reporte_filtrado_PDF_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                            mime="application/pdf"
+                        )
+                        st.success("✅ PDF generado exitosamente!")
+                    except Exception as e:
+                        st.error(f"❌ Error generando PDF: {str(e)}")
+                        st.info("💡 Asegúrese de que kaleido esté instalado correctamente.")
+
+        with col_download4:
             # Estadísticas rápidas de los datos filtrados
             if st.button("📈 Ver Estadísticas Rápidas"):
                 st.markdown("### 📊 Estadísticas de Datos Filtrados")
