@@ -382,13 +382,20 @@ def main():
     
     if trimestre_seleccionado != 'Todos':
         df_filtrado = df_filtrado[df_filtrado['trimestre_nombre'] == trimestre_seleccionado]
-    
-    # Filtrar merged_df también
+      # Filtrar merged_df también con los mismos criterios de df_filtrado
     merged_df_filtrado = merged_df[
         (merged_df['fecha_registro'].dt.date >= fecha_inicio) &
         (merged_df['fecha_registro'].dt.date <= fecha_fin)
     ]
     
+    # Aplicar TODOS los filtros a merged_df_filtrado también
+    if ruta_seleccionada != 'Todas':
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['ruta'] == ruta_seleccionada]
+    
+    if usuario_seleccionado != 'Todos':
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['usuario'] == usuario_seleccionado]
+        # También aplicar al df_filtrado principal si hay SUPERVISOR o CONTRATISTA seleccionados
+        
     # Aplicar filtros de mes y semana a merged_df también
     if mes_seleccionado != 'Todos':
         merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['mes_nombre'] == mes_seleccionado]
@@ -397,11 +404,21 @@ def main():
         semana_numero = int(semana_seleccionada.split()[1])
         merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['semana'] == semana_numero]
     
+    if trimestre_seleccionado != 'Todos':
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['trimestre_nombre'] == trimestre_seleccionado]
+    
+    # FILTROS CRÍTICOS: Aplicar filtros de supervisor y contratista a AMBOS DataFrames
     if supervisor_seleccionado != 'Todos':
         merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['SUPERVISOR'] == supervisor_seleccionado]
+        # También filtrar df_filtrado basado en las rutas que tienen ese supervisor
+        rutas_supervisor = merged_df_filtrado['ruta'].unique()
+        df_filtrado = df_filtrado[df_filtrado['ruta'].isin(rutas_supervisor)]
     
     if contratista_seleccionado != 'Todos':
         merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['CONTRATISTA'] == contratista_seleccionado]
+        # También filtrar df_filtrado basado en las rutas que tienen ese contratista
+        rutas_contratista = merged_df_filtrado['ruta'].unique()
+        df_filtrado = df_filtrado[df_filtrado['ruta'].isin(rutas_contratista)]
     
     # Sección de reportes en sidebar
     st.sidebar.markdown("### 📄 Generación de Reportes")
@@ -2244,13 +2261,22 @@ def show_detailed_data(df, merged_df):
     
     if centro_filtro != 'Todos':
         df_tabla = df_tabla[df_tabla['centro'] == centro_filtro]
+      # APLICAR FILTROS DE SUPERVISOR Y CONTRATISTA
+    if supervisor_filtro != 'Todos' and 'SUPERVISOR' in merged_df.columns:
+        # Filtrar merged_df para obtener rutas del supervisor seleccionado
+        rutas_supervisor = merged_df[merged_df['SUPERVISOR'] == supervisor_filtro]['ruta'].unique()
+        df_tabla = df_tabla[df_tabla['ruta'].isin(rutas_supervisor)]
     
+    if contratista_filtro != 'Todos' and 'CONTRATISTA' in merged_df.columns:
+        # Filtrar merged_df para obtener rutas del contratista seleccionado
+        rutas_contratista = merged_df[merged_df['CONTRATISTA'] == contratista_filtro]['ruta'].unique()
+        df_tabla = df_tabla[df_tabla['ruta'].isin(rutas_contratista)]
+
     if check_filtro == 'Supervisado (1)':
         df_tabla = df_tabla[df_tabla['check_supervisor'] == 1]
     elif check_filtro == 'No Supervisado (0)':
         df_tabla = df_tabla[df_tabla['check_supervisor'] == 0]
-    
-    # Mostrar estadísticas de la tabla filtrada
+      # Mostrar estadísticas de la tabla filtrada
     col_stats1, col_stats2, col_stats3, col_stats4 = st.columns(4)
     
     with col_stats1:
@@ -2277,27 +2303,69 @@ def show_detailed_data(df, merged_df):
         else:
             st.metric("✅ Tasa de Cierre", "0%")
     
-    # Columnas a mostrar en la tabla
-    columnas_mostrar = [
-        'fecha_registro', 'usuario', 'ruta', 'codigo_cliente', 'nombre_cliente',
-        'motivo_retro', 'puntos', 'vendedor', 'observacion', 'respuesta_sub',
-        'centro', 'check_supervisor', 'fecha_cierre'
-    ]
-    
-    # Mostrar la tabla
+    # Estadísticas adicionales de supervisores y contratistas
+    if len(df_tabla) > 0 and ('SUPERVISOR' in merged_df.columns or 'CONTRATISTA' in merged_df.columns):
+        st.markdown("### 📊 Estadísticas de Supervisión y Contratistas")
+        col_extra1, col_extra2, col_extra3, col_extra4 = st.columns(4)
+        
+        with col_extra1:
+            if 'SUPERVISOR' in merged_df.columns:
+                # Contar supervisores únicos en las rutas filtradas
+                rutas_filtradas = df_tabla['ruta'].unique()
+                supervisores_en_filtro = merged_df[merged_df['ruta'].isin(rutas_filtradas)]['SUPERVISOR'].nunique()
+                st.metric("👨‍💼 Supervisores", f"{supervisores_en_filtro}")
+        
+        with col_extra2:
+            if 'CONTRATISTA' in merged_df.columns:
+                # Contar contratistas únicos en las rutas filtradas
+                contratistas_en_filtro = merged_df[merged_df['ruta'].isin(rutas_filtradas)]['CONTRATISTA'].nunique()
+                st.metric("🏢 Contratistas", f"{contratistas_en_filtro}")
+        
+        with col_extra3:
+            # Usuarios únicos en el filtro
+            usuarios_unicos = df_tabla['usuario'].nunique()
+            st.metric("👤 Usuarios Únicos", f"{usuarios_unicos}")
+        
+        with col_extra4:
+            # Clientes únicos en el filtro
+            clientes_unicos = df_tabla['codigo_cliente'].nunique()
+            st.metric("🏪 Clientes Únicos", f"{clientes_unicos}")
+      # Crear tabla enriquecida con información de supervisor y contratista
     if len(df_tabla) > 0:
+        # Combinar df_tabla con merged_df para obtener información de supervisor y contratista
+        df_tabla_enriquecido = df_tabla.merge(
+            merged_df[['ruta', 'SUPERVISOR', 'CONTRATISTA']].drop_duplicates(),
+            on='ruta',
+            how='left'
+        )
+        
+        # Columnas a mostrar en la tabla (ahora con supervisor y contratista)
+        columnas_mostrar = [
+            'fecha_registro', 'usuario', 'ruta', 'SUPERVISOR', 'CONTRATISTA',
+            'codigo_cliente', 'nombre_cliente', 'motivo_retro', 'puntos', 
+            'vendedor', 'observacion', 'respuesta_sub', 'centro', 
+            'check_supervisor', 'fecha_cierre'
+        ]
+        
+        # Filtrar solo las columnas que existen
+        columnas_existentes = [col for col in columnas_mostrar if col in df_tabla_enriquecido.columns]
+        
+        # Mostrar la tabla enriquecida
         st.dataframe(
-            clean_dataframe_for_display(df_tabla[columnas_mostrar].sort_values('fecha_registro', ascending=False)),
+            clean_dataframe_for_display(df_tabla_enriquecido[columnas_existentes].sort_values('fecha_registro', ascending=False)),
             use_container_width=True,
             height=500
         )
-        
-        # Opciones de descarga mejoradas
+          # Opciones de descarga mejoradas
         col_download1, col_download2, col_download3 = st.columns(3)
         
         with col_download1:
             if st.button("📥 Descargar CSV"):
-                csv = df_tabla.to_csv(index=False)
+                # Usar la tabla enriquecida para descarga
+                if 'df_tabla_enriquecido' in locals():
+                    csv = df_tabla_enriquecido.to_csv(index=False)
+                else:
+                    csv = df_tabla.to_csv(index=False)
                 st.download_button(
                     label="💾 Descargar Datos Filtrados (CSV)",
                     data=csv,
@@ -2314,13 +2382,12 @@ def show_detailed_data(df, merged_df):
                     file_name=f"reporte_filtrado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain"
                 )
-        
         with col_download3:
             # Estadísticas rápidas de los datos filtrados
             if st.button("📈 Ver Estadísticas Rápidas"):
                 st.markdown("### 📊 Estadísticas de Datos Filtrados")
                 
-                stats_col1, stats_col2 = st.columns(2)
+                stats_col1, stats_col2, stats_col3 = st.columns(3)
                 
                 with stats_col1:
                     st.markdown("**Top 5 Motivos:**")
@@ -2333,6 +2400,22 @@ def show_detailed_data(df, merged_df):
                     top_rutas = df_tabla['ruta'].value_counts().head(5)
                     for ruta, count in top_rutas.items():
                         st.write(f"• {ruta}: {count}")
+                
+                with stats_col3:
+                    if 'SUPERVISOR' in merged_df.columns or 'CONTRATISTA' in merged_df.columns:
+                        st.markdown("**Supervisión:**")
+                        if 'SUPERVISOR' in merged_df.columns:
+                            rutas_con_supervisor = merged_df[merged_df['ruta'].isin(df_tabla['ruta'].unique())]
+                            top_supervisores = rutas_con_supervisor['SUPERVISOR'].value_counts().head(3)
+                            st.write("**Top Supervisores:**")
+                            for supervisor, count in top_supervisores.items():
+                                st.write(f"• {supervisor}: {count} rutas")
+                        
+                        if 'CONTRATISTA' in merged_df.columns:
+                            top_contratistas = rutas_con_supervisor['CONTRATISTA'].value_counts().head(3)
+                            st.write("**Top Contratistas:**")
+                            for contratista, count in top_contratistas.items():
+                                st.write(f"• {contratista}: {count} rutas")
     else:
         st.warning("⚠️ No hay registros que coincidan con los filtros seleccionados.")
         st.info("💡 Intenta ajustar los filtros para ver más datos.")
