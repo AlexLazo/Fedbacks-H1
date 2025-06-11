@@ -921,8 +921,8 @@ def generate_excel_report(df, merged_df, filtros_aplicados=None):
         # Crear buffer para el archivo Excel
         excel_buffer = BytesIO()
         
-        # Crear workbook con xlsxwriter
-        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter', options={'remove_timezone': True}) as writer:
+        # Crear workbook con xlsxwriter (sin options que pueden no ser compatibles)
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
             workbook = writer.book
             
             # Definir formatos
@@ -945,185 +945,165 @@ def generate_excel_report(df, merged_df, filtros_aplicados=None):
             })
             
             # HOJA 1: Datos filtrados principales
-            df_export = clean_dataframe_for_display(df.copy())
-            df_export.to_excel(writer, sheet_name='Datos_Filtrados', index=False)
-            worksheet1 = writer.sheets['Datos_Filtrados']
-            
-            # Aplicar formato a la hoja 1
-            for col_num, value in enumerate(df_export.columns.values):
-                worksheet1.write(0, col_num, value, header_format)
+            try:
+                df_export = clean_dataframe_for_display(df.copy())
+                # Convertir fechas problemáticas a string
+                for col in df_export.columns:
+                    if 'fecha' in col.lower() and df_export[col].dtype == 'object':
+                        df_export[col] = df_export[col].astype(str)
                 
-            # Ajustar ancho de columnas
-            for i, col in enumerate(df_export.columns):
-                max_len = max(df_export[col].astype(str).map(len).max(), len(col)) + 2
-                worksheet1.set_column(i, i, min(max_len, 50))
+                df_export.to_excel(writer, sheet_name='Datos_Filtrados', index=False)
+                worksheet1 = writer.sheets['Datos_Filtrados']
+                
+                # Aplicar formato a la hoja 1
+                for col_num, value in enumerate(df_export.columns.values):
+                    worksheet1.write(0, col_num, value, header_format)
+                    
+                # Ajustar ancho de columnas
+                for i, col in enumerate(df_export.columns):
+                    try:
+                        max_len = max(df_export[col].astype(str).map(len).max(), len(col)) + 2
+                        worksheet1.set_column(i, i, min(max_len, 50))
+                    except:
+                        worksheet1.set_column(i, i, 15)
+            except Exception as e:
+                print(f"Error en Hoja 1: {e}")
             
             # HOJA 2: Análisis por Rutas
-            rutas_analysis = df.groupby('ruta').agg({
-                'id_tema': 'count',
-                'puntos': ['mean', 'std', 'min', 'max'],
-                'fecha_cierre': lambda x: x.notna().sum(),
-                'codigo_cliente': 'nunique',
-                'usuario': 'nunique'
-            }).round(2)
-            
-            rutas_analysis.columns = ['Total_Registros', 'Puntos_Promedio', 'Puntos_Std', 'Puntos_Min', 'Puntos_Max', 'Registros_Cerrados', 'Clientes_Unicos', 'Usuarios_Activos']
-            rutas_analysis = rutas_analysis.reset_index()
-            rutas_analysis['Tasa_Cierre'] = (rutas_analysis['Registros_Cerrados'] / rutas_analysis['Total_Registros']) * 100
-            rutas_analysis = rutas_analysis.sort_values('Total_Registros', ascending=False)
-            
-            rutas_analysis.to_excel(writer, sheet_name='Analisis_Rutas', index=False)
-            worksheet2 = writer.sheets['Analisis_Rutas']
-            
-            # Aplicar formato a la hoja 2
-            for col_num, value in enumerate(rutas_analysis.columns.values):
-                worksheet2.write(0, col_num, value, header_format)
+            try:
+                rutas_analysis = df.groupby('ruta').agg({
+                    'id_tema': 'count',
+                    'puntos': ['mean', 'std', 'min', 'max'],
+                    'fecha_cierre': lambda x: x.notna().sum(),
+                    'codigo_cliente': 'nunique',
+                    'usuario': 'nunique'
+                }).round(2)
+                
+                # Aplanar columnas MultiIndex
+                rutas_analysis.columns = ['Total_Registros', 'Puntos_Promedio', 'Puntos_Std', 'Puntos_Min', 'Puntos_Max', 'Registros_Cerrados', 'Clientes_Unicos', 'Usuarios_Activos']
+                rutas_analysis = rutas_analysis.reset_index()
+                rutas_analysis['Tasa_Cierre'] = (rutas_analysis['Registros_Cerrados'] / rutas_analysis['Total_Registros']) * 100
+                rutas_analysis = rutas_analysis.sort_values('Total_Registros', ascending=False)
+                
+                rutas_analysis.to_excel(writer, sheet_name='Analisis_Rutas', index=False)
+                worksheet2 = writer.sheets['Analisis_Rutas']
+                
+                # Aplicar formato a la hoja 2
+                for col_num, value in enumerate(rutas_analysis.columns.values):
+                    worksheet2.write(0, col_num, value, header_format)
+            except Exception as e:
+                print(f"Error en Hoja 2: {e}")
             
             # HOJA 3: Análisis por Usuarios
-            usuarios_analysis = df.groupby('usuario').agg({
-                'id_tema': 'count',
-                'puntos': ['mean', 'std'],
-                'fecha_cierre': lambda x: x.notna().sum(),
-                'ruta': 'nunique',
-                'codigo_cliente': 'nunique'
-            }).round(2)
-            
-            usuarios_analysis.columns = ['Total_Casos', 'Puntos_Promedio', 'Puntos_Std', 'Casos_Cerrados', 'Rutas_Trabajadas', 'Clientes_Atendidos']
-            usuarios_analysis = usuarios_analysis.reset_index()
-            usuarios_analysis['Tasa_Cierre'] = (usuarios_analysis['Casos_Cerrados'] / usuarios_analysis['Total_Casos']) * 100
-            usuarios_analysis = usuarios_analysis.sort_values('Total_Casos', ascending=False)
-            
-            usuarios_analysis.to_excel(writer, sheet_name='Analisis_Usuarios', index=False)
-            worksheet3 = writer.sheets['Analisis_Usuarios']
-            
-            # Aplicar formato a la hoja 3
-            for col_num, value in enumerate(usuarios_analysis.columns.values):
-                worksheet3.write(0, col_num, value, header_format)
-            
-            # HOJA 4: Top Clientes Problemáticos
-            df['codigo_cliente_display'] = df['codigo_cliente'].apply(lambda x: f"Cliente-{str(x).zfill(6)}")
-            clientes_analysis = df.groupby(['codigo_cliente', 'codigo_cliente_display']).agg({
-                'id_tema': 'count',
-                'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
-                'puntos': 'mean',
-                'fecha_cierre': lambda x: x.notna().sum(),
-                'ruta': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
-                'usuario': 'nunique'
-            }).round(2).reset_index()
-            
-            clientes_analysis.columns = ['codigo_cliente', 'codigo_cliente_display', 'total_reportes', 'motivo_principal', 'puntos_promedio', 'casos_cerrados', 'ruta_principal', 'usuarios_involucrados']
-            clientes_analysis['tasa_cierre'] = (clientes_analysis['casos_cerrados'] / clientes_analysis['total_reportes']) * 100
-            clientes_analysis = clientes_analysis.sort_values('total_reportes', ascending=False).head(50)
-            
-            clientes_export = clientes_analysis[['codigo_cliente_display', 'total_reportes', 'motivo_principal', 'puntos_promedio', 'tasa_cierre', 'ruta_principal', 'usuarios_involucrados']].copy()
-            clientes_export.columns = ['Cliente', 'Total_Reportes', 'Motivo_Principal', 'Puntos_Promedio', 'Tasa_Cierre', 'Ruta_Principal', 'Usuarios_Involucrados']
-            
-            clientes_export.to_excel(writer, sheet_name='Top_Clientes_Problematicos', index=False)
-            worksheet4 = writer.sheets['Top_Clientes_Problematicos']
-            
-            # Aplicar formato a la hoja 4
-            for col_num, value in enumerate(clientes_export.columns.values):
-                worksheet4.write(0, col_num, value, header_format)
-            
-            # HOJA 5: Análisis Temporal
-            if 'mes_nombre' in df.columns:
-                temporal_analysis = df.groupby(['mes', 'mes_nombre']).agg({
+            try:
+                usuarios_analysis = df.groupby('usuario').agg({
                     'id_tema': 'count',
                     'puntos': ['mean', 'std'],
                     'fecha_cierre': lambda x: x.notna().sum(),
-                    'codigo_cliente': 'nunique',
-                    'usuario': 'nunique',
-                    'ruta': 'nunique'
-                }).round(2)
-                
-                temporal_analysis.columns = ['Total_Registros', 'Puntos_Promedio', 'Puntos_Std', 'Total_Cierres', 'Clientes_Unicos', 'Usuarios_Activos', 'Rutas_Activas']
-                temporal_analysis = temporal_analysis.reset_index()
-                temporal_analysis['Tasa_Cierre'] = (temporal_analysis['Total_Cierres'] / temporal_analysis['Total_Registros']) * 100
-                temporal_analysis = temporal_analysis.sort_values('mes')
-                
-                temporal_export = temporal_analysis[['mes_nombre', 'Total_Registros', 'Puntos_Promedio', 'Tasa_Cierre', 'Clientes_Unicos', 'Usuarios_Activos', 'Rutas_Activas']].copy()
-                temporal_export.columns = ['Mes', 'Total_Registros', 'Puntos_Promedio', 'Tasa_Cierre', 'Clientes_Unicos', 'Usuarios_Activos', 'Rutas_Activas']
-                
-                temporal_export.to_excel(writer, sheet_name='Analisis_Temporal', index=False)
-                worksheet5 = writer.sheets['Analisis_Temporal']
-                
-                # Aplicar formato a la hoja 5
-                for col_num, value in enumerate(temporal_export.columns.values):
-                    worksheet5.write(0, col_num, value, header_format)
-            
-            # HOJA 6: Supervisores y Contratistas (si disponible)
-            if 'SUPERVISOR' in merged_df.columns and 'CONTRATISTA' in merged_df.columns:
-                supervisores_analysis = merged_df.groupby(['SUPERVISOR', 'CONTRATISTA']).agg({
-                    'id_tema': 'count',
-                    'puntos': 'mean',
-                    'fecha_cierre': lambda x: x.notna().sum(),
                     'ruta': 'nunique',
                     'codigo_cliente': 'nunique'
+                }).round(2)
+                
+                usuarios_analysis.columns = ['Total_Casos', 'Puntos_Promedio', 'Puntos_Std', 'Casos_Cerrados', 'Rutas_Trabajadas', 'Clientes_Atendidos']
+                usuarios_analysis = usuarios_analysis.reset_index()
+                usuarios_analysis['Tasa_Cierre'] = (usuarios_analysis['Casos_Cerrados'] / usuarios_analysis['Total_Casos']) * 100
+                usuarios_analysis = usuarios_analysis.sort_values('Total_Casos', ascending=False)
+                
+                usuarios_analysis.to_excel(writer, sheet_name='Analisis_Usuarios', index=False)
+                worksheet3 = writer.sheets['Analisis_Usuarios']
+                
+                # Aplicar formato a la hoja 3
+                for col_num, value in enumerate(usuarios_analysis.columns.values):
+                    worksheet3.write(0, col_num, value, header_format)
+            except Exception as e:
+                print(f"Error en Hoja 3: {e}")
+            
+            # HOJA 4: Top Clientes Problemáticos
+            try:
+                df['codigo_cliente_display'] = df['codigo_cliente'].apply(lambda x: f"Cliente-{str(x).zfill(6)}")
+                clientes_analysis = df.groupby(['codigo_cliente', 'codigo_cliente_display']).agg({
+                    'id_tema': 'count',
+                    'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
+                    'puntos': 'mean',
+                    'fecha_cierre': lambda x: x.notna().sum(),
+                    'ruta': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
+                    'usuario': 'nunique'
                 }).round(2).reset_index()
                 
-                supervisores_analysis.columns = ['Supervisor', 'Contratista', 'Total_Casos', 'Puntos_Promedio', 'Casos_Cerrados', 'Rutas_Supervisadas', 'Clientes_Unicos']
-                supervisores_analysis['Tasa_Cierre'] = (supervisores_analysis['Casos_Cerrados'] / supervisores_analysis['Total_Casos']) * 100
-                supervisores_analysis = supervisores_analysis.sort_values('Total_Casos', ascending=False)
+                clientes_analysis.columns = ['codigo_cliente', 'codigo_cliente_display', 'total_reportes', 'motivo_principal', 'puntos_promedio', 'casos_cerrados', 'ruta_principal', 'usuarios_involucrados']
+                clientes_analysis['tasa_cierre'] = (clientes_analysis['casos_cerrados'] / clientes_analysis['total_reportes']) * 100
+                clientes_analysis = clientes_analysis.sort_values('total_reportes', ascending=False).head(50)
                 
-                supervisores_analysis.to_excel(writer, sheet_name='Supervisores_Contratistas', index=False)
-                worksheet6 = writer.sheets['Supervisores_Contratistas']
+                clientes_export = clientes_analysis[['codigo_cliente_display', 'total_reportes', 'motivo_principal', 'puntos_promedio', 'tasa_cierre', 'ruta_principal', 'usuarios_involucrados']].copy()
+                clientes_export.columns = ['Cliente', 'Total_Reportes', 'Motivo_Principal', 'Puntos_Promedio', 'Tasa_Cierre', 'Ruta_Principal', 'Usuarios_Involucrados']
                 
-                # Aplicar formato a la hoja 6
-                for col_num, value in enumerate(supervisores_analysis.columns.values):
-                    worksheet6.write(0, col_num, value, header_format)
+                clientes_export.to_excel(writer, sheet_name='Top_Clientes_Problematicos', index=False)
+                worksheet4 = writer.sheets['Top_Clientes_Problematicos']
+                
+                # Aplicar formato a la hoja 4
+                for col_num, value in enumerate(clientes_export.columns.values):
+                    worksheet4.write(0, col_num, value, header_format)
+            except Exception as e:
+                print(f"Error en Hoja 4: {e}")
             
-            # HOJA 7: Resumen Ejecutivo
-            resumen_data = {
-                'Metrica': [
-                    'Total de Registros',
-                    'Rutas Únicas',
-                    'Usuarios Activos',
-                    'Clientes Únicos',
-                    'Promedio de Puntos',
-                    'Tasa de Cierre Global (%)',
-                    'Registros Cerrados',
-                    'Periodo de Análisis'
-                ],
-                'Valor': [
-                    len(df),
-                    df['ruta'].nunique(),
-                    df['usuario'].nunique(),
-                    df['codigo_cliente'].nunique(),
-                    round(df['puntos'].mean(), 2),
-                    round((df['fecha_cierre'].notna().sum() / len(df)) * 100, 1),
-                    df['fecha_cierre'].notna().sum(),
-                    f"{df['fecha_registro'].min().strftime('%d/%m/%Y')} - {df['fecha_registro'].max().strftime('%d/%m/%Y')}"
-                ]
-            }
-            
-            if filtros_aplicados:
-                resumen_data['Metrica'].extend([
-                    'Filtros Aplicados',
-                    'Fecha Inicio Filtro',
-                    'Fecha Fin Filtro',
-                    'Ruta Filtrada',
-                    'Usuario Filtrado'
-                ])
-                resumen_data['Valor'].extend([
-                    'Sí',
-                    filtros_aplicados.get('fecha_inicio', 'N/A'),
-                    filtros_aplicados.get('fecha_fin', 'N/A'),
-                    filtros_aplicados.get('ruta', 'Todas'),
-                    filtros_aplicados.get('usuario', 'Todos')
-                ])
-            
-            resumen_df = pd.DataFrame(resumen_data)
-            resumen_df.to_excel(writer, sheet_name='Resumen_Ejecutivo', index=False)
-            worksheet7 = writer.sheets['Resumen_Ejecutivo']
-            
-            # Aplicar formato a la hoja 7
-            for col_num, value in enumerate(resumen_df.columns.values):
-                worksheet7.write(0, col_num, value, header_format)
+            # HOJA 5: Resumen Ejecutivo
+            try:
+                resumen_data = {
+                    'Metrica': [
+                        'Total de Registros',
+                        'Rutas Únicas',
+                        'Usuarios Activos',
+                        'Clientes Únicos',
+                        'Promedio de Puntos',
+                        'Tasa de Cierre Global (%)',
+                        'Registros Cerrados',
+                        'Fecha de Generación'
+                    ],
+                    'Valor': [
+                        len(df),
+                        df['ruta'].nunique(),
+                        df['usuario'].nunique(),
+                        df['codigo_cliente'].nunique(),
+                        round(df['puntos'].mean(), 2),
+                        round((df['fecha_cierre'].notna().sum() / len(df)) * 100, 1),
+                        df['fecha_cierre'].notna().sum(),
+                        datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+                    ]
+                }
+                
+                if filtros_aplicados:
+                    resumen_data['Metrica'].extend([
+                        'Filtros Aplicados',
+                        'Fecha Inicio Filtro',
+                        'Fecha Fin Filtro',
+                        'Ruta Filtrada',
+                        'Usuario Filtrado'
+                    ])
+                    resumen_data['Valor'].extend([
+                        'Sí',
+                        str(filtros_aplicados.get('fecha_inicio', 'N/A')),
+                        str(filtros_aplicados.get('fecha_fin', 'N/A')),
+                        str(filtros_aplicados.get('ruta', 'Todas')),
+                        str(filtros_aplicados.get('usuario', 'Todos'))
+                    ])
+                
+                resumen_df = pd.DataFrame(resumen_data)
+                resumen_df.to_excel(writer, sheet_name='Resumen_Ejecutivo', index=False)
+                worksheet5 = writer.sheets['Resumen_Ejecutivo']
+                
+                # Aplicar formato a la hoja 5
+                for col_num, value in enumerate(resumen_df.columns.values):
+                    worksheet5.write(0, col_num, value, header_format)
+            except Exception as e:
+                print(f"Error en Hoja 5: {e}")
             
             # Ajustar ancho de columnas para todas las hojas
-            for sheet_name in writer.sheets:
-                worksheet = writer.sheets[sheet_name]
-                worksheet.set_column('A:Z', 15)
+            try:
+                for sheet_name in writer.sheets:
+                    worksheet = writer.sheets[sheet_name]
+                    worksheet.set_column('A:Z', 15)
+            except Exception as e:
+                print(f"Error ajustando columnas: {e}")
         
         excel_buffer.seek(0)
         return excel_buffer.getvalue()
@@ -1133,11 +1113,17 @@ def generate_excel_report(df, merged_df, filtros_aplicados=None):
         simple_buffer = BytesIO()
         error_df = pd.DataFrame({
             'Error': [f"Error generando archivo XLSX: {str(e)}"],
-            'Timestamp': [datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+            'Timestamp': [datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
+            'Detalle': ['Por favor, verifique que xlsxwriter esté instalado correctamente']
         })
         
-        with pd.ExcelWriter(simple_buffer, engine='xlsxwriter') as writer:
-            error_df.to_excel(writer, sheet_name='Error', index=False)
+        try:
+            with pd.ExcelWriter(simple_buffer, engine='xlsxwriter') as writer:
+                error_df.to_excel(writer, sheet_name='Error', index=False)
+        except:
+            # Si incluso esto falla, usar openpyxl como fallback
+            with pd.ExcelWriter(simple_buffer, engine='openpyxl') as writer:
+                error_df.to_excel(writer, sheet_name='Error', index=False)
         
         simple_buffer.seek(0)
         return simple_buffer.getvalue()
@@ -4736,8 +4722,21 @@ def show_detailed_data(df, merged_df):
                     # Aplicar formato a las hojas
                     for sheet_name in writer.sheets:
                         worksheet = writer.sheets[sheet_name]
-                        for col_num in range(len(writer.sheets[sheet_name].table)):
-                            worksheet.write(0, col_num, worksheet.table[0][col_num], header_format)
+                        # Obtener las columnas del DataFrame correspondiente
+                        if sheet_name == 'Datos_Filtrados':
+                            columns = df_export.columns
+                        elif sheet_name == 'Resumen_Estadistico' and len(df_tabla) > 0:
+                            columns = resumen_stats.columns
+                        else:
+                            continue
+                            
+                        # Aplicar formato a los headers
+                        for col_num, col_name in enumerate(columns):
+                            worksheet.write(0, col_num, col_name, header_format)
+                        
+                        # Ajustar ancho de columnas
+                        for i, col in enumerate(columns):
+                            worksheet.set_column(i, i, 20)
                 
                 excel_buffer.seek(0)
                 
