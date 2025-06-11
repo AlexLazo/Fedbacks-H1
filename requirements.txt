@@ -4,6 +4,7 @@ numpy
 plotly
 openpyxl
 xlrd
+xlsxwriter
 seaborn
 matplotlib
 altair
