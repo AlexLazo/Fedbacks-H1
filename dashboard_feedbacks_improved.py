@@ -1496,29 +1496,24 @@ def show_temporal_analysis(df):
     
     fig_evolution.update_layout(
         title='📈 Evolución Temporal Multi-Dimensional de Registros',
-        xaxis_title='<b>Mes</b>',
-        yaxis=dict(
+        xaxis_title='<b>Mes</b>',        yaxis=dict(
             title='<b>Total de Registros</b>',
-            titlefont=dict(color='#FF6B6B'),
+            title_font=dict(color='#FF6B6B'),
             tickfont=dict(color='#FF6B6B'),
             side='left'
-        ),
-        yaxis2=dict(
+        ),        yaxis2=dict(
             title='<b>Tasa de Cierre (%)</b>',
-            titlefont=dict(color='#4ECDC4'),
+            title_font=dict(color='#4ECDC4'),
             tickfont=dict(color='#4ECDC4'),
             anchor='x',
             overlaying='y',
-            side='right'
-        ),
+            side='right'        ),
         yaxis3=dict(
             title='<b>Clientes Únicos</b>',
-            titlefont=dict(color='#FFA726'),
+            title_font=dict(color='#FFA726'),
             tickfont=dict(color='#FFA726'),
-            anchor='free',
             overlaying='y',
-            side='right',
-            position=0.95
+            side='right'
         ),
         height=600,
         plot_bgcolor='rgba(0,0,0,0)',
@@ -1864,16 +1859,14 @@ def show_temporal_analysis(df):
     
     fig_efficiency.update_layout(
         title='⚡ Eficiencia Temporal: Productividad vs Cobertura',
-        xaxis_title='<b>Mes</b>',
-        yaxis=dict(
+        xaxis_title='<b>Mes</b>',        yaxis=dict(
             title='<b>Registros por Usuario</b>',
-            titlefont=dict(color='#4ECDC4'),
+            title_font=dict(color='#4ECDC4'),
             tickfont=dict(color='#4ECDC4'),
             side='left'
-        ),
-        yaxis2=dict(
+        ),        yaxis2=dict(
             title='<b>Cobertura de Rutas (%)</b>',
-            titlefont=dict(color='#FF6B6B'),
+            title_font=dict(color='#FF6B6B'),
             tickfont=dict(color='#FF6B6B'),
             anchor='x',
             overlaying='y',
@@ -2180,13 +2173,15 @@ def show_routes_analysis(df, merged_df):
             size=20,
             line_width=0
         )
-    )    
+    )      
     fig_eficiencia.update_layout(
         margin=dict(l=20, r=20, t=80, b=20),
         xaxis_title="<b>Total de Registros de Feedback</b>",
         yaxis_title="<b>Calidad Promedio (Puntos 1-10)</b>",        
-        coloraxis_colorbar=dict(
-            title="Tasa de Cierre (%)"
+        coloraxis=dict(
+            colorbar=dict(
+                title="Tasa de Cierre (%)"
+            )
         )
     )
     st.plotly_chart(fig_eficiencia, use_container_width=True)
@@ -3413,16 +3408,14 @@ def show_performance_analysis(df):
     
     fig_usuarios.update_layout(
         title='👤 Rendimiento de Usuarios: Volumen vs Eficiencia',
-        xaxis=dict(title='<b>Usuario</b>', tickangle=45),
-        yaxis=dict(
+        xaxis=dict(title='<b>Usuario</b>', tickangle=45),        yaxis=dict(
             title='<b>Total de Casos</b>',
-            titlefont=dict(color='#FF6B6B'),
+            title_font=dict(color='#FF6B6B'),
             tickfont=dict(color='#FF6B6B'),
             side='left'
-        ),
-        yaxis2=dict(
+        ),        yaxis2=dict(
             title='<b>Eficiencia (Calidad × Cierre)</b>',
-            titlefont=dict(color='#4ECDC4'),
+            title_font=dict(color='#4ECDC4'),
             tickfont=dict(color='#4ECDC4'),
             anchor='x',
             overlaying='y',
@@ -3693,12 +3686,13 @@ def show_advanced_analysis(df, merged_df):
             yaxis_title="<b>Cliente</b>",
             margin=dict(l=200, r=50, t=80, b=50),
             plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white', size=12),
-            coloraxis_colorbar=dict(
-                title="Número de Reportes",
-                titlefont=dict(color='white'),
-                tickfont=dict(color='white')
+            paper_bgcolor='rgba(0,0,0,0)',            font=dict(color='white', size=12),
+            coloraxis=dict(
+                colorbar=dict(
+                    title="Número de Reportes",
+                    title_font=dict(color='white'),
+                    tickfont=dict(color='white')
+                )
             )
         )
         
