@@ -1543,24 +1543,11 @@ def show_temporal_analysis(df):
         line=dict(color='#FF6B6B', width=3),
         marker=dict(size=8, color='#FF6B6B'),
         text=dias_analysis['total_registros'],
-        textposition='middle center',
-        textfont=dict(size=12, color='white', family='Arial Black'),
+        textposition='middle center',        textfont=dict(size=12, color='white', family='Arial Black'),
         name='Registros por Día'
     ))
     
     fig_polar.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, dias_analysis['total_registros'].max() * 1.1],
-                tickfont=dict(color='white'),
-                gridcolor='rgba(255,255,255,0.3)'
-            ),
-            angularaxis=dict(
-                tickfont=dict(color='white', size=12),
-                gridcolor='rgba(255,255,255,0.3)'
-            )
-        ),
         title='🗓️ Distribución Polar de Registros por Día de la Semana',
         height=500,
         plot_bgcolor='rgba(0,0,0,0)',
@@ -1822,8 +1809,7 @@ def show_temporal_analysis(df):
         marker=dict(color='#4ECDC4', line=dict(width=2, color='white')),
         yaxis='y'
     ))
-    
-    # Línea de cobertura de rutas
+      # Línea de cobertura de rutas
     fig_efficiency.add_trace(go.Scatter(
         x=eficiencia_temporal['mes_nombre'],
         y=eficiencia_temporal['Cobertura'],
@@ -1833,26 +1819,12 @@ def show_temporal_analysis(df):
         texttemplate='%{text:.1f}%',
         textposition='top center',
         line=dict(color='#FF6B6B', width=4),
-        marker=dict(size=10, color='#FF6B6B'),
-        yaxis='y2'
+        marker=dict(size=10, color='#FF6B6B')
     ))
     fig_efficiency.update_layout(
         title='⚡ Eficiencia Temporal: Productividad vs Cobertura',
         xaxis_title='<b>Mes</b>',
-        yaxis=dict(
-            title='<b>Registros por Usuario</b>',
-            titlefont=dict(color='#4ECDC4'),
-            tickfont=dict(color='#4ECDC4'),
-            side='left'
-        ),
-        yaxis2=dict(
-            title='<b>Cobertura de Rutas (%)</b>',
-            titlefont=dict(color='#FF6B6B'),
-            tickfont=dict(color='#FF6B6B'),
-            anchor='x',
-            overlaying='y',
-            side='right'
-        ),
+        yaxis_title='<b>Registros por Usuario</b>',
         height=600,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -2154,16 +2126,14 @@ def show_routes_analysis(df, merged_df):
             size=20,
             line_width=0
         )
-    )      
+    )        
     fig_eficiencia.update_layout(
         margin=dict(l=20, r=20, t=80, b=20),
         xaxis_title="<b>Total de Registros de Feedback</b>",
-        yaxis_title="<b>Calidad Promedio (Puntos 1-10)</b>",        
-        coloraxis=dict(
-            colorbar=dict(
-                title="Tasa de Cierre (%)"
-            )
-        )
+        yaxis_title="<b>Calidad Promedio (Puntos 1-10)</b>",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
     )
     st.plotly_chart(fig_eficiencia, use_container_width=True)
     
@@ -3372,13 +3342,11 @@ def show_performance_analysis(df):
         textposition='outside',
         textfont=dict(color='white', size=10)
     ))
-    
-    # Línea de eficiencia
+      # Línea de eficiencia
     fig_usuarios.add_trace(go.Scatter(
         name='⚡ Eficiencia',
         x=usuarios_performance['usuario'],
         y=usuarios_performance['eficiencia'],
-        yaxis='y2',
         mode='lines+markers',
         line=dict(color='#4ECDC4', width=3),
         marker=dict(size=8, color='#4ECDC4'),
@@ -3388,21 +3356,8 @@ def show_performance_analysis(df):
     ))
     fig_usuarios.update_layout(
         title='👤 Rendimiento de Usuarios: Volumen vs Eficiencia',
-        xaxis=dict(title='<b>Usuario</b>', tickangle=45),
-        yaxis=dict(
-            title='<b>Total de Casos</b>',
-            titlefont=dict(color='#FF6B6B'),
-            tickfont=dict(color='#FF6B6B'),
-            side='left'
-        ),
-        yaxis2=dict(
-            title='<b>Eficiencia (Calidad × Cierre)</b>',
-            titlefont=dict(color='#4ECDC4'),
-            tickfont=dict(color='#4ECDC4'),
-            anchor='x',
-            overlaying='y',
-            side='right'
-        ),
+        xaxis_title='<b>Usuario</b>',
+        yaxis_title='<b>Total de Casos</b>',
         height=600,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -3662,19 +3617,13 @@ def show_advanced_analysis(df, merged_df):
             texttemplate='%{text}',
             textfont=dict(size=12, color='white')
         )
-        
         fig_heatmap.update_layout(
             xaxis_title="<b>Mes</b>",
             yaxis_title="<b>Cliente</b>",
             margin=dict(l=200, r=50, t=80, b=50),
             plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',            font=dict(color='white', size=12),            coloraxis=dict(
-                colorbar=dict(
-                    title="Número de Reportes",
-                    titlefont=dict(color='white'),
-                    tickfont=dict(color='white')
-                )
-            )
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=12)
         )
         
         st.plotly_chart(fig_heatmap, use_container_width=True)
