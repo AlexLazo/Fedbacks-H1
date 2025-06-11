@@ -1468,8 +1468,7 @@ def show_temporal_analysis(df):
         textfont=dict(size=12, color='white', family='Arial Black'),
         yaxis='y1'
     ))
-    
-    # Línea secundaria - Tasa de cierre
+      # Línea secundaria - Tasa de cierre
     fig_evolution.add_trace(go.Scatter(
         x=temporal_analysis['mes_nombre'],
         y=temporal_analysis['Tasa_Cierre'],
@@ -1479,36 +1478,22 @@ def show_temporal_analysis(df):
         marker=dict(size=8, color='#4ECDC4'),
         text=temporal_analysis['Tasa_Cierre'].round(1),
         textposition='bottom center',
-        textfont=dict(size=10, color='white'),
-        yaxis='y2'
-    ))
-      # Línea terciaria - Clientes únicos (usando yaxis principal con escala normalizada)
+        textfont=dict(size=10, color='white')    ))
+    
+    # Línea terciaria - Clientes únicos (usando yaxis principal con escala normalizada)
     fig_evolution.add_trace(go.Scatter(
         x=temporal_analysis['mes_nombre'],
         y=temporal_analysis['Clientes_Unicos'],
         mode='lines+markers',
         name='👥 Clientes Únicos',
         line=dict(color='#FFA726', width=2),
-        marker=dict(size=6, color='#FFA726'),
-        yaxis='y'
+        marker=dict(size=6, color='#FFA726')
     ))
+    
     fig_evolution.update_layout(
         title='📈 Evolución Temporal Multi-Dimensional de Registros',
         xaxis_title='<b>Mes</b>',
-        yaxis=dict(
-            title='<b>Total de Registros</b>',
-            titlefont=dict(color='#FF6B6B'),
-            tickfont=dict(color='#FF6B6B'),
-            side='left'
-        ),
-        yaxis2=dict(
-            title='<b>Tasa de Cierre (%)</b>',
-            titlefont=dict(color='#4ECDC4'),
-            tickfont=dict(color='#4ECDC4'),
-            anchor='x',
-            overlaying='y',
-            side='right'
-        ),
+        yaxis_title='<b>Total de Registros</b>',
         height=600,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -1529,11 +1514,11 @@ def show_temporal_analysis(df):
         """
         <div class="analysis-card">
             <h3 style="color: white; margin: 0;">🗓️ Análisis de Patrones Semanales y Estacionales</h3>
-        </div>
-        """, 
+        </div>        """, 
         unsafe_allow_html=True
     )
-      # Análisis por días de la semana
+    
+    # Análisis por días de la semana
     df['fecha_parsed'] = pd.to_datetime(df['fecha_registro'], errors='coerce')
     df['dia_semana_num'] = df['fecha_parsed'].dt.dayofweek
     df['dia_semana_nombre'] = df['fecha_parsed'].dt.day_name()
@@ -1735,9 +1720,10 @@ def show_temporal_analysis(df):
         xaxis_title="Mes",
         yaxis_title="Total de Registros",
         margin=dict(l=20, r=20, t=80, b=20)
-    )
+    )    
     st.plotly_chart(fig_monthly_bars, use_container_width=True)
-      # === SECCIÓN NUEVA: ANÁLISIS DE PICOS Y VALLES ===
+    
+    # === SECCIÓN NUEVA: ANÁLISIS DE PICOS Y VALLES ===
     st.markdown(
         """
         <div class="analysis-card">
@@ -1850,10 +1836,10 @@ def show_temporal_analysis(df):
         marker=dict(size=10, color='#FF6B6B'),
         yaxis='y2'
     ))
-    
     fig_efficiency.update_layout(
         title='⚡ Eficiencia Temporal: Productividad vs Cobertura',
-        xaxis_title='<b>Mes</b>',        yaxis=dict(
+        xaxis_title='<b>Mes</b>',
+        yaxis=dict(
             title='<b>Registros por Usuario</b>',
             titlefont=dict(color='#4ECDC4'),
             tickfont=dict(color='#4ECDC4'),
@@ -3400,10 +3386,10 @@ def show_performance_analysis(df):
         textposition='top center',
         textfont=dict(color='white', size=10)
     ))
-    
     fig_usuarios.update_layout(
         title='👤 Rendimiento de Usuarios: Volumen vs Eficiencia',
-        xaxis=dict(title='<b>Usuario</b>', tickangle=45),        yaxis=dict(
+        xaxis=dict(title='<b>Usuario</b>', tickangle=45),
+        yaxis=dict(
             title='<b>Total de Casos</b>',
             titlefont=dict(color='#FF6B6B'),
             tickfont=dict(color='#FF6B6B'),
