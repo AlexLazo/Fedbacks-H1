@@ -4390,17 +4390,20 @@ def show_advanced_analysis(df, merged_df):
         unsafe_allow_html=True
     )
     
-    # Top 5 clientes más problemáticos para seguimiento temporal
     top_5_clientes = clientes_analysis.head(5)['codigo_cliente'].tolist()
     top_5_display = clientes_analysis.head(5)['codigo_cliente_display'].tolist()
     
     if 'mes_nombre' in df.columns and top_5_clientes:
-        evolucion_clientes = df[df['codigo_cliente'].isin(top_5_clientes)].groupby(['mes_nombre', 'codigo_cliente_display']).agg({
+        # Crear mapping de meses con su número para ordenamiento correcto
+        evolucion_clientes = df[df['codigo_cliente'].isin(top_5_clientes)].groupby(['mes', 'mes_nombre', 'codigo_cliente_display']).agg({
             'id_tema': 'count',
             'fecha_cierre': lambda x: x.notna().sum()
         }).reset_index()
-        evolucion_clientes.columns = ['mes', 'cliente', 'reportes', 'casos_cerrados']
+        evolucion_clientes.columns = ['mes_num', 'mes', 'cliente', 'reportes', 'casos_cerrados']
         evolucion_clientes['tasa_cierre_mes'] = (evolucion_clientes['casos_cerrados'] / evolucion_clientes['reportes']) * 100
+        
+        # Ordenar correctamente por número de mes
+        evolucion_clientes = evolucion_clientes.sort_values(['mes_num', 'cliente'])
         
         if not evolucion_clientes.empty:
             # Evolución de reportes - FILA COMPLETA
@@ -4411,7 +4414,8 @@ def show_advanced_analysis(df, merged_df):
                 color='cliente',
                 title="📈 Evolución Mensual de Reportes - Top 5 Clientes",
                 markers=True,
-                height=600
+                height=600,
+                category_orders={'mes': evolucion_clientes.sort_values('mes_num')['mes'].unique()}
             )
             
             fig_evolucion_reportes.update_traces(
@@ -4432,8 +4436,7 @@ def show_advanced_analysis(df, merged_df):
             )
             
             st.plotly_chart(fig_evolucion_reportes, use_container_width=True)
-            
-            # Evolución de tasa de cierre - FILA COMPLETA
+              # Evolución de tasa de cierre - FILA COMPLETA
             fig_evolucion_cierre = px.line(
                 evolucion_clientes,
                 x='mes',
@@ -4441,7 +4444,8 @@ def show_advanced_analysis(df, merged_df):
                 color='cliente',
                 title="📊 Evolución de Tasa de Cierre - Top 5 Clientes",
                 markers=True,
-                height=600
+                height=600,
+                category_orders={'mes': evolucion_clientes.sort_values('mes_num')['mes'].unique()}
             )
             
             fig_evolucion_cierre.update_traces(
