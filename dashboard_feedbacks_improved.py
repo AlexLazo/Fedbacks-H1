@@ -29,60 +29,426 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado para un diseño profesional
+# CSS personalizado para un diseño profesional mejorado
 st.markdown("""
 <style>
+    /* Header principal */
     .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #1f77b4;
+        font-size: 3.5rem;
+        font-weight: 900;
         text-align: center;
         margin-bottom: 2rem;
-        background: linear-gradient(90deg, #1f77b4, #ff7f0e);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
+    
+    /* Tarjetas de métricas mejoradas */
     .metric-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
+        padding: 1.5rem;
+        border-radius: 20px;
         color: white;
         text-align: center;
-        margin: 0.5rem 0;
+        margin: 0.8rem 0;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
     }
+    
+    /* Sidebar mejorado */
     .sidebar .sidebar-content {
         background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    }
+        border-radius: 0 20px 20px 0;    }      /* Tabs completamente fijos - Sin movimiento ni cambio de tamaño */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 2rem;
+        gap: 2px !important;
+        background: rgba(0,0,0,0.4) !important;
+        padding: 6px !important;
+        border-radius: 15px !important;
+        margin-bottom: 2rem !important;
+        justify-content: center !important;
+        align-items: center !important;
+        height: 70px !important;
+        min-height: 70px !important;
+        max-height: 70px !important;
+        position: relative !important;
+        display: flex !important;
+        width: 100% !important;
+        overflow: hidden !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
     }
+    
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background-color: #f0f2f6;
-        border-radius: 10px;
-        padding: 0 1rem;
+        height: 58px !important;
+        min-height: 58px !important;
+        max-height: 58px !important;
+        width: calc(14.28% - 2px) !important;
+        min-width: calc(14.28% - 2px) !important;
+        max-width: calc(14.28% - 2px) !important;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+        border-radius: 12px !important;
+        padding: 8px 4px !important;
+        font-weight: 700 !important;
+        font-size: 0.7rem !important;
+        border: 2px solid rgba(255, 255, 255, 0.4) !important;
+        color: #2d3748 !important;
+        transition: none !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        flex: none !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        position: relative !important;
+        transform: none !important;
+        box-sizing: border-box !important;
     }
-    .kpi-container {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        padding: 1rem;
-        border-radius: 15px;
-        margin: 1rem 0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+        border-color: rgba(255, 255, 255, 0.8) !important;
+        transform: none !important;
+        z-index: 2 !important;
+        height: 58px !important;
+        width: calc(14.28% - 2px) !important;
     }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        transform: none !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+        border-color: rgba(255, 255, 255, 0.6) !important;
+        height: 58px !important;
+        width: calc(14.28% - 2px) !important;
+    }
+      /* Asegurar que el contenido de las pestañas también sea fijo */
+    .stTabs [data-baseweb="tab"] > div {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Bloquear completamente cualquier animación o movimiento */
+    .stTabs [data-baseweb="tab"],
+    .stTabs [data-baseweb="tab"] > div,
+    .stTabs [data-baseweb="tab"] > div > div,
+    .stTabs [data-baseweb="tab"] * {
+        transition: none !important;
+        animation: none !important;
+        transform: none !important;
+        will-change: auto !important;
+    }
+      /* Forzar posición exacta */
+    .stTabs [data-baseweb="tab"]:nth-child(1) { left: 0% !important; }
+    .stTabs [data-baseweb="tab"]:nth-child(2) { left: 14.28% !important; }
+    .stTabs [data-baseweb="tab"]:nth-child(3) { left: 28.56% !important; }
+    .stTabs [data-baseweb="tab"]:nth-child(4) { left: 42.84% !important; }
+    .stTabs [data-baseweb="tab"]:nth-child(5) { left: 57.12% !important; }
+    .stTabs [data-baseweb="tab"]:nth-child(6) { left: 71.4% !important; }
+    .stTabs [data-baseweb="tab"]:nth-child(7) { left: 85.68% !important; }
+    
+    /* Forza el mismo ancho para todas las pestañas */
+    .stTabs [data-baseweb="tab"]:nth-child(1),
+    .stTabs [data-baseweb="tab"]:nth-child(2),
+    .stTabs [data-baseweb="tab"]:nth-child(3),
+    .stTabs [data-baseweb="tab"]:nth-child(4),
+    .stTabs [data-baseweb="tab"]:nth-child(5),
+    .stTabs [data-baseweb="tab"]:nth-child(6),
+    .stTabs [data-baseweb="tab"]:nth-child(7) {
+        width: calc(14.28% - 2px) !important;
+        min-width: calc(14.28% - 2px) !important;
+        max-width: calc(14.28% - 2px) !important;
+        height: 58px !important;
+        min-height: 58px !important;
+        max-height: 58px !important;
+        flex: none !important;
+        flex-shrink: 0 !important;
+        flex-grow: 0 !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+      /* Bloquear cualquier cambio de estilo en hover o selección */
+    .stTabs [data-baseweb="tab"]:hover,
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        width: calc(14.28% - 2px) !important;
+        min-width: calc(14.28% - 2px) !important;
+        max-width: calc(14.28% - 2px) !important;
+        height: 58px !important;
+        min-height: 58px !important;
+        max-height: 58px !important;
+        flex: none !important;
+        flex-shrink: 0 !important;
+        flex-grow: 0 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+    
+    /* Regla universal para bloquear movimiento en tabs */
+    .stTabs div[role="tablist"] > button {
+        min-width: calc(14.28% - 2px) !important;
+        max-width: calc(14.28% - 2px) !important;
+        width: calc(14.28% - 2px) !important;
+        flex: none !important;
+        transition: none !important;
+        transform: none !important;
+        animation: none !important;
+    }
+    
+    /* Forzar distribución uniforme */
+    .stTabs div[role="tablist"] {
+        display: flex !important;
+        width: 100% !important;
+        justify-content: space-evenly !important;
+        gap: 2px !important;
+    }/* KPIs rediseñados como cubos uniformes y coloridos */
+    .stMetric {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        padding: 1.8rem !important;
+        border-radius: 20px !important;
+        margin: 0.8rem 0.3rem !important;
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4) !important;
+        border: 3px solid rgba(255, 255, 255, 0.2) !important;
+        text-align: center !important;
+        min-height: 160px !important;
+        max-height: 160px !important;
+        min-width: 180px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        position: relative !important;
+        overflow: hidden !important;
+        transition: all 0.4s ease !important;
+        transform: scale(1) !important;
+    }
+    
+    .stMetric:hover {
+        transform: scale(1.05) translateY(-8px) !important;
+        box-shadow: 0 20px 50px rgba(102, 126, 234, 0.6) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+      /* Banda superior colorida única para cada KPI */
+    .stMetric:nth-child(1)::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 6px !important;
+        background: linear-gradient(90deg, #ff6b6b, #4ecdc4) !important;
+    }
+    
+    .stMetric:nth-child(2)::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 6px !important;
+        background: linear-gradient(90deg, #f093fb, #f5576c) !important;
+    }
+    
+    .stMetric:nth-child(3)::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 6px !important;
+        background: linear-gradient(90deg, #4facfe, #00f2fe) !important;
+    }
+    
+    .stMetric:nth-child(4)::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 6px !important;
+        background: linear-gradient(90deg, #fa709a, #fee140) !important;
+    }
+    
+    .stMetric:nth-child(5)::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 6px !important;
+        background: linear-gradient(90deg, #4ecdc4, #44a08d) !important;
+    }
+    
+    .stMetric [data-testid="metric-container"] {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        text-align: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+    
+    .stMetric [data-testid="metric-container"] > div {
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .stMetric [data-testid="metric-container"] [data-testid="metric-value"] {
+        font-size: 2.8rem !important;
+        font-weight: 900 !important;
+        color: white !important;
+        text-shadow: 2px 2px 6px rgba(0,0,0,0.4) !important;
+        margin-bottom: 0.8rem !important;
+        line-height: 1 !important;
+    }
+    
+    .stMetric [data-testid="metric-container"] [data-testid="metric-label"] {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        color: rgba(255,255,255,0.95) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.2px !important;
+        margin-top: 0.5rem !important;
+        line-height: 1.2 !important;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.3) !important;
+    }
+    
+    .stMetric [data-testid="metric-container"] [data-testid="metric-delta"] {
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        color: rgba(255,255,255,0.8) !important;
+        margin-top: 0.3rem !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Tarjetas de análisis rediseñadas */
     .analysis-card {
         background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        padding: 2rem;
+        border-radius: 25px;
+        margin: 2rem 0;
+        color: white;
+        box-shadow: 0 20px 40px rgba(79, 172, 254, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .analysis-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ff6b6b, #ffa726, #42a5f5, #ab47bc);
+    }
+    
+    /* Tarjetas de rendimiento superior */
+    .top-performance {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        padding: 1.5rem;
+        border-radius: 20px;
+        margin: 1rem 0;
+        color: white;
+        box-shadow: 0 10px 25px rgba(250, 112, 154, 0.3);
+    }
+    
+    /* Insights mejorados */
+    .insight-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 1.5rem;
         border-radius: 15px;
         margin: 1rem 0;
         color: white;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid #ffa726;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
     }
-    .top-performance {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
+    
+    /* Alertas y notificaciones */
+    .alert-card {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff8a80 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 1rem 0;
         color: white;
+        border-left: 5px solid #ffab40;
+        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.2);
+    }    # Mejoras en gráficos - tamaños consistentes
+    .stPlotlyChart {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        min-height: 400px;
+    }
+    
+    .stPlotlyChart > div {
+        border-radius: 15px;
+    }
+    
+    /* Tablas mejoradas */
+    .stDataFrame {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        margin: 1rem 0;
+    }
+    
+    /* Efectos de hover para elementos interactivos */
+    .metric-card:hover, .analysis-card:hover, .top-performance:hover {
+        transform: translateY(-5px);
+        transition: all 0.3s ease;
+    }
+    
+    /* Títulos de secciones */
+    .section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 2rem 0 1rem 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    /* Columnas más organizadas */
+    .stColumns {
+        gap: 1rem;
+    }
+    
+    /* Responsividad mejorada */
+    @media (max-width: 768px) {
+        .main-header {
+            font-size: 2.5rem;
+        }
+        .analysis-card, .kpi-container {
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .stTabs [data-baseweb="tab"] {
+            font-size: 0.8rem !important;
+            padding: 0 1rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -90,7 +456,7 @@ st.markdown("""
 # Función para cargar datos con cache
 @st.cache_data
 def load_data():
-    """Carga los datos de los archivos Excel"""
+    """Carga los datos de los archivos Excel con manejo de duplicados y datos faltantes"""
     try:
         # Cargar Feedbacks
         feedbacks_df = pd.read_excel('Feedbacks H1.xlsx')
@@ -98,6 +464,14 @@ def load_data():
         # Cargar BD_Rutas
         rutas_df = pd.read_excel('BD_Rutas.xlsx')
         
+        # ========== LIMPIEZA DE DATOS BD_RUTAS ==========        # Identificar y manejar duplicados en BD_Rutas
+        duplicates = rutas_df[rutas_df['RUTA'].duplicated(keep=False)]
+        if len(duplicates) > 0:
+            # st.sidebar.warning(f"⚠️ Encontrados {len(duplicates)} registros duplicados en BD_Rutas")
+            # Mantener solo el primer registro de cada ruta duplicada
+            rutas_df = rutas_df.drop_duplicates(subset=['RUTA'], keep='first')
+        
+        # ========== PREPARACIÓN DE DATOS FEEDBACKS ==========
         # Limpiar y preparar datos
         feedbacks_df['fecha_registro'] = pd.to_datetime(feedbacks_df['fecha_registro'])
         feedbacks_df['fecha_cierre'] = pd.to_datetime(feedbacks_df['fecha_cierre'])
@@ -114,6 +488,15 @@ def load_data():
         # Mapear trimestres a nombres
         trimestre_map = {1: 'Q1 (Ene-Mar)', 2: 'Q2 (Abr-Jun)', 3: 'Q3 (Jul-Sep)', 4: 'Q4 (Oct-Dic)'}
         feedbacks_df['trimestre_nombre'] = feedbacks_df['trimestre'].map(trimestre_map)
+          # ========== MERGE CON VALIDACIÓN ==========
+        # Identificar rutas faltantes antes del merge
+        rutas_feedbacks = set(feedbacks_df['ruta'].unique())
+        rutas_bd = set(rutas_df['RUTA'].unique())
+        rutas_faltantes = rutas_feedbacks - rutas_bd
+        
+        # Comentado para limpiar la interfaz
+        # if rutas_faltantes:
+        #     st.sidebar.warning(f"⚠️ {len(rutas_faltantes)} rutas en Feedbacks sin datos de supervisor: {list(rutas_faltantes)}")
         
         # Join con BD_Rutas
         merged_df = feedbacks_df.merge(
@@ -123,10 +506,26 @@ def load_data():
             how='left'
         )
         
-        return feedbacks_df, rutas_df, merged_df
+        # ========== MANEJO DE DATOS FALTANTES ==========
+        # Rellenar supervisores y contratistas faltantes
+        merged_df['SUPERVISOR'] = merged_df['SUPERVISOR'].fillna('SIN ASIGNAR')
+        merged_df['CONTRATISTA'] = merged_df['CONTRATISTA'].fillna('SIN ASIGNAR')
+        
+        # Crear resumen de calidad de datos
+        data_quality = {
+            'total_feedbacks': len(feedbacks_df),
+            'rutas_feedbacks': feedbacks_df['ruta'].nunique(),
+            'total_rutas_bd': len(rutas_df),
+            'rutas_unicas_bd': rutas_df['RUTA'].nunique(),
+            'rutas_matched': len(rutas_feedbacks & rutas_bd),
+            'rutas_sin_supervisor': len(rutas_faltantes),
+            'duplicados_bd_rutas': len(duplicates)
+        }
+        
+        return feedbacks_df, rutas_df, merged_df, data_quality
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
-        return None, None, None
+        return None, None, None, None
 
 # Función para limpiar DataFrames antes de mostrar (soluciona errores de Arrow)
 def clean_dataframe_for_display(df):
@@ -179,81 +578,58 @@ def clean_dataframe_for_display(df):
 
 # Función para crear métricas KPI mejoradas
 def create_advanced_kpi_metrics(df, merged_df):
-    """Crea métricas KPI avanzadas"""
+    """Crea métricas KPI avanzadas con cubitos uniformes y coloridos"""
     st.markdown("### 📊 KPIs Principales del Sistema")
     
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    # Definir gradientes de colores únicos para cada KPI
+    kpi_colors = [
+        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",  # Azul-Púrpura
+        "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",  # Rosa-Rojo
+        "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",  # Azul-Cyan
+        "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",  # Rosa-Amarillo
+        "linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)"   # Verde-Turquesa
+    ]
     
     with col1:
         total_registros = len(df)
-        st.markdown(
-            f"""
-            <div class="kpi-container">
-                <h3 style="color: white; margin: 0;">📊 Total Registros</h3>
-                <h2 style="color: white; margin: 0;">{total_registros:,}</h2>
-            </div>
-            """, 
-            unsafe_allow_html=True
+        st.metric(
+            "📊 Total Registros",
+            f"{total_registros:,}",
+            f"+{len(df[df['mes'] == df['mes'].max()])} este mes" if 'mes' in df.columns and not df.empty else ""
         )
     
     with col2:
         total_rutas = df['ruta'].nunique()
-        st.markdown(
-            f"""
-            <div class="kpi-container">
-                <h3 style="color: white; margin: 0;">🚚 Rutas Únicas</h3>
-                <h2 style="color: white; margin: 0;">{total_rutas}</h2>
-            </div>
-            """, 
-            unsafe_allow_html=True
+        st.metric(
+            "🚚 Rutas Únicas", 
+            f"{total_rutas}",
+            "🗺️ Activas"
         )
     
     with col3:
         total_usuarios = df['usuario'].nunique()
-        st.markdown(
-            f"""
-            <div class="kpi-container">
-                <h3 style="color: white; margin: 0;">👥 Usuarios</h3>
-                <h2 style="color: white; margin: 0;">{total_usuarios}</h2>
-            </div>
-            """, 
-            unsafe_allow_html=True
+        st.metric(
+            "👥 Usuarios Activos",
+            f"{total_usuarios}",
+            "👤 Personal"
         )
     
     with col4:
-        promedio_puntos = df['puntos'].mean()
-        st.markdown(
-            f"""
-            <div class="kpi-container">
-                <h3 style="color: white; margin: 0;">⭐ Puntos Promedio</h3>
-                <h2 style="color: white; margin: 0;">{promedio_puntos:.1f}</h2>
-            </div>
-            """, 
-            unsafe_allow_html=True
+        total_clientes = df['codigo_cliente'].nunique()
+        st.metric(
+            "🏢 Clientes Únicos",
+            f"{total_clientes:,}",
+            "🏪 Base"
         )
     
     with col5:
-        total_clientes = df['codigo_cliente'].nunique()
-        st.markdown(
-            f"""
-            <div class="kpi-container">
-                <h3 style="color: white; margin: 0;">🏢 Clientes</h3>
-                <h2 style="color: white; margin: 0;">{total_clientes}</h2>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
-    
-    with col6:
         tasa_cierre = (df['fecha_cierre'].notna().sum() / len(df)) * 100
-        st.markdown(
-            f"""
-            <div class="kpi-container">
-                <h3 style="color: white; margin: 0;">✅ Tasa Cierre</h3>
-                <h2 style="color: white; margin: 0;">{tasa_cierre:.1f}%</h2>
-            </div>
-            """, 
-            unsafe_allow_html=True
+        st.metric(
+            "✅ Tasa de Cierre",
+            f"{tasa_cierre:.1f}%",
+            "📈 Eficiencia"
         )
 
 # Función para generar reportes
@@ -541,14 +917,25 @@ def generate_pdf_report(df, merged_df, report_type="completo"):
 def main():
     # Título principal
     st.markdown('<h1 class="main-header">Seguimiento Feedbacks - DS00</h1>', unsafe_allow_html=True)
-    
-    # Cargar datos
+      # Cargar datos
     with st.spinner('🔄 Cargando datos...'):
-        feedbacks_df, rutas_df, merged_df = load_data()
+        load_result = load_data()
+        
+        if load_result is None or len(load_result) != 4:
+            st.error("❌ No se pudieron cargar los datos. Verifica que los archivos Excel estén en el directorio correcto.")
+            return
+            
+        feedbacks_df, rutas_df, merged_df, data_quality = load_result
     
     if feedbacks_df is None:
         st.error("❌ No se pudieron cargar los datos. Verifica que los archivos Excel estén en el directorio correcto.")
         return
+      # Mostrar resumen de calidad de datos en sidebar
+    with st.sidebar.expander("📊 Calidad de Datos", expanded=False):
+        st.metric("Total Feedbacks", f"{data_quality['total_feedbacks']:,}")
+        st.metric("Rutas en Feedbacks", data_quality['rutas_feedbacks'])
+        st.metric("Rutas Matched", data_quality['rutas_matched'])
+        # Mensajes de advertencia removidos para limpiar la interfaz
     
     # Sidebar con filtros mejorados
     st.sidebar.markdown("## 🔧 Centro de Control y Filtros")
@@ -586,11 +973,12 @@ def main():
     rutas_disponibles = ['Todas'] + sorted(feedbacks_df['ruta'].unique().tolist())
     ruta_seleccionada = st.sidebar.selectbox("🚚 Seleccionar Ruta", rutas_disponibles)
     
-    usuarios_disponibles = ['Todos'] + sorted(feedbacks_df['usuario'].unique().tolist())
+    usuarios_disponibles = ['Todos'] + sorted(feedbacks_df['usuario'].unique().tolist())    
     usuario_seleccionado = st.sidebar.selectbox("👤 Seleccionar Usuario", usuarios_disponibles)
     
-    # NUEVOS FILTROS: Mes y Semana
-    meses_disponibles = ['Todos'] + sorted(feedbacks_df['mes_nombre'].unique().tolist())
+    # NUEVOS FILTROS: Mes y Semana - Ordenar meses cronológicamente
+    meses_ordenados = feedbacks_df.groupby(['mes', 'mes_nombre']).size().reset_index().sort_values('mes')['mes_nombre'].tolist()
+    meses_disponibles = ['Todos'] + meses_ordenados
     mes_seleccionado = st.sidebar.selectbox("📆 Filtrar por Mes", meses_disponibles)
     
     semanas_disponibles = ['Todas'] + sorted([f"Semana {s}" for s in feedbacks_df['semana'].unique()])
@@ -633,7 +1021,8 @@ def main():
     
     if trimestre_seleccionado != 'Todos':
         df_filtrado = df_filtrado[df_filtrado['trimestre_nombre'] == trimestre_seleccionado]
-      # Filtrar merged_df también con los mismos criterios de df_filtrado
+    
+    # Filtrar merged_df también con los mismos criterios de df_filtrado
     merged_df_filtrado = merged_df[
         (merged_df['fecha_registro'].dt.date >= fecha_inicio) &
         (merged_df['fecha_registro'].dt.date <= fecha_fin)
@@ -670,7 +1059,8 @@ def main():
         # También filtrar df_filtrado basado en las rutas que tienen ese contratista
         rutas_contratista = merged_df_filtrado['ruta'].unique()
         df_filtrado = df_filtrado[df_filtrado['ruta'].isin(rutas_contratista)]
-      # Sección de reportes en sidebar
+    
+    # Sección de reportes en sidebar
     st.sidebar.markdown("### 📄 Generación de Reportes")
     
     tipo_reporte = st.sidebar.selectbox(
@@ -692,10 +1082,9 @@ def main():
             mime="text/plain"
         )
         st.sidebar.success("✅ Reporte TXT generado exitosamente!")
-    
-    # Botón para reporte PDF con gráficas
+      # Botón para reporte PDF con gráficas
     if st.sidebar.button("📊 Generar Reporte PDF"):
-        with st.sidebar.spinner("📊 Generando PDF con gráficas..."):
+        with st.spinner("📊 Generando PDF con gráficas..."):
             try:
                 pdf_data = generate_pdf_report(df_filtrado, merged_df_filtrado, tipo_reporte.lower())
                 
@@ -725,8 +1114,7 @@ def main():
         """)
     
     # Métricas KPI mejoradas
-    create_advanced_kpi_metrics(df_filtrado, merged_df_filtrado)
-      # Menú de navegación principal
+    create_advanced_kpi_metrics(df_filtrado, merged_df_filtrado)    # Menú de navegación principal
     selected = option_menu(
         menu_title=None,
         options=[
@@ -736,15 +1124,14 @@ def main():
             "👨‍💼 Supervisores y Contratistas",
             "👥 Análisis de Personal", 
             "🎯 Análisis de Rendimiento", 
-            "📊 Análisis Avanzado",
+            "🏪 Análisis de Clientes",
             "📋 Datos Detallados"
         ],
-        icons=["house", "graph-up", "truck", "person-badge", "people", "target", "bar-chart", "table"],
+        icons=["house", "graph-up", "truck", "person-badge", "people", "target", "shop", "table"],
         menu_icon="cast",
         default_index=0,
         orientation="horizontal",
-    )
-      # Contenido según la selección
+    )    # Contenido según la selección
     if selected == "🏠 Resumen General":
         show_general_overview(df_filtrado, merged_df_filtrado)
     elif selected == "📈 Análisis Temporal":
@@ -757,7 +1144,7 @@ def main():
         show_personnel_analysis(df_filtrado, merged_df_filtrado)
     elif selected == "🎯 Análisis de Rendimiento":
         show_performance_analysis(df_filtrado)
-    elif selected == "📊 Análisis Avanzado":
+    elif selected == "🏪 Análisis de Clientes":
         show_advanced_analysis(df_filtrado, merged_df_filtrado)
     elif selected == "📋 Datos Detallados":
         show_detailed_data(df_filtrado, merged_df_filtrado)
@@ -1036,104 +1423,299 @@ def show_general_overview(df, merged_df):
         st.plotly_chart(fig_supervisor_cierres, use_container_width=True)
 
 def show_temporal_analysis(df):
-    """Muestra análisis temporal mejorado en disposición vertical"""
+    """Muestra análisis temporal mejorado y completo"""
     st.subheader("📅 Análisis Temporal Profundo y Detallado")
     
-    # Primera fila - Análisis por Trimestres
+    # === SECCIÓN 1: EVOLUCIÓN TEMPORAL MULTI-NIVEL ===
     st.markdown(
         """
         <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">📊 Análisis Detallado por Trimestres</h3>
+            <h3 style="color: white; margin: 0;">📊 Evolución Temporal Multi-Nivel</h3>
         </div>
         """, 
         unsafe_allow_html=True
     )
     
-    trimestre_data = df.groupby('trimestre_nombre').agg({
+    # Análisis temporal por múltiples dimensiones
+    temporal_analysis = df.groupby(['mes', 'mes_nombre']).agg({
         'id_tema': 'count',
-        'puntos': ['mean', 'sum'],
-        'fecha_cierre': lambda x: x.notna().sum()
+        'puntos': ['mean', 'std', 'min', 'max'],
+        'fecha_cierre': lambda x: x.notna().sum(),
+        'codigo_cliente': 'nunique',
+        'usuario': 'nunique',
+        'ruta': 'nunique'
     }).round(2)
     
-    trimestre_data.columns = ['Total_Registros', 'Puntos_Promedio', 'Puntos_Totales', 'Total_Cierres']
-    trimestre_data = trimestre_data.reset_index()
+    temporal_analysis.columns = ['Total_Registros', 'Puntos_Promedio', 'Puntos_Std', 'Puntos_Min', 'Puntos_Max', 
+                                'Total_Cierres', 'Clientes_Unicos', 'Usuarios_Activos', 'Rutas_Activas']
+    temporal_analysis = temporal_analysis.reset_index()
+    temporal_analysis['Tasa_Cierre'] = (temporal_analysis['Total_Cierres'] / temporal_analysis['Total_Registros']) * 100
+    temporal_analysis = temporal_analysis.sort_values('mes')
     
-    fig_trimestre = px.bar(
-        trimestre_data,
-        x='trimestre_nombre',
-        y='Total_Registros',
-        title="📊 Registros y Análisis por Trimestre",
-        color='Puntos_Promedio',
-        color_continuous_scale='viridis',
-        text='Total_Registros',
-        height=800
-    )
-    fig_trimestre.update_traces(
-        texttemplate='<b>%{text}</b>', 
-        textposition='outside',
-        marker_line_width=0
-    )
-    fig_trimestre.update_layout(
-        xaxis_title="Trimestre",
-        yaxis_title="Total de Registros",
-        margin=dict(l=20, r=20, t=80, b=20)
-    )
-    st.plotly_chart(fig_trimestre, use_container_width=True)
+    # Gráfico de líneas múltiples para evolución temporal
+    fig_evolution = go.Figure()
     
-    # Segunda fila - Análisis por Días de la Semana
+    # Línea principal - Total de registros
+    fig_evolution.add_trace(go.Scatter(
+        x=temporal_analysis['mes_nombre'],
+        y=temporal_analysis['Total_Registros'],
+        mode='lines+markers+text',
+        name='📊 Total Registros',
+        line=dict(color='#FF6B6B', width=4),
+        marker=dict(size=10, color='#FF6B6B'),
+        text=temporal_analysis['Total_Registros'],
+        textposition='top center',
+        textfont=dict(size=12, color='white', family='Arial Black'),
+        yaxis='y1'
+    ))
+    
+    # Línea secundaria - Tasa de cierre
+    fig_evolution.add_trace(go.Scatter(
+        x=temporal_analysis['mes_nombre'],
+        y=temporal_analysis['Tasa_Cierre'],
+        mode='lines+markers+text',
+        name='✅ Tasa Cierre (%)',
+        line=dict(color='#4ECDC4', width=3, dash='dash'),
+        marker=dict(size=8, color='#4ECDC4'),
+        text=temporal_analysis['Tasa_Cierre'].round(1),
+        textposition='bottom center',
+        textfont=dict(size=10, color='white'),
+        yaxis='y2'
+    ))
+    
+    # Línea terciaria - Clientes únicos
+    fig_evolution.add_trace(go.Scatter(
+        x=temporal_analysis['mes_nombre'],
+        y=temporal_analysis['Clientes_Unicos'],
+        mode='lines+markers',
+        name='👥 Clientes Únicos',
+        line=dict(color='#FFA726', width=2),
+        marker=dict(size=6, color='#FFA726'),
+        yaxis='y3'
+    ))
+    
+    fig_evolution.update_layout(
+        title='📈 Evolución Temporal Multi-Dimensional de Registros',
+        xaxis_title='<b>Mes</b>',
+        yaxis=dict(
+            title='<b>Total de Registros</b>',
+            titlefont=dict(color='#FF6B6B'),
+            tickfont=dict(color='#FF6B6B'),
+            side='left'
+        ),
+        yaxis2=dict(
+            title='<b>Tasa de Cierre (%)</b>',
+            titlefont=dict(color='#4ECDC4'),
+            tickfont=dict(color='#4ECDC4'),
+            anchor='x',
+            overlaying='y',
+            side='right'
+        ),
+        yaxis3=dict(
+            title='<b>Clientes Únicos</b>',
+            titlefont=dict(color='#FFA726'),
+            tickfont=dict(color='#FFA726'),
+            anchor='free',
+            overlaying='y',
+            side='right',
+            position=0.95
+        ),
+        height=600,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    
+    st.plotly_chart(fig_evolution, use_container_width=True)
+    
+    # === SECCIÓN 2: ANÁLISIS DE PATRONES SEMANALES Y ESTACIONALES ===
     st.markdown(
         """
         <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">📅 Análisis Detallado por Días de la Semana</h3>
+            <h3 style="color: white; margin: 0;">🗓️ Análisis de Patrones Semanales y Estacionales</h3>
         </div>
         """, 
         unsafe_allow_html=True
     )
+      # Análisis por días de la semana
+    df['fecha_parsed'] = pd.to_datetime(df['fecha_registro'], errors='coerce')
+    df['dia_semana_num'] = df['fecha_parsed'].dt.dayofweek
+    df['dia_semana_nombre'] = df['fecha_parsed'].dt.day_name()
     
-    dias_data = df.groupby('dia_semana').agg({
+    dias_analysis = df.groupby(['dia_semana_num', 'dia_semana_nombre']).agg({
         'id_tema': 'count',
         'puntos': 'mean',
         'fecha_cierre': lambda x: x.notna().sum()
     }).round(2).reset_index()
-    dias_data.columns = ['dia_semana', 'total_registros', 'puntos_promedio', 'total_cierres']
+    dias_analysis.columns = ['dia_num', 'dia_nombre', 'total_registros', 'puntos_promedio', 'total_cierres']
+    dias_analysis['tasa_cierre'] = (dias_analysis['total_cierres'] / dias_analysis['total_registros']) * 100
+    dias_analysis = dias_analysis.sort_values('dia_num')
     
-    # Ordenar días de la semana
-    dias_orden = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    dias_data['dia_semana'] = pd.Categorical(dias_data['dia_semana'], categories=dias_orden)
-    dias_data = dias_data.sort_values('dia_semana')
+    # Gráfico polar para días de la semana
+    fig_polar = go.Figure()
     
-    fig_dias = px.bar(
-        dias_data,
-        x='dia_semana',
-        y='total_registros',
-        title="📈 Registros por Día de la Semana con Promedio de Puntos",
-        color='puntos_promedio',
-        color_continuous_scale='plasma',
-        text='total_registros',
-        height=800
-    )
-    fig_dias.update_traces(
-        texttemplate='<b>%{text}</b>', 
-        textposition='outside',
-        marker_line_width=0
-    )
-    fig_dias.update_layout(
-        xaxis_title="Día de la Semana",
-        yaxis_title="Total de Registros",
-        margin=dict(l=20, r=20, t=80, b=20)
-    )
-    st.plotly_chart(fig_dias, use_container_width=True)
+    fig_polar.add_trace(go.Scatterpolar(
+        r=dias_analysis['total_registros'],
+        theta=dias_analysis['dia_nombre'],
+        fill='toself',
+        fillcolor='rgba(255, 107, 107, 0.3)',
+        line=dict(color='#FF6B6B', width=3),
+        marker=dict(size=8, color='#FF6B6B'),
+        text=dias_analysis['total_registros'],
+        textposition='middle center',
+        textfont=dict(size=12, color='white', family='Arial Black'),
+        name='Registros por Día'
+    ))
     
-    # Tercera fila - Análisis Mensual Completo
+    fig_polar.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, dias_analysis['total_registros'].max() * 1.1],
+                tickfont=dict(color='white'),
+                gridcolor='rgba(255,255,255,0.3)'
+            ),
+            angularaxis=dict(
+                tickfont=dict(color='white', size=12),
+                gridcolor='rgba(255,255,255,0.3)'
+            )
+        ),
+        title='🗓️ Distribución Polar de Registros por Día de la Semana',
+        height=500,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
+    )
+    
+    st.plotly_chart(fig_polar, use_container_width=True)
+    
+    # === SECCIÓN 3: ANÁLISIS DE VELOCIDAD DE RESOLUCIÓN ===
     st.markdown(
         """
         <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">📆 Análisis Mensual Completo y Detallado</h3>
+            <h3 style="color: white; margin: 0;">⚡ Análisis de Velocidad de Resolución</h3>
         </div>
         """, 
         unsafe_allow_html=True
     )
+      # Calcular tiempo de resolución cuando hay fecha de cierre
+    df_cerrados = df[df['fecha_cierre'].notna()].copy()
+    if not df_cerrados.empty:
+        df_cerrados['fecha_registro_parsed'] = pd.to_datetime(df_cerrados['fecha_registro'], errors='coerce')
+        df_cerrados['fecha_cierre_parsed'] = pd.to_datetime(df_cerrados['fecha_cierre'], errors='coerce')
+        df_cerrados['dias_resolucion'] = (df_cerrados['fecha_cierre_parsed'] - df_cerrados['fecha_registro_parsed']).dt.days
+        
+        # Filtrar valores razonables (entre 0 y 365 días)
+        df_cerrados = df_cerrados[(df_cerrados['dias_resolucion'] >= 0) & (df_cerrados['dias_resolucion'] <= 365)]
+        if not df_cerrados.empty:
+            resolucion_analysis = df_cerrados.groupby(['mes', 'mes_nombre']).agg({
+                'dias_resolucion': ['mean', 'median', 'std', 'min', 'max', 'count']
+            }).round(2)
+            
+            resolucion_analysis.columns = ['Dias_Promedio', 'Dias_Mediana', 'Dias_Std', 'Dias_Min', 'Dias_Max', 'Total_Casos']
+            resolucion_analysis = resolucion_analysis.reset_index()
+            resolucion_analysis = resolucion_analysis.sort_values('mes')
+            
+            # Gráfico de cajas para mostrar distribución de tiempos
+            fig_resolution = go.Figure()
+            
+            for mes in resolucion_analysis['mes_nombre']:
+                datos_mes = df_cerrados[df_cerrados['mes_nombre'] == mes]['dias_resolucion']
+                
+                fig_resolution.add_trace(go.Box(
+                    y=datos_mes,
+                    name=mes,
+                    boxpoints='outliers',
+                    marker=dict(color='#4ECDC4'),
+                    line=dict(color='#FF6B6B', width=2),
+                    fillcolor='rgba(78, 205, 196, 0.3)'
+                ))
+            
+            fig_resolution.update_layout(
+                title='📊 Distribución de Tiempos de Resolución por Mes',
+                xaxis_title='<b>Mes</b>',
+                yaxis_title='<b>Días para Resolución</b>',
+                height=500,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white', size=12)
+            )
+            
+            st.plotly_chart(fig_resolution, use_container_width=True)
+            
+            # KPIs de resolución
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                tiempo_promedio = df_cerrados['dias_resolucion'].mean()
+                st.metric(
+                    "⏱️ Tiempo Promedio",
+                    f"{tiempo_promedio:.1f} días"
+                )
+            
+            with col2:
+                tiempo_mediana = df_cerrados['dias_resolucion'].median()
+                st.metric(
+                    "📊 Tiempo Mediana",
+                    f"{tiempo_mediana:.1f} días"
+                )
+            
+            with col3:
+                casos_rapidos = len(df_cerrados[df_cerrados['dias_resolucion'] <= 7])
+                porcentaje_rapidos = (casos_rapidos / len(df_cerrados)) * 100
+                st.metric(
+                    "🚀 Resolución Rápida",
+                    f"{porcentaje_rapidos:.1f}%",
+                    "≤ 7 días"
+                )
+            
+            with col4:
+                casos_lentos = len(df_cerrados[df_cerrados['dias_resolucion'] > 30])
+                porcentaje_lentos = (casos_lentos / len(df_cerrados)) * 100
+                st.metric(
+                    "🐌 Resolución Lenta",
+                    f"{porcentaje_lentos:.1f}%",
+                    "> 30 días"
+                )
+        else:
+            st.warning("⚠️ No hay datos suficientes para calcular tiempos de resolución.")
+    else:
+        st.warning("⚠️ No hay casos cerrados para analizar tiempos de resolución.")
     
+    # === SECCIÓN 4: INSIGHTS AUTOMÁTICOS ===
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin: 20px 0;">
+        <h4 style="color: white; margin: 0;">🧠 Insights Temporales Automáticos</h4>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            📈 <strong>Mes más activo:</strong> {temporal_analysis.loc[temporal_analysis['Total_Registros'].idxmax(), 'mes_nombre']} 
+            ({temporal_analysis['Total_Registros'].max()} registros)
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            ✅ <strong>Mejor tasa de cierre:</strong> {temporal_analysis.loc[temporal_analysis['Tasa_Cierre'].idxmax(), 'mes_nombre']} 
+            ({temporal_analysis['Tasa_Cierre'].max():.1f}%)
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            👥 <strong>Mayor diversidad de clientes:</strong> {temporal_analysis.loc[temporal_analysis['Clientes_Unicos'].idxmax(), 'mes_nombre']} 
+            ({temporal_analysis['Clientes_Unicos'].max()} clientes únicos)
+        </p>
+    </div>    """, unsafe_allow_html=True)
+    
+    # === SECCIÓN 5: ANÁLISIS DETALLADO MENSUAL ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">📊 Análisis Detallado Mensual</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
     monthly_detailed = df.groupby(['mes', 'mes_nombre']).agg({
         'id_tema': 'count',
         'puntos': ['mean', 'sum'],
@@ -1144,7 +1726,7 @@ def show_temporal_analysis(df):
     
     monthly_detailed.columns = ['Total_Registros', 'Puntos_Promedio', 'Puntos_Totales', 'Usuarios_Unicos', 'Rutas_Activas', 'Total_Cierres']
     monthly_detailed = monthly_detailed.reset_index()
-    
+    monthly_detailed = monthly_detailed.sort_values('mes')
     fig_monthly_bars = px.bar(
         monthly_detailed,
         x='mes_nombre',
@@ -1153,7 +1735,7 @@ def show_temporal_analysis(df):
         text='Total_Registros',
         color='Puntos_Promedio',
         color_continuous_scale='viridis',
-        height=800
+        height=500
     )
     fig_monthly_bars.update_traces(
         texttemplate='<b>%{text}</b>', 
@@ -1166,89 +1748,197 @@ def show_temporal_analysis(df):
         margin=dict(l=20, r=20, t=80, b=20)
     )
     st.plotly_chart(fig_monthly_bars, use_container_width=True)
-    
-    # Cuarta fila - Tendencia de Puntos Promedio Mensual
+      # === SECCIÓN NUEVA: ANÁLISIS DE PICOS Y VALLES ===
     st.markdown(
         """
         <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">📈 Tendencia de Puntos Promedio Mensual</h3>
+            <h3 style="color: white; margin: 0;">📈 Análisis de Picos y Valles de Actividad</h3>
         </div>
         """, 
         unsafe_allow_html=True
     )
     
-    fig_trend = px.line(
-        monthly_detailed,
-        x='mes_nombre',
-        y='Puntos_Promedio',
-        title="📈 Tendencia de Calidad - Puntos Promedio por Mes",
-        markers=True,
-        text='Puntos_Promedio',
-        height=800
+    # Crear análisis de variabilidad
+    temporal_analysis_sorted = temporal_analysis.sort_values('mes')
+    temporal_analysis_sorted['cambio_mensual'] = temporal_analysis_sorted['Total_Registros'].pct_change() * 100
+    temporal_analysis_sorted['categoria_cambio'] = temporal_analysis_sorted['cambio_mensual'].apply(
+        lambda x: '📈 Aumento Significativo' if x > 20 else 
+                  '📊 Aumento Moderado' if x > 0 else 
+                  '📉 Disminución Moderada' if x > -20 else 
+                  '⚠️ Disminución Significativa' if pd.notna(x) else '🔄 Primer Mes'
     )
-    fig_trend.update_traces(
-        line_width=6,
-        marker_size=12,
-        texttemplate='%{text:.2f}',
-        textposition='top center'
-    )
-    fig_trend.update_layout(
-        xaxis_title="Mes",
-        yaxis_title="Puntos Promedio",
-        margin=dict(l=20, r=20, t=80, b=20)
-    )
-    st.plotly_chart(fig_trend, use_container_width=True)
     
-    # Quinta fila - Análisis de Usuarios Únicos y Rutas Activas
+    # Gráfico de cascada para mostrar cambios mensuales
+    fig_waterfall = go.Figure()
+    
+    # Colores para diferentes tipos de cambio
+    colores = []
+    for cambio in temporal_analysis_sorted['cambio_mensual']:
+        if pd.isna(cambio):
+            colores.append('#4ECDC4')  # Primer mes
+        elif cambio > 20:
+            colores.append('#FF6B6B')  # Aumento significativo
+        elif cambio > 0:
+            colores.append('#FFA726')  # Aumento moderado
+        elif cambio > -20:
+            colores.append('#FFD54F')  # Disminución moderada
+        else:
+            colores.append('#FF5722')  # Disminución significativa
+    
+    fig_waterfall.add_trace(go.Bar(
+        x=temporal_analysis_sorted['mes_nombre'],
+        y=temporal_analysis_sorted['Total_Registros'],
+        text=[f"<b>{val}</b><br>{cat}" for val, cat in zip(
+            temporal_analysis_sorted['Total_Registros'],
+            temporal_analysis_sorted['categoria_cambio']
+        )],
+        textposition='outside',
+        textfont=dict(size=10, color='white'),
+        marker=dict(color=colores, line=dict(width=2, color='white')),
+        name='Registros Mensuales'
+    ))
+    
+    fig_waterfall.update_layout(
+        title='📊 Análisis de Picos y Valles - Registros Mensuales con Categorización',
+        xaxis_title='<b>Mes</b>',
+        yaxis_title='<b>Total de Registros</b>',
+        height=600,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12),
+        showlegend=False
+    )
+    
+    st.plotly_chart(fig_waterfall, use_container_width=True)
+    
+    # Tabla de análisis de cambios
+    cambios_df = temporal_analysis_sorted[['mes_nombre', 'Total_Registros', 'cambio_mensual', 'categoria_cambio']].copy()
+    cambios_df['cambio_mensual'] = cambios_df['cambio_mensual'].fillna(0).round(1)
+    cambios_df.columns = ['Mes', 'Total Registros', 'Cambio %', 'Categoría']
+    
+    st.markdown("#### 📊 Resumen de Cambios Mensuales")
+    st.dataframe(clean_dataframe_for_display(cambios_df), use_container_width=True)
+      # === SECCIÓN 6: ANÁLISIS DE EFICIENCIA TEMPORAL ===
     st.markdown(
         """
         <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">👥 Análisis de Actividad: Usuarios y Rutas por Mes</h3>
+            <h3 style="color: white; margin: 0;">⚡ Análisis de Eficiencia Temporal</h3>
         </div>
         """, 
         unsafe_allow_html=True
     )
     
-    fig_activity = go.Figure()
-    fig_activity.add_trace(go.Bar(
-        x=monthly_detailed['mes_nombre'],
-        y=monthly_detailed['Usuarios_Unicos'],
-        name='Usuarios Únicos',
-        text=monthly_detailed['Usuarios_Unicos'],
+    # Crear métrica de eficiencia: Registros por Usuario por Mes
+    eficiencia_temporal = monthly_detailed.copy()
+    eficiencia_temporal['Eficiencia'] = eficiencia_temporal['Total_Registros'] / eficiencia_temporal['Usuarios_Unicos']
+    eficiencia_temporal['Cobertura'] = eficiencia_temporal['Rutas_Activas'] / 123 * 100  # Asumiendo 123 rutas totales
+    
+    # Gráfico combinado de eficiencia
+    fig_efficiency = go.Figure()
+    
+    # Barras de eficiencia (registros por usuario)
+    fig_efficiency.add_trace(go.Bar(
+        x=eficiencia_temporal['mes_nombre'],
+        y=eficiencia_temporal['Eficiencia'],
+        name='📊 Registros por Usuario',
+        text=eficiencia_temporal['Eficiencia'].round(1),
         texttemplate='<b>%{text}</b>',
         textposition='outside',
-        marker_color='lightblue',
-        marker_line_width=0
+        marker=dict(color='#4ECDC4', line=dict(width=2, color='white')),
+        yaxis='y'
     ))
-    fig_activity.add_trace(go.Bar(
-        x=monthly_detailed['mes_nombre'],
-        y=monthly_detailed['Rutas_Activas'],
-        name='Rutas Activas',
-        text=monthly_detailed['Rutas_Activas'],
-        texttemplate='<b>%{text}</b>',
-        textposition='outside',
-        marker_color='orange',
-        marker_line_width=0
+    
+    # Línea de cobertura de rutas
+    fig_efficiency.add_trace(go.Scatter(
+        x=eficiencia_temporal['mes_nombre'],
+        y=eficiencia_temporal['Cobertura'],
+        mode='lines+markers+text',
+        name='📍 Cobertura de Rutas (%)',
+        text=eficiencia_temporal['Cobertura'].round(1),
+        texttemplate='%{text:.1f}%',
+        textposition='top center',
+        line=dict(color='#FF6B6B', width=4),
+        marker=dict(size=10, color='#FF6B6B'),
+        yaxis='y2'
     ))
-    fig_activity.update_layout(
-        title="👥 Usuarios Únicos y Rutas Activas por Mes",
-        xaxis_title="Mes",
-        yaxis_title="Cantidad",
-        height=800,
-        barmode='group',
-        margin=dict(l=20, r=20, t=80, b=20)
+    
+    fig_efficiency.update_layout(
+        title='⚡ Eficiencia Temporal: Productividad vs Cobertura',
+        xaxis_title='<b>Mes</b>',
+        yaxis=dict(
+            title='<b>Registros por Usuario</b>',
+            titlefont=dict(color='#4ECDC4'),
+            tickfont=dict(color='#4ECDC4'),
+            side='left'
+        ),
+        yaxis2=dict(
+            title='<b>Cobertura de Rutas (%)</b>',
+            titlefont=dict(color='#FF6B6B'),
+            tickfont=dict(color='#FF6B6B'),
+            anchor='x',
+            overlaying='y',
+            side='right'
+        ),
+        height=600,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
     )
-    st.plotly_chart(fig_activity, use_container_width=True)
+    
+    st.plotly_chart(fig_efficiency, use_container_width=True)
+    
+    # KPIs de eficiencia
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        eficiencia_promedio = eficiencia_temporal['Eficiencia'].mean()
+        st.metric(
+            "📊 Eficiencia Promedio",
+            f"{eficiencia_promedio:.1f}",
+            "registros/usuario"
+        )
+    
+    with col2:
+        mejor_mes_eficiencia = eficiencia_temporal.loc[eficiencia_temporal['Eficiencia'].idxmax(), 'mes_nombre']
+        mejor_eficiencia = eficiencia_temporal['Eficiencia'].max()
+        st.metric(
+            "🏆 Mejor Eficiencia",
+            f"{mejor_eficiencia:.1f}",
+            f"en {mejor_mes_eficiencia}"
+        )
+    
+    with col3:
+        cobertura_promedio = eficiencia_temporal['Cobertura'].mean()
+        st.metric(
+            "📍 Cobertura Promedio",
+            f"{cobertura_promedio:.1f}%",
+            "de rutas activas"
+        )
+    
+    with col4:
+        mejor_mes_cobertura = eficiencia_temporal.loc[eficiencia_temporal['Cobertura'].idxmax(), 'mes_nombre']
+        mejor_cobertura = eficiencia_temporal['Cobertura'].max()
+        st.metric(
+            "🎯 Mejor Cobertura",
+            f"{mejor_cobertura:.1f}%",
+            f"en {mejor_mes_cobertura}"
+        )
 
 def show_routes_analysis(df, merged_df):
     """Análisis completo por rutas con supervisores y contratistas"""
-    st.subheader("🚚 Análisis Completo por Rutas, Supervisores y Contratistas")
-      # Primera fila - Top 3 rutas por contratista (fila completa)
+    st.subheader("🚚 Análisis Completo por Rutas, Supervisores y Contratistas")    # Primera fila - Top 3 rutas por contratista (fila completa)
     if 'CONTRATISTA' in merged_df.columns and 'SUPERVISOR' in merged_df.columns:
         st.markdown(
             """
-            <div class="top-performance">
-                <h3 style="color: white; margin: 0;">🏆 Top 3 Rutas por Contratista</h3>
+            <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(250, 112, 154, 0.3);">
+                <h3 style="color: white; margin: 0; text-align: center;">🏆 Top 3 Rutas por Contratista</h3>
             </div>
             """, 
             unsafe_allow_html=True
@@ -1307,11 +1997,11 @@ def show_routes_analysis(df, merged_df):
             yaxis_title="<b>Ruta</b>"
         )
         st.plotly_chart(fig_contratista_rutas, use_container_width=True)
-          # Segunda fila - Top 3 rutas por supervisor (fila completa)
+          # Segunda fila - Top 3 rutas por supervisor (fila completa)        
         st.markdown(
             """
-            <div class="top-performance">
-                <h3 style="color: white; margin: 0;">🏆 Top 3 Rutas por Supervisor</h3>
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);">
+                <h3 style="color: white; margin: 0; text-align: center;">🏆 Top 3 Rutas por Supervisor</h3>
             </div>
             """, 
             unsafe_allow_html=True
@@ -1737,13 +2427,11 @@ def show_routes_analysis(df, merged_df):
         st.markdown("#### 📊 Análisis Completo de Contratistas")
         contratista_details = contratista_analysis[['contratista', 'total_casos', 'casos_cerrados', 'casos_pendientes', 'tasa_cierre', 'puntos_promedio', 'rutas_trabajadas', 'motivo_principal', 'tipos_respuesta']].copy()
         contratista_details.columns = ['Contratista', 'Total Casos', 'Casos Cerrados', 'Casos Pendientes', 'Tasa Cierre (%)', 'Puntos Promedio', 'Rutas Trabajadas', 'Motivo Principal', 'Tipos de Respuesta']
-        st.dataframe(clean_dataframe_for_display(contratista_details), use_container_width=True)
-
-    # Séptima fila - Análisis de motivos específicos en lugar de números
+    st.dataframe(clean_dataframe_for_display(contratista_details), use_container_width=True)    # Séptima fila - Análisis de motivos específicos en lugar de números
     st.markdown(
         """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🎯 Análisis Detallado de Motivos Específicos</h3>
+        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);">
+            <h3 style="color: white; margin: 0; text-align: center;">🎯 Análisis Detallado de Motivos Específicos</h3>
         </div>
         """, 
         unsafe_allow_html=True
@@ -1794,13 +2482,11 @@ def show_routes_analysis(df, merged_df):
     st.markdown("#### 📋 Detalles Completos de Motivos")
     motivos_details = motivos_analysis[['motivo_retro', 'total_casos', 'puntos_promedio', 'tasa_cierre', 'clientes_afectados', 'desviacion_puntos']].copy()
     motivos_details.columns = ['Motivo', 'Total Casos', 'Puntos Promedio', 'Tasa Cierre (%)', 'Clientes Afectados', 'Desviación Puntos']
-    st.dataframe(clean_dataframe_for_display(motivos_details), use_container_width=True)
-
-    # Octava fila - Análisis de respuestas específicas
+    st.dataframe(clean_dataframe_for_display(motivos_details), use_container_width=True)    # Octava fila - Análisis de respuestas específicas
     st.markdown(
         """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">💬 Análisis de Tipos de Respuesta Específicas</h3>
+        <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(250, 112, 154, 0.3);">
+            <h3 style="color: white; margin: 0; text-align: center;">💬 Análisis de Tipos de Respuesta Específicas</h3>
         </div>
         """, 
         unsafe_allow_html=True
@@ -1833,443 +2519,31 @@ def show_routes_analysis(df, merged_df):
             'total_casos': True,
             'puntos_promedio': ':.2f',
             'tasa_cierre': ':.1f',
-            'clientes_afectados': True
-        }
+            'clientes_afectados': True        }
     )
+    
     fig_respuestas.update_traces(
-        texttemplate='%{text} casos',
+        texttemplate='<b>%{x}</b>',
         textposition='outside',
-        marker_line_width=0
+        marker_line_width=0,
+        textfont=dict(size=10, color='white')
     )
     fig_respuestas.update_layout(
         yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=200, r=50, t=80, b=50)
+        margin=dict(l=250, r=100, t=80, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=11),
+        xaxis_title="<b>Total de Casos</b>",
+        yaxis_title="<b>Tipo de Respuesta</b>"
     )
     st.plotly_chart(fig_respuestas, use_container_width=True)
-    
-    # Tabla detallada de respuestas    st.markdown("#### 📋 Detalles Completos de Tipos de Respuesta")
+      # Tabla detallada de respuestas
+    st.markdown("#### 📋 Detalles Completos de Tipos de Respuesta")
     respuestas_details = respuestas_analysis[['respuesta_sub', 'total_casos', 'puntos_promedio', 'tasa_cierre', 'clientes_afectados', 'desviacion_puntos']].copy()
     respuestas_details.columns = ['Tipo de Respuesta', 'Total Casos', 'Puntos Promedio', 'Tasa Cierre (%)', 'Clientes Afectados', 'Desviación Puntos']
-    st.dataframe(clean_dataframe_for_display(respuestas_details), use_container_width=True)    # Novena fila - Análisis específico de clientes con múltiples reportes del mismo motivo (usando respuesta_sub)
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🔍 Análisis de Clientes con Múltiples Reportes del Mismo Motivo Real</h3>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    
-    # Convertir codigo_cliente a string para mejor manejo
-    df['codigo_cliente_str'] = df['codigo_cliente'].astype(str)
-    
-    # Analizar clientes que tienen múltiples reportes del mismo motivo real (respuesta_sub)
-    cliente_motivo_analysis = df.groupby(['codigo_cliente_str', 'respuesta_sub']).agg({
-        'id_tema': 'count',
-        'puntos': 'mean',
-        'fecha_cierre': lambda x: x.notna().sum()
-    }).round(2).reset_index()
-    cliente_motivo_analysis.columns = ['codigo_cliente', 'motivo_real', 'total_reportes', 'puntos_promedio', 'casos_cerrados']
-    
-    # Filtrar clientes con más de 3 reportes del mismo motivo real
-    clientes_repetitivos = cliente_motivo_analysis[cliente_motivo_analysis['total_reportes'] >= 3].sort_values('total_reportes', ascending=False)
-    
-    if not clientes_repetitivos.empty:
-        st.markdown(f"##### 🎯 Se encontraron {len(clientes_repetitivos)} clientes con 3+ reportes del mismo motivo real")
-        fig_clientes_repetitivos = px.bar(
-            clientes_repetitivos.head(20),
-            x='total_reportes',
-            y='codigo_cliente',
-            orientation='h',
-            title="🚨 Top 20 Clientes con Más Reportes del Mismo Motivo Real",
-            color='motivo_real',
-            height=800,
-            text='total_reportes',
-            hover_data={
-                'codigo_cliente': True,
-                'motivo_real': True,
-                'total_reportes': True,
-                'puntos_promedio': ':.2f',
-                'casos_cerrados': True
-            }
-        )
-        fig_clientes_repetitivos.update_traces(
-            texttemplate='<b>%{text} reportes</b>',
-            textposition='outside',
-            marker_line_width=0,
-            textfont=dict(size=14, color='white', family='Arial Black')
-        )
-        fig_clientes_repetitivos.update_layout(
-            yaxis={
-                'categoryorder': 'total ascending',
-                'tickformat': '',
-                'type': 'category',
-                'tickfont': dict(size=12, color='white')
-            },
-            margin=dict(l=150, r=100, t=80, b=50),
-            xaxis_title="<b>Número de Reportes</b>",
-            yaxis_title="<b>Código Cliente</b>",
-            font=dict(size=12)
-        )
-        st.plotly_chart(fig_clientes_repetitivos, use_container_width=True)
-        
-        # Tabla detallada
-        st.markdown("##### 📋 Detalles de Clientes con Reportes Repetitivos del Mismo Motivo")
-        clientes_details = clientes_repetitivos[['codigo_cliente', 'motivo_real', 'total_reportes', 'puntos_promedio', 'casos_cerrados']].copy()
-        clientes_details.columns = ['Cliente', 'Motivo Real', 'Total Reportes', 'Puntos Promedio', 'Casos Cerrados']
-        st.dataframe(clean_dataframe_for_display(clientes_details), use_container_width=True)
-        
-        # Análisis de los motivos más problemáticos
-        st.markdown("##### 🎯 Top 10 Motivos Reales Más Problemáticos")
-        motivos_problematicos = clientes_repetitivos.groupby('motivo_real').agg({
-            'codigo_cliente': 'count',
-            'total_reportes': 'sum',
-            'puntos_promedio': 'mean'
-        }).round(2).reset_index()
-        motivos_problematicos.columns = ['motivo_real', 'clientes_afectados', 'total_reportes_acumulados', 'puntos_promedio']
-        motivos_problematicos = motivos_problematicos.sort_values('clientes_afectados', ascending=False).head(10)
-        
-        fig_motivos_problematicos = px.bar(
-            motivos_problematicos,
-            x='clientes_afectados',
-            y='motivo_real',
-            orientation='h',
-            title="🎯 Top 10 Motivos Reales con Más Clientes con Reportes Repetitivos",
-            color='puntos_promedio',
-            color_continuous_scale='RdYlGn',
-            height=600,
-            text='clientes_afectados'
-        )
-        fig_motivos_problematicos.update_traces(
-            texttemplate='%{text} clientes',
-            textposition='outside'
-        )
-        fig_motivos_problematicos.update_layout(
-            yaxis={'categoryorder': 'total ascending'},
-            margin=dict(l=250, r=50, t=80, b=50)
-        )
-        st.plotly_chart(fig_motivos_problematicos, use_container_width=True)
-        
-        st.markdown("##### 📋 Detalles de Motivos Problemáticos")
-        motivos_problematicos_details = motivos_problematicos[['motivo_real', 'clientes_afectados', 'total_reportes_acumulados', 'puntos_promedio']].copy()
-        motivos_problematicos_details.columns = ['Motivo Real', 'Clientes Afectados', 'Total Reportes', 'Puntos Promedio']        
-        st.dataframe(clean_dataframe_for_display(motivos_problematicos_details), use_container_width=True)
-    else:
-        st.info("✅ No se encontraron clientes con 3+ reportes del mismo motivo real")    # --- NUEVA SECCIÓN: Cumplimiento de Meta Mensual por Ruta, Supervisor y Contratista ---
-        st.markdown(
-            """
-            <div class="analysis-card">
-                <h3 style="color: white; margin: 0;">📅 Cumplimiento de Meta Mensual (10 registros/ruta)</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-    )
-    
-    # Filtros dinámicos mejorados
-    col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
-    
-    with col_filtro1:
-        meses_disponibles = sorted(df['mes_nombre'].unique().tolist())
-        mes_meta = st.selectbox("📅 Selecciona el mes:", meses_disponibles, key="meta_mes")
-    
-    with col_filtro2:
-        if 'SUPERVISOR' in merged_df.columns:
-            supervisores_disp = ['Todos'] + sorted(merged_df['SUPERVISOR'].dropna().unique().tolist())
-            supervisor_meta = st.selectbox("👨‍💼 Filtrar por Supervisor:", supervisores_disp, key="meta_supervisor")
-        else:
-            supervisor_meta = 'Todos'
-    
-    with col_filtro3:
-        if 'CONTRATISTA' in merged_df.columns:
-            contratistas_disp = ['Todos'] + sorted(merged_df['CONTRATISTA'].dropna().unique().tolist())
-            contratista_meta = st.selectbox("🏢 Filtrar por Contratista:", contratistas_disp, key="meta_contratista")
-        else:
-            contratista_meta = 'Todos'
-    
-    # Aplicar filtros
-    df_meta = merged_df[merged_df['mes_nombre'] == mes_meta].copy()
-    
-    if supervisor_meta != 'Todos' and 'SUPERVISOR' in df_meta.columns:
-        df_meta = df_meta[df_meta['SUPERVISOR'] == supervisor_meta]
-    
-    if contratista_meta != 'Todos' and 'CONTRATISTA' in df_meta.columns:
-        df_meta = df_meta[df_meta['CONTRATISTA'] == contratista_meta]
-    
-    # --- Análisis por SUPERVISOR ---
-    if 'SUPERVISOR' in df_meta.columns:
-        st.markdown("### 👨‍💼 Análisis por Supervisores")
-        
-        # Calcular métricas por supervisor y ruta
-        supervisor_rutas = df_meta.groupby(['SUPERVISOR', 'ruta']).agg({'id_tema':'count'}).reset_index()
-        supervisor_rutas['Meta Cumplida'] = supervisor_rutas['id_tema'] >= 10
-        supervisor_rutas['Estado'] = supervisor_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
-        supervisor_rutas = supervisor_rutas.rename(columns={'id_tema':'Registros'})
-        
-        # Tabla detallada
-        st.dataframe(
-            clean_dataframe_for_display(supervisor_rutas[['SUPERVISOR', 'ruta', 'Registros', 'Estado']]), 
-            use_container_width=True
-        )
-        
-        # KPIs por supervisor
-        col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-        
-        with col_kpi1:
-            total_rutas_sup = supervisor_rutas.shape[0]
-            rutas_cumplen_sup = supervisor_rutas['Meta Cumplida'].sum()
-            porcentaje_cumple_sup = (rutas_cumplen_sup/total_rutas_sup*100) if total_rutas_sup > 0 else 0
-            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_sup:.1f}%")
-        
-        with col_kpi2:
-            st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_sup}/{total_rutas_sup}")
-        
-        with col_kpi3:
-            rutas_no_cumplen_sup = total_rutas_sup - rutas_cumplen_sup
-            st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_sup}")
-        
-        # Ranking de supervisores
-        ranking_supervisores = supervisor_rutas.groupby('SUPERVISOR').agg({
-            'Meta Cumplida': ['count', 'sum'],
-            'Registros': 'mean'
-        }).round(2)
-        ranking_supervisores.columns = ['Total_Rutas', 'Rutas_Cumplen', 'Registros_Promedio']
-        ranking_supervisores = ranking_supervisores.reset_index()
-        ranking_supervisores['Porcentaje_Cumplimiento'] = (ranking_supervisores['Rutas_Cumplen'] / ranking_supervisores['Total_Rutas'] * 100).round(1)
-        ranking_supervisores = ranking_supervisores.sort_values('Porcentaje_Cumplimiento', ascending=False)
-        
-        # Gráfica de ranking de supervisores
-        fig_ranking_sup = px.bar(
-            ranking_supervisores, 
-            x='SUPERVISOR', 
-            y='Porcentaje_Cumplimiento',
-            color='Porcentaje_Cumplimiento',
-            color_continuous_scale='RdYlGn',
-            title='🏆 Ranking de Supervisores por % de Cumplimiento de Meta',
-            text='Porcentaje_Cumplimiento'
-        )
-        fig_ranking_sup.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-        fig_ranking_sup.update_layout(
-            xaxis_title="<b>Supervisor</b>",
-            yaxis_title="<b>% de Cumplimiento</b>",
-            height=500
-        )
-        st.plotly_chart(fig_ranking_sup, use_container_width=True)
-    
-    # --- Análisis por CONTRATISTA ---
-    if 'CONTRATISTA' in df_meta.columns:
-        st.markdown("### 🏢 Análisis por Contratistas")
-        
-        # Calcular métricas por contratista y ruta
-        contratista_rutas = df_meta.groupby(['CONTRATISTA', 'ruta']).agg({'id_tema':'count'}).reset_index()
-        contratista_rutas['Meta Cumplida'] = contratista_rutas['id_tema'] >= 10
-        contratista_rutas['Estado'] = contratista_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
-        contratista_rutas = contratista_rutas.rename(columns={'id_tema':'Registros'})
-        
-        # Tabla detallada
-        st.dataframe(
-            clean_dataframe_for_display(contratista_rutas[['CONTRATISTA', 'ruta', 'Registros', 'Estado']]), 
-            use_container_width=True
-        )
-        
-        # KPIs por contratista
-        col_kpi4, col_kpi5, col_kpi6 = st.columns(3)
-        
-        with col_kpi4:
-            total_rutas_con = contratista_rutas.shape[0]
-            rutas_cumplen_con = contratista_rutas['Meta Cumplida'].sum()
-            porcentaje_cumple_con = (rutas_cumplen_con/total_rutas_con*100) if total_rutas_con > 0 else 0
-            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_con:.1f}%")
-        
-        with col_kpi5:
-            st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_con}/{total_rutas_con}")
-        
-        with col_kpi6:
-            rutas_no_cumplen_con = total_rutas_con - rutas_cumplen_con
-            st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_con}")
-        
-        # Ranking de contratistas
-        ranking_contratistas = contratista_rutas.groupby('CONTRATISTA').agg({
-            'Meta Cumplida': ['count', 'sum'],
-            'Registros': 'mean'
-        }).round(2)
-        ranking_contratistas.columns = ['Total_Rutas', 'Rutas_Cumplen', 'Registros_Promedio']
-        ranking_contratistas = ranking_contratistas.reset_index()
-        ranking_contratistas['Porcentaje_Cumplimiento'] = (ranking_contratistas['Rutas_Cumplen'] / ranking_contratistas['Total_Rutas'] * 100).round(1)
-        ranking_contratistas = ranking_contratistas.sort_values('Porcentaje_Cumplimiento', ascending=False)
-        
-        # Gráfica de ranking de contratistas
-        fig_ranking_con = px.bar(
-            ranking_contratistas, 
-            x='CONTRATISTA', 
-            y='Porcentaje_Cumplimiento',
-            color='Porcentaje_Cumplimiento',
-            color_continuous_scale='RdYlGn',
-            title='🏆 Ranking de Contratistas por % de Cumplimiento de Meta',
-            text='Porcentaje_Cumplimiento'
-        )
-        fig_ranking_con.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-        fig_ranking_con.update_layout(
-            xaxis_title="<b>Contratista</b>",
-            yaxis_title="<b>% de Cumplimiento</b>",
-            height=500
-        )
-        st.plotly_chart(fig_ranking_con, use_container_width=True)
-    
-    # --- SECCIÓN 2: Top Performers y Offenders ---
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🏅 Top Performers vs Top Offenders por Mes</h3>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    # Top Offenders y Best por rutas
-    rutas_mes = df_meta.groupby('ruta').agg({'id_tema':'count'}).reset_index()
-    rutas_mes = rutas_mes.rename(columns={'id_tema':'Registros'})
-    top_offenders = rutas_mes.nsmallest(10, 'Registros')
-    top_performers = rutas_mes.nlargest(10, 'Registros')
-    
-    col_top1, col_top2 = st.columns(2)
-    
-    with col_top1:
-        st.markdown("##### ⚠️ Top 10 Offenders (Menos registros)")
-        fig_offenders = px.bar(
-            top_offenders, 
-            x='Registros', 
-            y='ruta', 
-            orientation='h',
-            color='Registros',
-            color_continuous_scale='Reds',
-            title='⚠️ Rutas con Menos Registros',
-            text='Registros'
-        )
-        fig_offenders.update_traces(texttemplate='%{text}', textposition='outside')
-        fig_offenders.update_layout(height=400)
-        st.plotly_chart(fig_offenders, use_container_width=True)
-    
-    with col_top2:
-        st.markdown("##### 🏆 Top 10 Performers (Más registros)")
-        fig_performers = px.bar(
-            top_performers, 
-            x='Registros', 
-            y='ruta', 
-            orientation='h',
-            color='Registros',
-            color_continuous_scale='Greens',
-            title='🏆 Rutas con Más Registros',
-            text='Registros'
-        )
-        fig_performers.update_traces(texttemplate='%{text}', textposition='outside')
-        fig_performers.update_layout(height=400)
-        st.plotly_chart(fig_performers, use_container_width=True)
-    
-    # --- SECCIÓN 3: Análisis de Impacto ---
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🔥 Análisis de Impacto y Focos de Atención</h3>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    col_impacto1, col_impacto2 = st.columns(2)
-    
-    # Impacto por supervisores
-    if 'SUPERVISOR' in df_meta.columns:
-        with col_impacto1:
-            st.markdown("##### 👨‍💼 Supervisores con Rutas Sin Meta")
-            supervisor_sin_meta = supervisor_rutas[~supervisor_rutas['Meta Cumplida']].groupby('SUPERVISOR').size().reset_index(name='Rutas_Sin_Meta')
-            supervisor_sin_meta = supervisor_sin_meta.sort_values('Rutas_Sin_Meta', ascending=False)
-            
-            if not supervisor_sin_meta.empty:
-                fig_impacto_sup = px.bar(
-                    supervisor_sin_meta.head(10),
-                    x='Rutas_Sin_Meta',
-                    y='SUPERVISOR',
-                    orientation='h',
-                    color='Rutas_Sin_Meta',
-                    color_continuous_scale='Reds',
-                    title='🚨 Supervisores con Más Rutas Sin Meta',
-                    text='Rutas_Sin_Meta'
-                )
-                fig_impacto_sup.update_traces(texttemplate='%{text}', textposition='outside')
-                fig_impacto_sup.update_layout(height=400)
-                st.plotly_chart(fig_impacto_sup, use_container_width=True)
-            else:
-                st.success("✅ Todos los supervisores tienen rutas que cumplen la meta!")
-    
-    # Impacto por contratistas
-    if 'CONTRATISTA' in df_meta.columns:
-        with col_impacto2:
-            st.markdown("##### 🏢 Contratistas con Rutas Sin Meta")
-            contratista_sin_meta = contratista_rutas[~contratista_rutas['Meta Cumplida']].groupby('CONTRATISTA').size().reset_index(name='Rutas_Sin_Meta')
-            contratista_sin_meta = contratista_sin_meta.sort_values('Rutas_Sin_Meta', ascending=False)
-            
-            if not contratista_sin_meta.empty:
-                fig_impacto_con = px.bar(
-                    contratista_sin_meta.head(10),
-                    x='Rutas_Sin_Meta',
-                    y='CONTRATISTA',
-                    orientation='h',
-                    color='Rutas_Sin_Meta',
-                    color_continuous_scale='Reds',
-                    title='🚨 Contratistas con Más Rutas Sin Meta',
-                    text='Rutas_Sin_Meta'
-                )
-                fig_impacto_con.update_traces(texttemplate='%{text}', textposition='outside')
-                fig_impacto_con.update_layout(height=400)
-                st.plotly_chart(fig_impacto_con, use_container_width=True)
-            else:
-                st.success("✅ Todos los contratistas tienen rutas que cumplen la meta!")
-    
-    # --- SECCIÓN 4: Recomendaciones y Acciones ---
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">💡 Recomendaciones y Plan de Acción</h3>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    # Generar recomendaciones automáticas
-    recomendaciones = []
-    
-    if 'SUPERVISOR' in df_meta.columns and 'supervisor_sin_meta' in locals() and not supervisor_sin_meta.empty:
-        peor_supervisor = supervisor_sin_meta.iloc[0]
-        recomendaciones.append(f"🎯 **Supervisor {peor_supervisor['SUPERVISOR']}** requiere atención inmediata: {peor_supervisor['Rutas_Sin_Meta']} rutas sin meta.")
-    
-    if 'CONTRATISTA' in df_meta.columns and 'contratista_sin_meta' in locals() and not contratista_sin_meta.empty:
-        peor_contratista = contratista_sin_meta.iloc[0]
-        recomendaciones.append(f"🎯 **Contratista {peor_contratista['CONTRATISTA']}** requiere atención inmediata: {peor_contratista['Rutas_Sin_Meta']} rutas sin meta.")
-    
-    if not top_offenders.empty:
-        peor_ruta = top_offenders.iloc[0]
-        recomendaciones.append(f"🚨 **Ruta {peor_ruta['ruta']}** es la menos activa con solo {peor_ruta['Registros']} registros.")
-    
-    if recomendaciones:
-        for i, rec in enumerate(recomendaciones, 1):
-            st.markdown(f"{i}. {rec}")
-    else:
-        st.success("🎉 **¡Excelente!** Todos los indicadores están dentro de los parámetros esperados.")
-    
-    # Botón para exportar datos
-    st.markdown("---")
-    st.markdown("### 📤 Exportar Análisis")
-    if st.button("💾 Generar Reporte de Supervisores y Contratistas", key="export_supervisores"):
-        # Crear datos para exportar
-        export_data = {
-            'Mes_Analizado': mes_meta,
-            'Supervisor_Filtro': supervisor_meta,
-            'Contratista_Filtro': contratista_meta,
-            'Total_Rutas_Analizadas': total_rutas_sup if 'SUPERVISOR' in df_meta.columns else (total_rutas_con if 'CONTRATISTA' in df_meta.columns else 0)
-        }
-        
-        st.json(export_data)
-        st.success("📊 Datos exportados exitosamente para análisis adicional.")
+    st.dataframe(clean_dataframe_for_display(respuestas_details), use_container_width=True)    
+    # Este análisis de cumplimiento de meta mensual se movió a la sección "Supervisores y Contratistas" para evitar duplicación
 
 def show_supervisors_contractors_analysis(df, merged_df):
     """Análisis integral dedicado a Supervisores y Contratistas"""
@@ -2292,10 +2566,10 @@ def show_supervisors_contractors_analysis(df, merged_df):
     
     # Filtros dinámicos mejorados
     col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
-    
     with col_filtro1:
-        meses_disponibles = sorted(df['mes_nombre'].unique().tolist())
-        mes_meta = st.selectbox("📅 Selecciona el mes:", meses_disponibles, key="meta_mes")
+        # Ordenar meses cronológicamente
+        meses_ordenados = df.groupby(['mes', 'mes_nombre']).size().reset_index().sort_values('mes')['mes_nombre'].tolist()
+        mes_meta = st.selectbox("📅 Selecciona el mes:", meses_ordenados, key="meta_mes")
     
     with col_filtro2:
         if 'SUPERVISOR' in merged_df.columns:
@@ -2324,8 +2598,26 @@ def show_supervisors_contractors_analysis(df, merged_df):
     if 'SUPERVISOR' in df_meta.columns:
         st.markdown("### 👨‍💼 Análisis por Supervisores")
         
-        # Calcular métricas por supervisor y ruta
-        supervisor_rutas = df_meta.groupby(['SUPERVISOR', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        # ========== MEJORA: Incluir rutas con 0 registros ==========
+        # 1. Obtener todas las rutas asignadas a supervisores (de BD_Rutas completo)
+        todas_rutas_supervisor = merged_df[['SUPERVISOR', 'ruta']].drop_duplicates()
+        
+        # 2. Calcular registros por supervisor-ruta para el período filtrado
+        registros_activos = df_meta.groupby(['SUPERVISOR', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        
+        # 3. Hacer merge completo para incluir rutas con 0 registros
+        supervisor_rutas = todas_rutas_supervisor.merge(
+            registros_activos, 
+            on=['SUPERVISOR', 'ruta'], 
+            how='left'
+        )
+        supervisor_rutas['id_tema'] = supervisor_rutas['id_tema'].fillna(0).astype(int)
+        
+        # 4. Filtrar por supervisor seleccionado si aplica
+        if supervisor_meta != 'Todos':
+            supervisor_rutas = supervisor_rutas[supervisor_rutas['SUPERVISOR'] == supervisor_meta]
+        
+        # 5. Calcular métricas finales
         supervisor_rutas['Meta Cumplida'] = supervisor_rutas['id_tema'] >= 10
         supervisor_rutas['Estado'] = supervisor_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
         supervisor_rutas = supervisor_rutas.rename(columns={'id_tema':'Registros'})
@@ -2379,13 +2671,30 @@ def show_supervisors_contractors_analysis(df, merged_df):
             height=500
         )
         st.plotly_chart(fig_ranking_sup, use_container_width=True)
-    
-    # --- Análisis por CONTRATISTA ---
+      # --- Análisis por CONTRATISTA ---
     if 'CONTRATISTA' in df_meta.columns:
         st.markdown("### 🏢 Análisis por Contratistas")
         
-        # Calcular métricas por contratista y ruta
-        contratista_rutas = df_meta.groupby(['CONTRATISTA', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        # ========== MEJORA: Incluir rutas con 0 registros ==========
+        # 1. Obtener todas las rutas asignadas a contratistas (de BD_Rutas completo)
+        todas_rutas_contratista = merged_df[['CONTRATISTA', 'ruta']].drop_duplicates()
+        
+        # 2. Calcular registros por contratista-ruta para el período filtrado
+        registros_activos_con = df_meta.groupby(['CONTRATISTA', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        
+        # 3. Hacer merge completo para incluir rutas con 0 registros
+        contratista_rutas = todas_rutas_contratista.merge(
+            registros_activos_con, 
+            on=['CONTRATISTA', 'ruta'], 
+            how='left'
+        )
+        contratista_rutas['id_tema'] = contratista_rutas['id_tema'].fillna(0).astype(int)
+        
+        # 4. Filtrar por contratista seleccionado si aplica
+        if contratista_meta != 'Todos':
+            contratista_rutas = contratista_rutas[contratista_rutas['CONTRATISTA'] == contratista_meta]
+        
+        # 5. Calcular métricas finales
         contratista_rutas['Meta Cumplida'] = contratista_rutas['id_tema'] >= 10
         contratista_rutas['Estado'] = contratista_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
         contratista_rutas = contratista_rutas.rename(columns={'id_tema':'Registros'})
@@ -2576,7 +2885,7 @@ def show_personnel_analysis(df, merged_df):
     """Análisis completo del personal con múltiples métricas"""
     st.subheader("👥 Análisis Detallado del Personal y Rendimiento")
     
-    # Primera fila - Análisis de usuarios más activos
+    # === SECCIÓN 1: ANÁLISIS DE USUARIOS ===
     st.markdown(
         """
         <div class="analysis-card">
@@ -2590,14 +2899,16 @@ def show_personnel_analysis(df, merged_df):
         'id_tema': 'count',
         'puntos': ['mean', 'std'],
         'fecha_cierre': lambda x: x.notna().sum(),
-        'ruta': 'nunique'
+        'ruta': 'nunique',
+        'codigo_cliente': 'nunique'
     }).round(2)
-    user_performance.columns = ['Total_Registros', 'Puntos_Promedio', 'Desviacion_Puntos', 'Registros_Cerrados', 'Rutas_Trabajadas']
+    user_performance.columns = ['Total_Registros', 'Puntos_Promedio', 'Desviacion_Puntos', 'Registros_Cerrados', 'Rutas_Trabajadas', 'Clientes_Atendidos']
     user_performance = user_performance.reset_index()
     user_performance['Tasa_Cierre'] = (user_performance['Registros_Cerrados'] / user_performance['Total_Registros']) * 100
+    user_performance['Eficiencia'] = user_performance['Puntos_Promedio'] * user_performance['Tasa_Cierre'] / 100
     user_performance = user_performance.sort_values('Total_Registros', ascending=False)
     
-    # Gráfico de rendimiento de usuarios
+    # Gráfico 1: Top 15 usuarios por volumen
     fig_user_performance = px.bar(
         user_performance.head(15),
         x='Total_Registros',
@@ -2606,72 +2917,646 @@ def show_personnel_analysis(df, merged_df):
         title="👤 Top 15 Usuarios por Volumen de Registros",
         color='Puntos_Promedio',
         color_continuous_scale='Blues',
-        height=800,
+        height=700,
         text='Total_Registros'
     )
     fig_user_performance.update_traces(
         texttemplate='<b>%{text}</b>', 
         textposition='outside',
-        marker_line_width=0
+        marker_line_width=1,
+        marker_line_color='white'
     )
     fig_user_performance.update_layout(
         yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=150, r=50, t=50, b=50)
+        margin=dict(l=150, r=50, t=80, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
     )
     st.plotly_chart(fig_user_performance, use_container_width=True)
-
-def show_performance_analysis(df):
-    """Análisis de rendimiento completo con múltiples gráficas"""
-    st.subheader("🎯 Análisis Detallado de Rendimiento y Calidad")
     
-    # Primera fila - Top clientes más reportados
+    # === SECCIÓN 2: ANÁLISIS DE EFICIENCIA USUARIO vs CALIDAD ===
     st.markdown(
         """
         <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🏪 Top 20 Clientes Más Reportados</h3>
+            <h3 style="color: white; margin: 0;">⚡ Matriz de Eficiencia: Productividad vs Calidad</h3>
         </div>
         """, 
         unsafe_allow_html=True
     )
     
-    # Convertir codigo_cliente a string para evitar problemas de formato
-    df['codigo_cliente_str'] = df['codigo_cliente'].astype(str)
-    clientes_reportados = df.groupby('codigo_cliente_str').agg({
-        'id_tema': 'count',
-        'puntos': 'mean',
-        'fecha_cierre': lambda x: x.notna().sum(),
-        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A'
-    }).round(2).reset_index()
-    clientes_reportados.columns = ['codigo_cliente', 'total_reportes', 'puntos_promedio', 'reportes_cerrados', 'motivo_principal']
-    clientes_reportados['tasa_cierre'] = (clientes_reportados['reportes_cerrados'] / clientes_reportados['total_reportes']) * 100    
-    clientes_reportados = clientes_reportados.sort_values('total_reportes', ascending=False).head(20)
+    # Gráfico 2: Scatter plot de productividad vs calidad
+    fig_efficiency = px.scatter(
+        user_performance.head(20),
+        x='Total_Registros',
+        y='Puntos_Promedio',
+        size='Tasa_Cierre',
+        color='Eficiencia',
+        hover_data={
+            'usuario': True,
+            'Total_Registros': True,
+            'Puntos_Promedio': ':.2f',
+            'Tasa_Cierre': ':.1f',
+            'Rutas_Trabajadas': True,
+            'Clientes_Atendidos': True
+        },
+        title='⚡ Productividad vs Calidad (Tamaño = Tasa de Cierre)',
+        color_continuous_scale='Viridis',
+        height=600
+    )
     
-    fig_clientes = px.bar(
-        clientes_reportados,
+    fig_efficiency.update_traces(
+        marker=dict(
+            sizemode='diameter',
+            sizemin=10,
+            sizeref=2,
+            line_width=2,
+            line_color='white'
+        )
+    )
+    
+    # Agregar líneas de referencia
+    promedio_registros = user_performance['Total_Registros'].mean()
+    promedio_puntos = user_performance['Puntos_Promedio'].mean()
+    
+    fig_efficiency.add_hline(y=promedio_puntos, line_dash="dash", line_color="yellow", 
+                           annotation_text="Promedio de Calidad")
+    fig_efficiency.add_vline(x=promedio_registros, line_dash="dash", line_color="orange",
+                           annotation_text="Promedio de Productividad")
+    
+    fig_efficiency.update_layout(
+        xaxis_title="<b>Total de Registros (Productividad)</b>",
+        yaxis_title="<b>Puntos Promedio (Calidad)</b>",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
+    )
+    st.plotly_chart(fig_efficiency, use_container_width=True)
+    
+    # === SECCIÓN 3: ANÁLISIS DE VENDEDORES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">💼 Análisis de Rendimiento de Vendedores</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    if 'vendedor' in df.columns:
+        vendedor_performance = df.groupby('vendedor').agg({
+            'id_tema': 'count',
+            'puntos': ['mean', 'std'],
+            'codigo_cliente': 'nunique',
+            'ruta': 'nunique',
+            'fecha_cierre': lambda x: x.notna().sum()
+        }).round(2)
+        vendedor_performance.columns = ['Total_Casos', 'Puntos_Promedio', 'Desviacion_Puntos', 'Clientes_Unicos', 'Rutas_Cubiertas', 'Casos_Cerrados']
+        vendedor_performance = vendedor_performance.reset_index()
+        vendedor_performance['Tasa_Cierre'] = (vendedor_performance['Casos_Cerrados'] / vendedor_performance['Total_Casos']) * 100
+        vendedor_performance = vendedor_performance.sort_values('Total_Casos', ascending=False).head(20)
+        
+        # Gráfico 3: Top vendedores
+        fig_vendedores = px.bar(
+            vendedor_performance,
+            x='Total_Casos',
+            y='vendedor',
+            orientation='h',
+            title="💼 Top 20 Vendedores por Volumen de Casos",
+            color='Puntos_Promedio',
+            color_continuous_scale='Plasma',
+            height=700,
+            text='Total_Casos'
+        )
+        fig_vendedores.update_traces(
+            texttemplate='<b>%{text}</b>',
+            textposition='outside',
+            marker_line_width=1,
+            marker_line_color='white'
+        )
+        fig_vendedores.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            margin=dict(l=150, r=50, t=80, b=50),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=12)
+        )
+        st.plotly_chart(fig_vendedores, use_container_width=True)
+    else:
+        st.info("ℹ️ No hay datos de vendedores disponibles para análisis")
+    
+    # === SECCIÓN 4: ANÁLISIS DE CARGA DE TRABAJO ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">📊 Distribución de Carga de Trabajo</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Gráfico 4: Histograma de distribución de casos
+    fig_distribution = px.histogram(
+        user_performance,
+        x='Total_Registros',
+        nbins=20,
+        title='📊 Distribución de Casos por Usuario',
+        color_discrete_sequence=['#4ECDC4'],
+        height=500
+    )
+    
+    fig_distribution.update_traces(
+        marker_line_width=1,
+        marker_line_color='white'
+    )
+    
+    fig_distribution.update_layout(
+        xaxis_title="<b>Número de Casos</b>",
+        yaxis_title="<b>Número de Usuarios</b>",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
+    )
+    st.plotly_chart(fig_distribution, use_container_width=True)
+    
+    # === SECCIÓN 5: ANÁLISIS COMPARATIVO DE EFICIENCIA POR RUTAS ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🗺️ Eficiencia de Usuarios por Rutas Trabajadas</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Gráfico 5: Eficiencia vs Rutas trabajadas
+    fig_rutas_efficiency = px.scatter(
+        user_performance.head(25),
+        x='Rutas_Trabajadas',
+        y='Eficiencia',
+        size='Total_Registros',
+        color='Tasa_Cierre',
+        hover_data={
+            'usuario': True,
+            'Rutas_Trabajadas': True,
+            'Eficiencia': ':.2f',
+            'Total_Registros': True,
+            'Clientes_Atendidos': True
+        },
+        title='🗺️ Eficiencia vs Diversidad de Rutas',
+        color_continuous_scale='RdYlGn',
+        height=600
+    )
+    
+    fig_rutas_efficiency.update_traces(
+        marker=dict(
+            sizemode='diameter',
+            sizemin=8,
+            sizeref=2,
+            line_width=2,
+            line_color='white'
+        )
+    )
+    
+    fig_rutas_efficiency.update_layout(
+        xaxis_title="<b>Número de Rutas Trabajadas</b>",
+        yaxis_title="<b>Eficiencia (Calidad × Cierre)</b>",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
+    )
+    st.plotly_chart(fig_rutas_efficiency, use_container_width=True)
+    
+    # === SECCIÓN 6: ANÁLISIS DE TOP Y BOTTOM PERFORMERS ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🏆 Top & Bottom Performers</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("##### 🏆 Top 5 Usuarios por Eficiencia")
+        top_efficient = user_performance.nlargest(5, 'Eficiencia')[
+            ['usuario', 'Total_Registros', 'Puntos_Promedio', 'Tasa_Cierre', 'Eficiencia']
+        ].copy()
+        top_efficient.columns = ['Usuario', 'Casos', 'Calidad', 'Cierre (%)', 'Eficiencia']
+        st.dataframe(clean_dataframe_for_display(top_efficient), use_container_width=True, hide_index=True)
+    
+    with col2:
+        st.markdown("##### ⚠️ Bottom 5 Usuarios (Necesitan Apoyo)")
+        bottom_performers = user_performance[user_performance['Total_Registros'] >= 5].nsmallest(5, 'Eficiencia')[
+            ['usuario', 'Total_Registros', 'Puntos_Promedio', 'Tasa_Cierre', 'Eficiencia']
+        ].copy()
+        if not bottom_performers.empty:
+            bottom_performers.columns = ['Usuario', 'Casos', 'Calidad', 'Cierre (%)', 'Eficiencia']
+            st.dataframe(clean_dataframe_for_display(bottom_performers), use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Todos los usuarios tienen buen rendimiento")
+    
+    # === SECCIÓN 7: INSIGHTS Y RECOMENDACIONES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">💡 Insights de Personal y Recomendaciones</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Generar insights automáticos
+    mejor_usuario = user_performance.loc[user_performance['Eficiencia'].idxmax(), 'usuario']
+    mejor_eficiencia = user_performance['Eficiencia'].max()
+    usuarios_alta_productividad = len(user_performance[user_performance['Total_Registros'] >= user_performance['Total_Registros'].quantile(0.8)])
+    usuarios_baja_eficiencia = len(user_performance[user_performance['Eficiencia'] <= user_performance['Eficiencia'].quantile(0.2)])
+    
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin: 20px 0;">
+        <h4 style="color: white; margin: 0;">🧠 Insights del Personal</h4>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            🏆 <strong>Mejor usuario:</strong> {mejor_usuario} (Eficiencia: {mejor_eficiencia:.2f})
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            📈 <strong>Alta productividad:</strong> {usuarios_alta_productividad} usuarios en el top 20%
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            ⚠️ <strong>Necesitan apoyo:</strong> {usuarios_baja_eficiencia} usuarios en el bottom 20%
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            📊 <strong>Diversidad de rutas promedio:</strong> {user_performance['Rutas_Trabajadas'].mean():.1f} rutas por usuario
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Recomendaciones
+    st.markdown("##### 📋 Plan de Acción Recomendado")
+    recomendaciones = [
+        "🎓 **Programa de mentoring:** Los top performers pueden capacitar a usuarios con baja eficiencia",
+        "📈 **Redistribución de carga:** Equilibrar casos entre usuarios de alta y baja productividad",
+        "🗺️ **Especialización en rutas:** Usuarios con pocas rutas pueden especializarse para mejor eficiencia",
+        "⚡ **Incentivos por eficiencia:** Reconocer usuarios que combinan alta productividad y calidad",
+        "📊 **Monitoreo semanal:** Seguimiento de KPIs para identificar tendencias tempranas",
+        "🎯 **Metas personalizadas:** Establecer objetivos específicos según perfil de cada usuario"
+    ]
+    
+    for rec in recomendaciones:
+        st.markdown(rec)
+
+def show_performance_analysis(df):
+    """Análisis de rendimiento completo y avanzado con múltiples métricas"""
+    st.subheader("🎯 Análisis Detallado de Rendimiento y Calidad")
+    
+    # === SECCIÓN 1: OVERVIEW DE RENDIMIENTO GENERAL ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">📊 Dashboard de Rendimiento General</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # KPIs principales de rendimiento
+    col1, col2, col3, col4 = st.columns(4)
+    
+    total_casos = len(df)
+    casos_cerrados = df['fecha_cierre'].notna().sum()
+    tasa_cierre_global = (casos_cerrados / total_casos) * 100 if total_casos > 0 else 0
+    puntos_promedio_global = df['puntos'].mean()
+    
+    with col1:
+        st.metric(
+            "📈 Total de Casos",
+            f"{total_casos:,}",
+            f"+{len(df[df['mes'] == df['mes'].max()])} este mes" if not df.empty else ""
+        )
+    
+    with col2:
+        st.metric(
+            "✅ Tasa de Cierre",
+            f"{tasa_cierre_global:.1f}%",
+            "📊 Global"
+        )
+    
+    with col3:
+        st.metric(
+            "⭐ Calidad Promedio",
+            f"{puntos_promedio_global:.2f}/10",
+            "🎯 Puntos"
+        )
+    
+    with col4:
+        clientes_unicos = df['codigo_cliente'].nunique()
+        st.metric(
+            "👥 Clientes Activos",
+            f"{clientes_unicos:,}",
+            "🏪 Únicos"
+        )
+    
+    # === SECCIÓN 2: ANÁLISIS DETALLADO DE CLIENTES POR RENDIMIENTO ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🏪 Matriz de Rendimiento de Clientes</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Formatear correctamente el código de cliente como ID
+    df['codigo_cliente_display'] = df['codigo_cliente'].apply(lambda x: f"Cliente-{str(x).zfill(6)}")
+    
+    # Análisis avanzado de clientes
+    clientes_performance = df.groupby(['codigo_cliente', 'codigo_cliente_display']).agg({
+        'id_tema': 'count',
+        'puntos': ['mean', 'std', 'min', 'max'],
+        'fecha_cierre': lambda x: x.notna().sum(),
+        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
+        'ruta': 'nunique',
+        'usuario': 'nunique'
+    }).round(2).reset_index()
+    
+    # Aplanar columnas
+    clientes_performance.columns = ['codigo_cliente', 'codigo_cliente_display', 'total_reportes', 
+                                   'puntos_promedio', 'puntos_std', 'puntos_min', 'puntos_max',
+                                   'reportes_cerrados', 'motivo_principal', 'rutas_afectadas', 'usuarios_involucrados']
+    
+    clientes_performance['tasa_cierre'] = (clientes_performance['reportes_cerrados'] / clientes_performance['total_reportes']) * 100
+    clientes_performance['variabilidad_calidad'] = clientes_performance['puntos_std']
+    
+    # Clasificación de clientes por rendimiento
+    clientes_performance['categoria_rendimiento'] = clientes_performance.apply(lambda x:
+        '🔴 Crítico' if x['total_reportes'] >= 15 and x['puntos_promedio'] <= 5 else
+        '🟡 Atención' if x['total_reportes'] >= 10 and x['puntos_promedio'] <= 7 else
+        '🟢 Estable' if x['total_reportes'] >= 5 and x['puntos_promedio'] >= 7 else
+        '⚪ Monitoreando', axis=1
+    )
+    
+    clientes_performance = clientes_performance.sort_values('total_reportes', ascending=False).head(25)
+    
+    # Gráfico de dispersión avanzado: Volumen vs Calidad
+    fig_scatter = px.scatter(
+        clientes_performance,
         x='total_reportes',
-        y='codigo_cliente',
-        orientation='h',
-        title="🏪 Top 20 Clientes Más Reportados",
-        color='motivo_principal',
-        height=800,
-        text='total_reportes'
-    )    
-    fig_clientes.update_traces(
-        texttemplate='<b>%{text}</b>', 
+        y='puntos_promedio',
+        size='tasa_cierre',
+        color='categoria_rendimiento',
+        hover_data={
+            'codigo_cliente_display': True,
+            'total_reportes': True,
+            'puntos_promedio': ':.2f',
+            'tasa_cierre': ':.1f',
+            'variabilidad_calidad': ':.2f',
+            'rutas_afectadas': True
+        },
+        title='🎯 Matriz de Rendimiento: Volumen vs Calidad vs Tasa de Cierre',
+        color_discrete_map={
+            '🔴 Crítico': '#FF4444',
+            '🟡 Atención': '#FFA500',
+            '🟢 Estable': '#32CD32',
+            '⚪ Monitoreando': '#87CEEB'
+        },
+        height=700
+    )
+    
+    # Añadir líneas de referencia
+    fig_scatter.add_hline(y=puntos_promedio_global, line_dash="dash", line_color="white", 
+                         annotation_text="Promedio Global de Calidad")
+    fig_scatter.add_vline(x=clientes_performance['total_reportes'].median(), line_dash="dash", line_color="yellow",
+                         annotation_text="Mediana de Volumen")
+    
+    fig_scatter.update_traces(
+        marker=dict(
+            sizemode='diameter',
+            sizemin=8,
+            sizeref=2,
+            line_width=2,
+            line_color='white'
+        )
+    )
+    
+    fig_scatter.update_layout(
+        xaxis_title="<b>Total de Reportes</b>",
+        yaxis_title="<b>Calidad Promedio (Puntos)</b>",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    
+    st.plotly_chart(fig_scatter, use_container_width=True)
+    
+    # === SECCIÓN 3: ANÁLISIS DE TENDENCIAS POR USUARIO ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">👤 Análisis de Rendimiento por Usuario</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Análisis de usuarios
+    usuarios_performance = df.groupby('usuario').agg({
+        'id_tema': 'count',
+        'puntos': ['mean', 'std'],
+        'fecha_cierre': lambda x: x.notna().sum(),
+        'codigo_cliente': 'nunique',
+        'ruta': 'nunique'
+    }).round(2).reset_index()
+    
+    usuarios_performance.columns = ['usuario', 'total_casos', 'puntos_promedio', 'puntos_std', 
+                                   'casos_cerrados', 'clientes_atendidos', 'rutas_trabajadas']
+    usuarios_performance['tasa_cierre'] = (usuarios_performance['casos_cerrados'] / usuarios_performance['total_casos']) * 100
+    usuarios_performance['eficiencia'] = usuarios_performance['puntos_promedio'] * usuarios_performance['tasa_cierre'] / 100
+    usuarios_performance = usuarios_performance.sort_values('total_casos', ascending=False).head(20)
+    
+    # Gráfico de barras apiladas para usuarios
+    fig_usuarios = go.Figure()
+    
+    # Barras de casos totales
+    fig_usuarios.add_trace(go.Bar(
+        name='📊 Casos Totales',
+        x=usuarios_performance['usuario'],
+        y=usuarios_performance['total_casos'],
+        yaxis='y',
+        offsetgroup=1,
+        marker=dict(color='#FF6B6B'),
+        text=usuarios_performance['total_casos'],
         textposition='outside',
-        marker_line_width=0
+        textfont=dict(color='white', size=10)
+    ))
+    
+    # Línea de eficiencia
+    fig_usuarios.add_trace(go.Scatter(
+        name='⚡ Eficiencia',
+        x=usuarios_performance['usuario'],
+        y=usuarios_performance['eficiencia'],
+        yaxis='y2',
+        mode='lines+markers',
+        line=dict(color='#4ECDC4', width=3),
+        marker=dict(size=8, color='#4ECDC4'),
+        text=usuarios_performance['eficiencia'].round(2),
+        textposition='top center',
+        textfont=dict(color='white', size=10)
+    ))
+    
+    fig_usuarios.update_layout(
+        title='👤 Rendimiento de Usuarios: Volumen vs Eficiencia',
+        xaxis=dict(title='<b>Usuario</b>', tickangle=45),
+        yaxis=dict(
+            title='<b>Total de Casos</b>',
+            titlefont=dict(color='#FF6B6B'),
+            tickfont=dict(color='#FF6B6B'),
+            side='left'
+        ),
+        yaxis2=dict(
+            title='<b>Eficiencia (Calidad × Cierre)</b>',
+            titlefont=dict(color='#4ECDC4'),
+            tickfont=dict(color='#4ECDC4'),
+            anchor='x',
+            overlaying='y',
+            side='right'
+        ),
+        height=600,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
     )
-    fig_clientes.update_layout(
-        yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=200, r=50, t=50, b=50)
+    
+    st.plotly_chart(fig_usuarios, use_container_width=True)
+    
+    # === SECCIÓN 4: ANÁLISIS DE MOTIVOS Y PATRONES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🎯 Análisis de Motivos y Patrones de Calidad</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
     )
-    st.plotly_chart(fig_clientes, use_container_width=True)
+    
+    # Análisis de motivos vs calidad
+    motivos_analysis = df.groupby('respuesta_sub').agg({
+        'id_tema': 'count',
+        'puntos': ['mean', 'std'],
+        'fecha_cierre': lambda x: x.notna().sum(),
+        'codigo_cliente': 'nunique'
+    }).round(2).reset_index()
+    
+    motivos_analysis.columns = ['motivo', 'total_casos', 'puntos_promedio', 'puntos_std', 
+                               'casos_cerrados', 'clientes_afectados']
+    motivos_analysis['tasa_cierre'] = (motivos_analysis['casos_cerrados'] / motivos_analysis['total_casos']) * 100
+    motivos_analysis = motivos_analysis.sort_values('total_casos', ascending=False).head(15)
+    
+    # Gráfico de burbujas para motivos
+    fig_motivos = px.scatter(
+        motivos_analysis,
+        x='puntos_promedio',
+        y='tasa_cierre',
+        size='total_casos',
+        color='clientes_afectados',
+        hover_data={
+            'motivo': True,
+            'total_casos': True,
+            'puntos_promedio': ':.2f',
+            'tasa_cierre': ':.1f',
+            'clientes_afectados': True
+        },
+        title='🎯 Matriz de Motivos: Calidad vs Tasa de Cierre vs Volumen',
+        color_continuous_scale='Viridis',
+        height=600
+    )
+    
+    fig_motivos.update_traces(
+        marker=dict(
+            sizemode='diameter',
+            sizemin=10,
+            sizeref=2,
+            line_width=2,
+            line_color='white'
+        )
+    )
+    
+    fig_motivos.update_layout(
+        xaxis_title="<b>Calidad Promedio (Puntos)</b>",
+        yaxis_title="<b>Tasa de Cierre (%)</b>",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
+    )
+    
+    st.plotly_chart(fig_motivos, use_container_width=True)
+    
+    # === SECCIÓN 5: TABLA RESUMEN DE RENDIMIENTO ===
+    st.markdown("#### 📊 Resumen Ejecutivo de Rendimiento")
+    
+    # Top performers
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("##### 🏆 Top 5 Clientes por Eficiencia")
+        top_eficientes = clientes_performance.nlargest(5, 'puntos_promedio')[
+            ['codigo_cliente_display', 'total_reportes', 'puntos_promedio', 'tasa_cierre']
+        ].copy()
+        top_eficientes.columns = ['Cliente', 'Reportes', 'Calidad', 'Cierre (%)']
+        st.dataframe(top_eficientes, use_container_width=True, hide_index=True)
+    
+    with col2:
+        st.markdown("##### ⚠️ Top 5 Clientes Críticos")
+        top_criticos = clientes_performance[clientes_performance['categoria_rendimiento'] == '🔴 Crítico'].head(5)[
+            ['codigo_cliente_display', 'total_reportes', 'puntos_promedio', 'tasa_cierre']
+        ].copy()
+        if not top_criticos.empty:
+            top_criticos.columns = ['Cliente', 'Reportes', 'Calidad', 'Cierre (%)']
+            st.dataframe(top_criticos, use_container_width=True, hide_index=True)
+        else:
+            st.success("🎉 No hay clientes en estado crítico!")
+    
+    # Insights automáticos
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin: 20px 0;">
+        <h4 style="color: white; margin: 0;">🧠 Insights de Rendimiento</h4>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            🏆 <strong>Mejor usuario:</strong> {usuarios_performance.loc[usuarios_performance['eficiencia'].idxmax(), 'usuario']} 
+            (Eficiencia: {usuarios_performance['eficiencia'].max():.2f})
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            🎯 <strong>Motivo más eficiente:</strong> {motivos_analysis.loc[motivos_analysis['puntos_promedio'].idxmax(), 'motivo']} 
+            (Calidad: {motivos_analysis['puntos_promedio'].max():.2f}/10)
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            📊 <strong>Clientes críticos:</strong> {len(clientes_performance[clientes_performance['categoria_rendimiento'] == '🔴 Crítico'])} 
+            requieren atención inmediata
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 def show_advanced_analysis(df, merged_df):
-    """Análisis avanzado con gráficas especializadas"""
-    st.subheader("📊 Análisis Avanzado y Insights Profundos")
+    """Análisis avanzado enfocado en Clientes y gráficas especializadas"""
+    st.subheader("📊 Análisis Avanzado de Clientes e Insights Profundos")
     
-    # Primera fila - Análisis de clientes problemáticos
+    # Preparar datos de clientes - formatear correctamente el código de cliente
+    df['codigo_cliente_display'] = df['codigo_cliente'].apply(lambda x: f"Cliente-{str(x).zfill(6)}")
+    
+    # === SECCIÓN 1: TOP CLIENTES PROBLEMÁTICOS ===
     st.markdown(
         """
         <div class="analysis-card">
@@ -2681,40 +3566,862 @@ def show_advanced_analysis(df, merged_df):
         unsafe_allow_html=True
     )
     
-    # Convertir codigo_cliente a string para evitar problemas de formato
-    df['codigo_cliente_str'] = df['codigo_cliente'].astype(str)
-    
-    # Análisis de clientes usando respuesta_sub como motivo real
-    clientes_analysis = df.groupby('codigo_cliente_str').agg({
+    # Análisis completo de clientes
+    clientes_analysis = df.groupby(['codigo_cliente', 'codigo_cliente_display']).agg({
         'id_tema': 'count',
         'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
         'puntos': 'mean',
-        'fecha_cierre': lambda x: x.notna().sum()
+        'fecha_cierre': lambda x: x.notna().sum(),
+        'ruta': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
+        'usuario': 'nunique'
     }).round(2).reset_index()
-    clientes_analysis.columns = ['codigo_cliente', 'total_reportes', 'motivo_principal', 'puntos_promedio', 'casos_cerrados']
+    clientes_analysis.columns = ['codigo_cliente', 'codigo_cliente_display', 'total_reportes', 'motivo_principal', 'puntos_promedio', 'casos_cerrados', 'ruta_principal', 'usuarios_involucrados']
     clientes_analysis['tasa_cierre'] = (clientes_analysis['casos_cerrados'] / clientes_analysis['total_reportes']) * 100
-    clientes_analysis = clientes_analysis.sort_values('total_reportes', ascending=False).head(20)
+    clientes_analysis = clientes_analysis.sort_values('total_reportes', ascending=False)
+      # Crear categorías de riesgo para TODOS los clientes
+    clientes_analysis['categoria_riesgo'] = clientes_analysis.apply(lambda x: 
+        'Alto Riesgo' if x['total_reportes'] >= 10 and x['tasa_cierre'] < 50 else
+        'Riesgo Medio' if x['total_reportes'] >= 5 and x['tasa_cierre'] < 70 else
+        'Bajo Riesgo', axis=1)
     
-    fig_clientes_problematicos = px.bar(
-        clientes_analysis,
+    # Top 20 clientes problemáticos
+    top_clientes = clientes_analysis.head(20).copy()
+    
+    # Gráfico principal de barras horizontal con mejor diseño
+    fig_clientes_main = px.bar(
+        top_clientes,
         x='total_reportes',
-        y='codigo_cliente',
+        y='codigo_cliente_display',
         orientation='h',
-        title="🎯 Top 20 Clientes con Más Reportes",
-        color='motivo_principal',
+        title="🎯 Top 20 Clientes Problemáticos",
+        color='categoria_riesgo',
+        color_discrete_map={
+            'Alto Riesgo': '#FF4B4B',
+            'Riesgo Medio': '#FFA500', 
+            'Bajo Riesgo': '#32CD32'
+        },
         height=800,
-        text='total_reportes'
+        text='total_reportes',
+        hover_data={
+            'codigo_cliente_display': True,
+            'total_reportes': True,
+            'tasa_cierre': ':.1f',
+            'puntos_promedio': ':.2f',
+            'motivo_principal': True,
+            'ruta_principal': True
+        }
     )
-    fig_clientes_problematicos.update_traces(
-        texttemplate='<b>%{text}</b>',
+    
+    fig_clientes_main.update_traces(
+        texttemplate='<b>%{text} reportes</b>',
         textposition='outside',
-        marker_line_width=0
+        marker_line_width=2,
+        marker_line_color='white',
+        textfont=dict(size=12, color='white', family='Arial Black')
     )
-    fig_clientes_problematicos.update_layout(
-        yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=150, r=50, t=80, b=50)
+    
+    fig_clientes_main.update_layout(
+        yaxis={
+            'categoryorder': 'total ascending',
+            'tickfont': dict(size=11, color='white'),
+            'title': '<b>Código de Cliente</b>'
+        },
+        xaxis_title="<b>Número Total de Reportes</b>",
+        margin=dict(l=200, r=100, t=80, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
     )
-    st.plotly_chart(fig_clientes_problematicos, use_container_width=True)
+    
+    st.plotly_chart(fig_clientes_main, use_container_width=True)    # === SECCIÓN 2: HEATMAP DE CLIENTES VS MESES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🌡️ Heatmap: Intensidad de Reportes por Cliente y Mes</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Análisis de intensidad temporal de los top 15 clientes más problemáticos
+    top_15_clientes = clientes_analysis.head(15)['codigo_cliente'].tolist()
+    
+    # Filtrar datos temporales para estos clientes
+    df_heatmap = df[df['codigo_cliente'].isin(top_15_clientes)].copy()
+    
+    if not df_heatmap.empty:
+        # Crear matriz de clientes vs meses
+        heatmap_data = df_heatmap.groupby(['codigo_cliente_display', 'mes_nombre']).agg({
+            'id_tema': 'count'
+        }).reset_index()
+        heatmap_data.columns = ['Cliente', 'Mes', 'Reportes']
+        
+        # Crear pivot table para el heatmap
+        heatmap_pivot = heatmap_data.pivot(index='Cliente', columns='Mes', values='Reportes').fillna(0)
+        
+        # Ordenar columnas cronológicamente
+        meses_orden = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December']
+        heatmap_pivot = heatmap_pivot.reindex(columns=[mes for mes in meses_orden if mes in heatmap_pivot.columns])
+        
+        # Crear heatmap
+        fig_heatmap = px.imshow(
+            heatmap_pivot.values,
+            x=heatmap_pivot.columns,
+            y=heatmap_pivot.index,
+            color_continuous_scale='Reds',
+            title="🌡️ Intensidad de Reportes: Top 15 Clientes vs Meses",
+            aspect='auto',
+            height=700
+        )
+        
+        fig_heatmap.update_traces(
+            text=heatmap_pivot.values,
+            texttemplate='%{text}',
+            textfont=dict(size=12, color='white')
+        )
+        
+        fig_heatmap.update_layout(
+            xaxis_title="<b>Mes</b>",
+            yaxis_title="<b>Cliente</b>",
+            margin=dict(l=200, r=50, t=80, b=50),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=12),
+            coloraxis_colorbar=dict(
+                title="Número de Reportes",
+                titlefont=dict(color='white'),
+                tickfont=dict(color='white')
+            )
+        )
+        
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+        
+        # Insights del heatmap
+        cliente_mas_activo = heatmap_pivot.sum(axis=1).idxmax()
+        mes_mas_problematico = heatmap_pivot.sum(axis=0).idxmax()
+        pico_maximo = heatmap_pivot.max().max()
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 10px; margin: 20px 0;">
+            <h4 style="color: white; margin: 0;">📊 Insights del Heatmap</h4>
+            <p style="color: white; margin: 10px 0; font-size: 14px;">
+                🔥 <strong>Cliente más activo:</strong> {cliente_mas_activo}<br>
+                📅 <strong>Mes más problemático:</strong> {mes_mas_problematico}<br>
+                ⚡ <strong>Pico máximo:</strong> {pico_maximo} reportes en un mes
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    else:
+        st.info("ℹ️ No hay suficientes datos temporales para mostrar el heatmap")
+    
+    # === SECCIÓN 2.1: DISTRIBUCIÓN POR MOTIVOS PRINCIPALES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🎯 Top 10 Motivos Principales</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Distribución por motivo principal
+    motivos_distribucion = clientes_analysis['motivo_principal'].value_counts().head(10).reset_index()
+    motivos_distribucion.columns = ['motivo_principal', 'cantidad_clientes']
+    
+    fig_motivos_bar = px.bar(
+        motivos_distribucion,
+        x='cantidad_clientes',
+        y='motivo_principal',
+        orientation='h',
+        title="🎯 Top 10 Motivos Principales por Cantidad de Clientes",
+        color='cantidad_clientes',
+        color_continuous_scale='Viridis',
+        height=600,
+        text='cantidad_clientes'
+    )
+    
+    fig_motivos_bar.update_traces(
+        texttemplate='<b>%{text} clientes</b>',
+        textposition='outside',
+        marker_line_width=1,
+        marker_line_color='white',
+        textfont=dict(size=12, color='white')
+    )
+    
+    fig_motivos_bar.update_layout(
+        yaxis={
+            'categoryorder': 'total ascending',
+            'tickfont': dict(size=11, color='white'),
+            'title': '<b>Motivo del Reporte</b>'
+        },
+        xaxis_title="<b>Cantidad de Clientes</b>",
+        margin=dict(l=200, r=50, t=80, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12)
+    )
+    
+    st.plotly_chart(fig_motivos_bar, use_container_width=True)
+    
+    # === SECCIÓN 3.1: ANÁLISIS DE FRECUENCIA DE REPORTES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">📈 Análisis de Frecuencia de Reportes por Cliente</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Análisis de distribución por frecuencia de reportes
+    def clasificar_frecuencia(reportes):
+        if reportes >= 15:
+            return '15+ reportes (Crítico)'
+        elif reportes >= 10:
+            return '10-14 reportes (Alto)'
+        elif reportes >= 5:
+            return '5-9 reportes (Medio)'
+        elif reportes >= 2:
+            return '2-4 reportes (Bajo)'
+        else:
+            return '1 reporte (Mínimo)'
+    
+    clientes_analysis['frecuencia_categoria'] = clientes_analysis['total_reportes'].apply(clasificar_frecuencia)
+    
+    # Contar clientes por frecuencia
+    distribucion_frecuencia = clientes_analysis['frecuencia_categoria'].value_counts().reset_index()
+    distribucion_frecuencia.columns = ['frecuencia_categoria', 'cantidad_clientes']
+    
+    # Ordenar de manera lógica
+    orden_frecuencia = ['1 reporte (Mínimo)', '2-4 reportes (Bajo)', '5-9 reportes (Medio)', '10-14 reportes (Alto)', '15+ reportes (Crítico)']
+    distribucion_frecuencia['frecuencia_categoria'] = pd.Categorical(distribucion_frecuencia['frecuencia_categoria'], categories=orden_frecuencia, ordered=True)
+    distribucion_frecuencia = distribucion_frecuencia.sort_values('frecuencia_categoria')
+    
+    # Gráfico de distribución de frecuencia
+    fig_frecuencia = px.bar(
+        distribucion_frecuencia,
+        x='frecuencia_categoria',
+        y='cantidad_clientes',
+        title="📈 Distribución de Clientes por Frecuencia de Reportes",
+        color='cantidad_clientes',
+        color_continuous_scale='Plasma',
+        height=600,
+        text='cantidad_clientes'
+    )
+    
+    fig_frecuencia.update_traces(
+        texttemplate='<b>%{text} clientes</b>',
+        textposition='outside',
+        marker_line_width=2,
+        marker_line_color='white',
+        textfont=dict(size=14, color='white', family='Arial Black')
+    )
+    
+    fig_frecuencia.update_layout(
+        xaxis_title="<b>Categoría de Frecuencia</b>",
+        yaxis_title="<b>Cantidad de Clientes</b>",
+        margin=dict(l=50, r=50, t=80, b=100),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white', size=12),
+        xaxis={'tickangle': 45}
+    )
+    
+    st.plotly_chart(fig_frecuencia, use_container_width=True)
+    
+    # Insight sobre la distribución
+    clientes_criticos = len(clientes_analysis[clientes_analysis['total_reportes'] >= 10])
+    porcentaje_criticos = (clientes_criticos / len(clientes_analysis)) * 100 if len(clientes_analysis) > 0 else 0
+    
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); padding: 15px; border-radius: 10px; margin: 20px 0;">
+        <h4 style="color: white; margin: 0;">🎯 Insights de Frecuencia</h4>
+        <p style="color: white; margin: 10px 0; font-size: 16px;">
+            📊 <strong>{clientes_criticos}</strong> clientes tienen 10+ reportes ({porcentaje_criticos:.1f}% del total)
+        </p>
+        <p style="color: white; margin: 10px 0; font-size: 14px;">
+            💡 <strong>Recomendación:</strong> Estos clientes de alta frecuencia requieren atención prioritaria y seguimiento especializado.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)    # === SECCIÓN 3: ANÁLISIS DE DISTRIBUCIÓN DE PUNTUACIONES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">📊 Distribución de Puntuaciones por Cliente</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Crear análisis de distribución de puntuaciones
+    if not clientes_analysis.empty:
+        # Clasificar clientes por rango de puntuación
+        def clasificar_puntuacion(puntos):
+            if puntos >= 8:
+                return 'Excelente (8-10)'
+            elif puntos >= 6:
+                return 'Bueno (6-7.9)'
+            elif puntos >= 4:
+                return 'Regular (4-5.9)'
+            else:
+                return 'Deficiente (1-3.9)'
+        
+        clientes_analysis['rango_puntuacion'] = clientes_analysis['puntos_promedio'].apply(clasificar_puntuacion)
+        
+        # Contar clientes por rango de puntuación
+        distribucion_puntos = clientes_analysis['rango_puntuacion'].value_counts().reset_index()
+        distribucion_puntos.columns = ['rango_puntuacion', 'cantidad_clientes']
+        
+        # Ordenar de manera lógica
+        orden_rangos = ['Excelente (8-10)', 'Bueno (6-7.9)', 'Regular (4-5.9)', 'Deficiente (1-3.9)']
+        distribucion_puntos['rango_puntuacion'] = pd.Categorical(distribucion_puntos['rango_puntuacion'], categories=orden_rangos, ordered=True)
+        distribucion_puntos = distribucion_puntos.sort_values('rango_puntuacion')
+        
+        # Gráfico de barras de distribución
+        fig_distribucion = px.bar(
+            distribucion_puntos,
+            x='rango_puntuacion',
+            y='cantidad_clientes',
+            title="📊 Distribución de Clientes por Rango de Puntuación",
+            color='cantidad_clientes',
+            color_continuous_scale='RdYlGn_r',
+            height=600,
+            text='cantidad_clientes'
+        )
+        
+        fig_distribucion.update_traces(
+            texttemplate='<b>%{text} clientes</b>',
+            textposition='outside',
+            marker_line_width=2,
+            marker_line_color='white',
+            textfont=dict(size=14, color='white', family='Arial Black')
+        )
+        
+        fig_distribucion.update_layout(
+            xaxis_title="<b>Rango de Puntuación</b>",
+            yaxis_title="<b>Cantidad de Clientes</b>",
+            margin=dict(l=50, r=50, t=80, b=50),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=12),
+            xaxis={'tickangle': 45}
+        )
+        
+        st.plotly_chart(fig_distribucion, use_container_width=True)
+        
+        # Análisis adicional por categoría de riesgo y puntuación
+        st.markdown("##### 📋 Análisis Cruzado: Riesgo vs Puntuación")
+        
+        analisis_cruzado = clientes_analysis.groupby(['categoria_riesgo', 'rango_puntuacion']).agg({
+            'codigo_cliente': 'count',
+            'total_reportes': 'sum'
+        }).reset_index()
+        analisis_cruzado.columns = ['Categoría de Riesgo', 'Rango de Puntuación', 'Cantidad de Clientes', 'Total Reportes']
+        
+        if not analisis_cruzado.empty:
+            st.dataframe(clean_dataframe_for_display(analisis_cruzado), use_container_width=True)
+            
+            # Insights automáticos
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <h4 style="color: white; margin: 0;">💡 Insights de Puntuación</h4>
+                <ul style="color: white; margin: 10px 0;">
+                    <li><strong>🎯 Objetivo:</strong> Identificar patrones entre satisfacción del cliente y frecuencia de reportes</li>
+                    <li><strong>📈 Análisis:</strong> Clientes con puntuaciones bajas pero pocos reportes pueden necesitar seguimiento</li>
+                    <li><strong>⚠️ Alertas:</strong> Clientes con puntuaciones altas pero muchos reportes requieren atención especial</li>
+                    <li><strong>🎪 Acción:</strong> Priorizar clientes de alto riesgo con puntuaciones bajas</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("ℹ️ No hay datos suficientes para mostrar la distribución de puntuaciones")
+    
+    # === SECCIÓN 4: ANÁLISIS DE REPORTES REPETITIVOS ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🔍 Clientes con Reportes Repetitivos del Mismo Motivo</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Analizar clientes que tienen múltiples reportes del mismo motivo
+    cliente_motivo_analysis = df.groupby(['codigo_cliente', 'codigo_cliente_display', 'respuesta_sub']).agg({
+        'id_tema': 'count',
+        'puntos': 'mean',
+        'fecha_cierre': lambda x: x.notna().sum(),
+        'ruta': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A'
+    }).round(2).reset_index()
+    cliente_motivo_analysis.columns = ['codigo_cliente', 'codigo_cliente_display', 'motivo_real', 'total_reportes', 'puntos_promedio', 'casos_cerrados', 'ruta_principal']
+    
+    # Filtrar clientes con 3+ reportes del mismo motivo
+    clientes_repetitivos = cliente_motivo_analysis[cliente_motivo_analysis['total_reportes'] >= 3].sort_values('total_reportes', ascending=False)
+    if not clientes_repetitivos.empty:
+        st.markdown(f"##### 🎯 Se encontraron {len(clientes_repetitivos)} casos de clientes con 3+ reportes del mismo motivo")
+        
+        # Gráfico de clientes repetitivos - FILA COMPLETA
+        fig_repetitivos = px.bar(
+            clientes_repetitivos.head(15),
+            x='total_reportes',
+            y='codigo_cliente_display',
+            orientation='h',
+            title="🚨 Top 15 Casos de Reportes Repetitivos",
+            color='motivo_real',
+            height=800,
+            text='total_reportes',
+            hover_data={
+                'codigo_cliente_display': True,
+                'motivo_real': True,
+                'puntos_promedio': ':.2f',
+                'casos_cerrados': True,
+                'ruta_principal': True
+            }
+        )
+        
+        fig_repetitivos.update_traces(
+            texttemplate='<b>%{text}</b>',
+            textposition='outside',
+            marker_line_width=1,
+            marker_line_color='white',
+            textfont=dict(size=11, color='white')
+        )
+        
+        fig_repetitivos.update_layout(
+            yaxis={
+                'categoryorder': 'total ascending',
+                'tickfont': dict(size=10, color='white')
+            },
+            xaxis_title="<b>Reportes del Mismo Motivo</b>",
+            yaxis_title="<b>Cliente</b>",
+            margin=dict(l=200, r=50, t=80, b=50),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=11),
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig_repetitivos, use_container_width=True)
+        
+        # === ANÁLISIS DE MOTIVOS MÁS PROBLEMÁTICOS - FILA COMPLETA ===
+        st.markdown(
+            """
+            <div class="analysis-card">
+                <h3 style="color: white; margin: 0;">🎯 Análisis de Motivos Más Problemáticos</h3>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        # Análisis de motivos más problemáticos
+        motivos_problematicos = clientes_repetitivos.groupby('motivo_real').agg({
+            'codigo_cliente': 'count',
+            'total_reportes': 'sum',
+            'puntos_promedio': 'mean',
+            'casos_cerrados': 'sum'
+        }).round(2).reset_index()
+        motivos_problematicos.columns = ['motivo_real', 'clientes_afectados', 'total_reportes_acumulados', 'puntos_promedio', 'casos_cerrados_total']
+        motivos_problematicos['tasa_resolucion'] = (motivos_problematicos['casos_cerrados_total'] / motivos_problematicos['total_reportes_acumulados']) * 100
+        motivos_problematicos = motivos_problematicos.sort_values('clientes_afectados', ascending=False).head(10)
+        
+        fig_motivos_problematicos = px.bar(
+            motivos_problematicos,
+            x='clientes_afectados',
+            y='motivo_real',
+            orientation='h',
+            title="🎯 Top 10 Motivos Más Problemáticos",
+            color='tasa_resolucion',
+            color_continuous_scale='RdYlGn',
+            height=700,
+            text='clientes_afectados',
+            hover_data={
+                'motivo_real': True,
+                'clientes_afectados': True,
+                'total_reportes_acumulados': True,
+                'tasa_resolucion': ':.1f'
+            }
+        )
+        
+        fig_motivos_problematicos.update_traces(
+            texttemplate='%{text} clientes',
+            textposition='outside',
+            marker_line_width=1,
+            marker_line_color='white',
+            textfont=dict(size=11, color='white')
+        )
+        
+        fig_motivos_problematicos.update_layout(
+            yaxis={
+                'categoryorder': 'total ascending',
+                'tickfont': dict(size=10, color='white')
+            },
+            xaxis_title="<b>Clientes Afectados</b>",
+            yaxis_title="<b>Motivo del Reporte</b>",
+            margin=dict(l=200, r=50, t=80, b=50),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=11)
+        )
+        
+        st.plotly_chart(fig_motivos_problematicos, use_container_width=True)
+        
+        # Tabla resumen de clientes repetitivos críticos
+        st.markdown("##### 📋 Clientes Críticos con Reportes Repetitivos")
+        clientes_criticos = clientes_repetitivos[clientes_repetitivos['total_reportes'] >= 5].copy()
+        if not clientes_criticos.empty:
+            clientes_criticos_display = clientes_criticos[['codigo_cliente_display', 'motivo_real', 'total_reportes', 'puntos_promedio', 'casos_cerrados', 'ruta_principal']].copy()
+            clientes_criticos_display.columns = ['Cliente', 'Motivo Repetitivo', 'Total Reportes', 'Puntos Promedio', 'Casos Cerrados', 'Ruta Principal']
+            st.dataframe(clean_dataframe_for_display(clientes_criticos_display), use_container_width=True)
+        else:
+            st.success("✅ No hay clientes con 5+ reportes repetitivos del mismo motivo")
+    else:
+        st.success("✅ No se encontraron clientes con reportes repetitivos significativos")      # === SECCIÓN 5: ANÁLISIS GEOGRÁFICO POR RUTAS ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🗺️ Análisis Geográfico por Rutas</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Distribución de clientes problemáticos por ruta
+    clientes_rutas = df.groupby(['ruta', 'codigo_cliente', 'codigo_cliente_display']).agg({
+        'id_tema': 'count',
+        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A'
+    }).reset_index()
+    clientes_rutas.columns = ['ruta', 'codigo_cliente', 'codigo_cliente_display', 'reportes', 'motivo_principal']
+    
+    # Rutas con más clientes problemáticos (3+ reportes)
+    clientes_problematicos_por_ruta = clientes_rutas[clientes_rutas['reportes'] >= 3].groupby('ruta').agg({
+        'codigo_cliente': 'count',
+        'reportes': 'sum'
+    }).reset_index()
+    clientes_problematicos_por_ruta.columns = ['ruta', 'clientes_problematicos', 'total_reportes']
+    clientes_problematicos_por_ruta = clientes_problematicos_por_ruta.sort_values('clientes_problematicos', ascending=False).head(12)
+    
+    if not clientes_problematicos_por_ruta.empty:
+        fig_rutas = px.bar(
+            clientes_problematicos_por_ruta,
+            x='clientes_problematicos',
+            y='ruta',
+            orientation='h',
+            title="🗺️ Top 12 Rutas con Clientes Problemáticos",
+            color='total_reportes',
+            color_continuous_scale='Reds',
+            height=600,
+            text='clientes_problematicos',
+            hover_data={
+                'ruta': True,
+                'clientes_problematicos': True,
+                'total_reportes': True
+            }
+        )
+        
+        fig_rutas.update_traces(
+            texttemplate='<b>%{text}</b>',
+            textposition='outside',
+            marker_line_width=1,
+            marker_line_color='white',
+            textfont=dict(size=11, color='white')
+        )
+        
+        fig_rutas.update_layout(
+            yaxis={
+                'categoryorder': 'total ascending',
+                'tickfont': dict(size=10, color='white')
+            },
+            xaxis_title="<b>Clientes Problemáticos</b>",
+            yaxis_title="<b>Ruta</b>",
+            margin=dict(l=120, r=50, t=80, b=50),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=11)
+        )
+        
+        st.plotly_chart(fig_rutas, use_container_width=True)
+    else:
+        st.success("✅ No se encontraron rutas con concentración alta de clientes problemáticos")
+    
+    # === HEATMAP DE RUTAS VS MOTIVOS ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🌡️ Heatmap: Rutas vs Motivos de Reporte</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Heatmap de rutas vs motivos
+    if not clientes_rutas.empty:
+        ruta_motivo_heatmap = df.groupby(['ruta', 'respuesta_sub']).size().reset_index(name='cantidad')
+        # Tomar solo las rutas y motivos más comunes para mejor visualización
+        top_rutas = ruta_motivo_heatmap.groupby('ruta')['cantidad'].sum().nlargest(10).index
+        top_motivos = ruta_motivo_heatmap.groupby('respuesta_sub')['cantidad'].sum().nlargest(8).index
+        
+        heatmap_data = ruta_motivo_heatmap[
+            (ruta_motivo_heatmap['ruta'].isin(top_rutas)) & 
+            (ruta_motivo_heatmap['respuesta_sub'].isin(top_motivos))
+        ]
+        
+        if not heatmap_data.empty:
+            heatmap_pivot = heatmap_data.pivot(index='ruta', columns='respuesta_sub', values='cantidad').fillna(0)
+            
+            fig_heatmap = px.imshow(
+                heatmap_pivot.values,
+                x=heatmap_pivot.columns,
+                y=heatmap_pivot.index,
+                color_continuous_scale='Reds',
+                title="🌡️ Heatmap: Rutas vs Motivos de Reporte",
+                height=600,
+                aspect='auto'
+            )
+            
+            fig_heatmap.update_layout(
+                xaxis_title="<b>Motivo del Reporte</b>",
+                yaxis_title="<b>Ruta</b>",
+                margin=dict(l=100, r=50, t=80, b=120),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white', size=10),
+                xaxis={'tickangle': 45}
+            )
+            
+            st.plotly_chart(fig_heatmap, use_container_width=True)
+        else:
+            st.info("ℹ️ No hay suficientes datos para mostrar el heatmap")
+    else:
+        st.info("ℹ️ No hay datos de rutas disponibles para el heatmap")
+      # === SECCIÓN 6: EVOLUCIÓN TEMPORAL ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">📅 Evolución Temporal de Clientes Problemáticos</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Top 5 clientes más problemáticos para seguimiento temporal
+    top_5_clientes = clientes_analysis.head(5)['codigo_cliente'].tolist()
+    top_5_display = clientes_analysis.head(5)['codigo_cliente_display'].tolist()
+    
+    if 'mes_nombre' in df.columns and top_5_clientes:
+        evolucion_clientes = df[df['codigo_cliente'].isin(top_5_clientes)].groupby(['mes_nombre', 'codigo_cliente_display']).agg({
+            'id_tema': 'count',
+            'fecha_cierre': lambda x: x.notna().sum()
+        }).reset_index()
+        evolucion_clientes.columns = ['mes', 'cliente', 'reportes', 'casos_cerrados']
+        evolucion_clientes['tasa_cierre_mes'] = (evolucion_clientes['casos_cerrados'] / evolucion_clientes['reportes']) * 100
+        
+        if not evolucion_clientes.empty:
+            # Evolución de reportes - FILA COMPLETA
+            fig_evolucion_reportes = px.line(
+                evolucion_clientes,
+                x='mes',
+                y='reportes',
+                color='cliente',
+                title="📈 Evolución Mensual de Reportes - Top 5 Clientes",
+                markers=True,
+                height=600
+            )
+            
+            fig_evolucion_reportes.update_traces(
+                line_width=3, 
+                marker_size=8,
+                marker_line_width=2,
+                marker_line_color='white'
+            )
+            
+            fig_evolucion_reportes.update_layout(
+                xaxis_title="<b>Mes</b>",
+                yaxis_title="<b>Número de Reportes</b>",
+                margin=dict(l=20, r=20, t=80, b=50),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white', size=11),
+                legend=dict(title="<b>Cliente</b>")
+            )
+            
+            st.plotly_chart(fig_evolucion_reportes, use_container_width=True)
+            
+            # Evolución de tasa de cierre - FILA COMPLETA
+            fig_evolucion_cierre = px.line(
+                evolucion_clientes,
+                x='mes',
+                y='tasa_cierre_mes',
+                color='cliente',
+                title="📊 Evolución de Tasa de Cierre - Top 5 Clientes",
+                markers=True,
+                height=600
+            )
+            
+            fig_evolucion_cierre.update_traces(
+                line_width=3, 
+                marker_size=8,
+                marker_line_width=2,
+                marker_line_color='white'
+            )
+            
+            fig_evolucion_cierre.add_hline(
+                y=70, 
+                line_dash="dash", 
+                line_color="yellow", 
+                annotation_text="Meta 70%"
+            )
+            
+            fig_evolucion_cierre.update_layout(
+                xaxis_title="<b>Mes</b>",
+                yaxis_title="<b>Tasa de Cierre (%)</b>",
+                margin=dict(l=20, r=20, t=80, b=50),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white', size=11),
+                legend=dict(title="<b>Cliente</b>")
+            )
+            
+            st.plotly_chart(fig_evolucion_cierre, use_container_width=True)
+        else:
+            st.info("ℹ️ No hay datos suficientes para mostrar evolución temporal")
+      # === SECCIÓN 7: INSIGHTS Y RECOMENDACIONES ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">💡 Insights Inteligentes y Plan de Acción</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Generar insights automáticos
+    insights_avanzados = []
+    
+    if not clientes_analysis.empty:
+        # Estadísticas generales
+        total_clientes = len(clientes_analysis)
+        clientes_alto_riesgo = len(clientes_analysis[clientes_analysis['categoria_riesgo'] == 'Alto Riesgo'])
+        cliente_mas_reportes = clientes_analysis.iloc[0]
+        tasa_cierre_promedio = clientes_analysis['tasa_cierre'].mean()
+        
+        insights_avanzados.extend([
+            f"📊 **Total de clientes analizados:** {total_clientes:,}",
+            f"🚨 **Clientes de alto riesgo:** {clientes_alto_riesgo} ({(clientes_alto_riesgo/total_clientes)*100:.1f}%)",
+            f"🥇 **Cliente más problemático:** {cliente_mas_reportes['codigo_cliente_display']} ({cliente_mas_reportes['total_reportes']} reportes)",
+            f"📈 **Tasa de cierre promedio:** {tasa_cierre_promedio:.1f}%"
+        ])
+        
+        if 'motivo_principal' in cliente_mas_reportes:
+            insights_avanzados.append(f"🎯 **Motivo principal del cliente más problemático:** {cliente_mas_reportes['motivo_principal']}")
+        
+        # Análisis de eficiencia
+        clientes_eficientes = clientes_analysis[clientes_analysis['tasa_cierre'] >= 80]
+        if not clientes_eficientes.empty:
+            insights_avanzados.append(f"✅ **Clientes con alta eficiencia (≥80% cierre):** {len(clientes_eficientes)}")
+        
+        clientes_criticos = clientes_analysis[
+            (clientes_analysis['total_reportes'] >= 10) & 
+            (clientes_analysis['tasa_cierre'] < 50)
+        ]
+        if not clientes_criticos.empty:
+            insights_avanzados.append(f"⚠️ **Clientes críticos (10+ reportes, <50% cierre):** {len(clientes_criticos)}")
+      # Mostrar insights y recomendaciones en dos columnas para ahorrar espacio
+    col_insights, col_recomendaciones = st.columns(2)
+    
+    with col_insights:
+        st.markdown("#### 📊 Insights Clave")
+        for i, insight in enumerate(insights_avanzados, 1):
+            st.markdown(f"{i}. {insight}")
+    
+    with col_recomendaciones:
+        st.markdown("#### 🎯 Recomendaciones Estratégicas")
+        recomendaciones_avanzadas = [
+            "🔄 **Implementar programa de seguimiento personalizado** para clientes de alto riesgo",
+            "📞 **Establecer contacto proactivo mensual** con top 10 clientes problemáticos",
+            "📋 **Crear protocolo especial** para casos con 3+ reportes del mismo motivo",
+            "⚡ **Priorizar resolución** de clientes críticos (alto volumen + baja eficiencia)",
+            "📈 **Monitorear métricas semanales** de tasa de cierre por cliente",
+            "🗺️ **Analizar rutas con concentración** de clientes problemáticos",
+            "🎓 **Capacitar equipos** en motivos más frecuentes identificados",
+            "📊 **Implementar dashboard de alerta temprana** para nuevos casos críticos"
+        ]
+        
+        for rec in recomendaciones_avanzadas:
+            st.markdown(rec)
+    
+    # === SECCIÓN 8: EXPORTAR ANÁLISIS ===
+    st.markdown("---")
+    st.markdown("### 📤 Exportar Análisis Completo")
+    
+    col_export1, col_export2, col_export3 = st.columns(3)
+    
+    with col_export1:
+        if st.button("💾 Exportar Top Clientes Problemáticos", key="export_top_clientes"):
+            try:
+                export_data = clientes_analysis[['codigo_cliente_display', 'total_reportes', 'motivo_principal', 
+                                               'puntos_promedio', 'tasa_cierre', 'categoria_riesgo']].copy()
+                export_data.columns = ['Cliente', 'Total Reportes', 'Motivo Principal', 'Puntos Promedio', 'Tasa Cierre (%)', 'Categoría Riesgo']
+                
+                csv = export_data.to_csv(index=False)
+                st.download_button(
+                    label="📥 Descargar CSV",
+                    data=csv,
+                    file_name=f"top_clientes_problematicos_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    mime="text/csv"
+                )
+                st.success("✅ Datos preparados para exportar")
+            except Exception as e:
+                st.error(f"❌ Error al preparar exportación: {str(e)}")
+    
+    with col_export2:
+        if st.button("📊 Exportar Análisis de Repetitivos", key="export_repetitivos"):
+            try:
+                if not clientes_repetitivos.empty:
+                    export_repetitivos = clientes_repetitivos[['codigo_cliente_display', 'motivo_real', 'total_reportes', 
+                                                             'puntos_promedio', 'casos_cerrados', 'ruta_principal']].copy()
+                    export_repetitivos.columns = ['Cliente', 'Motivo Repetitivo', 'Total Reportes', 'Puntos Promedio', 'Casos Cerrados', 'Ruta Principal']
+                    
+                    csv = export_repetitivos.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Descargar CSV",
+                        data=csv,
+                        file_name=f"clientes_repetitivos_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv"
+                    )
+                    st.success("✅ Datos preparados para exportar")
+                else:
+                    st.info("ℹ️ No hay datos de clientes repetitivos para exportar")
+            except Exception as e:
+                st.error(f"❌ Error al preparar exportación: {str(e)}")
+    
+    with col_export3:
+        if st.button("🗺️ Exportar Análisis por Rutas", key="export_rutas"):
+            try:
+                if not clientes_problematicos_por_ruta.empty:
+                    export_rutas = clientes_problematicos_por_ruta.copy()
+                    export_rutas.columns = ['Ruta', 'Clientes Problemáticos', 'Total Reportes']
+                    
+                    csv = export_rutas.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Descargar CSV",
+                        data=csv,
+                        file_name=f"analisis_rutas_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv"
+                    )
+                    st.success("✅ Datos preparados para exportar")
+                else:
+                    st.info("ℹ️ No hay datos de rutas para exportar")
+            except Exception as e:
+                st.error(f"❌ Error al preparar exportación: {str(e)}")
 
 def show_detailed_data(df, merged_df):
     """Muestra los datos detallados con filtros avanzados"""
@@ -2731,10 +4438,14 @@ def show_detailed_data(df, merged_df):
     with col1:
         motivos_unicos = ['Todos'] + sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
         motivo_filtro = st.selectbox("🎯 Filtrar por Motivo", motivos_unicos, key="detailed_motivo_filtro")
-    
     with col2:
         min_puntos = int(df['puntos'].min()) if not df.empty else 0
         max_puntos = int(df['puntos'].max()) if not df.empty else 5
+        
+        # Asegurar que min_value < max_value para el slider
+        if min_puntos >= max_puntos:
+            max_puntos = min_puntos + 5
+        
         puntos_filtro = st.slider("⭐ Rango de Puntos", min_puntos, max_puntos, (min_puntos, max_puntos), key="detailed_puntos_filtro")
     
     with col3:
