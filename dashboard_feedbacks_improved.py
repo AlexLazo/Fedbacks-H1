@@ -540,7 +540,7 @@ def generate_pdf_report(df, merged_df, report_type="completo"):
 # Función principal mejorada
 def main():
     # Título principal
-    st.markdown('<h1 class="main-header">🎯 Dashboard Feedbacks H1 - Análisis Profesional Completo</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">Seguimiento Feedbacks - DS00</h1>', unsafe_allow_html=True)
     
     # Cargar datos
     with st.spinner('🔄 Cargando datos...'):
@@ -726,32 +726,33 @@ def main():
     
     # Métricas KPI mejoradas
     create_advanced_kpi_metrics(df_filtrado, merged_df_filtrado)
-    
-    # Menú de navegación principal
+      # Menú de navegación principal
     selected = option_menu(
         menu_title=None,
         options=[
             "🏠 Resumen General", 
             "📈 Análisis Temporal", 
             "🚚 Análisis por Rutas", 
+            "👨‍💼 Supervisores y Contratistas",
             "👥 Análisis de Personal", 
             "🎯 Análisis de Rendimiento", 
             "📊 Análisis Avanzado",
             "📋 Datos Detallados"
         ],
-        icons=["house", "graph-up", "truck", "people", "target", "bar-chart", "table"],
+        icons=["house", "graph-up", "truck", "person-badge", "people", "target", "bar-chart", "table"],
         menu_icon="cast",
         default_index=0,
         orientation="horizontal",
     )
-    
-    # Contenido según la selección
+      # Contenido según la selección
     if selected == "🏠 Resumen General":
         show_general_overview(df_filtrado, merged_df_filtrado)
     elif selected == "📈 Análisis Temporal":
         show_temporal_analysis(df_filtrado)
     elif selected == "🚚 Análisis por Rutas":
         show_routes_analysis(df_filtrado, merged_df_filtrado)
+    elif selected == "👨‍💼 Supervisores y Contratistas":
+        show_supervisors_contractors_analysis(df_filtrado, merged_df_filtrado)
     elif selected == "👥 Análisis de Personal":
         show_personnel_analysis(df_filtrado, merged_df_filtrado)
     elif selected == "🎯 Análisis de Rendimiento":
@@ -843,29 +844,64 @@ def show_general_overview(df, merged_df):
         """, 
         unsafe_allow_html=True
     )
-    
-    # Análisis por mes
-    registros_mes = df.groupby(['mes_nombre', 'mes']).size().reset_index()
-    registros_mes.columns = ['mes_nombre', 'mes_num', 'cantidad']
+      # Análisis por mes - Registros y Cierres
+    registros_mes = df.groupby(['mes_nombre', 'mes']).agg({
+        'id_tema': 'count',
+        'fecha_cierre': lambda x: x.notna().sum()
+    }).reset_index()
+    registros_mes.columns = ['mes_nombre', 'mes_num', 'total_registros', 'total_cierres']
     registros_mes = registros_mes.sort_values('mes_num')
     
-    fig_temporal = px.line(
-        registros_mes,
-        x='mes_nombre',
-        y='cantidad',
-        title="📈 Evolución Mensual de Registros",
-        markers=True,
-        line_shape='spline',
-        height=700
-    )   
-    fig_temporal.update_traces(
-        line=dict(width=6), 
-        marker=dict(size=12),
-        texttemplate='%{y}',
-        textposition='top center'
-    )
+    # Crear gráfico con dos líneas usando go.Figure
+    fig_temporal = go.Figure()
+    
+    # Línea de registros totales
+    fig_temporal.add_trace(go.Scatter(
+        x=registros_mes['mes_nombre'],
+        y=registros_mes['total_registros'],
+        mode='lines+markers+text',
+        name='Total Registros',
+        line=dict(color='#1f77b4', width=6),
+        marker=dict(size=15, color='#1f77b4', line=dict(width=2, color='white')),
+        text=registros_mes['total_registros'],
+        texttemplate='<b>%{text}</b>',
+        textposition='top center',
+        textfont=dict(size=14, color='white', family='Arial Black'),
+        hovertemplate='<b>%{x}</b><br>Registros: %{y}<extra></extra>'
+    ))
+    
+    # Línea de cierres totales
+    fig_temporal.add_trace(go.Scatter(
+        x=registros_mes['mes_nombre'],
+        y=registros_mes['total_cierres'],
+        mode='lines+markers+text',
+        name='Total Cierres',
+        line=dict(color='#ff7f0e', width=6),
+        marker=dict(size=15, color='#ff7f0e', line=dict(width=2, color='white')),
+        text=registros_mes['total_cierres'],
+        texttemplate='<b>%{text}</b>',
+        textposition='bottom center',
+        textfont=dict(size=14, color='white', family='Arial Black'),
+        hovertemplate='<b>%{x}</b><br>Cierres: %{y}<extra></extra>'
+    ))
+    
     fig_temporal.update_layout(
-        showlegend=False
+        title="📈 Evolución Mensual: Registros vs Cierres",
+        xaxis_title="<b>Mes</b>",
+        yaxis_title="<b>Número de Casos</b>",
+        font=dict(size=12),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=50, r=50, t=80, b=50),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            font=dict(size=14, color='white', family='Arial Black')
+        ),
+        height=700
     )
     st.plotly_chart(fig_temporal, use_container_width=True)
     
@@ -996,7 +1032,7 @@ def show_general_overview(df, merged_df):
         fig_supervisor_cierres.update_layout(
             yaxis={'categoryorder': 'total ascending'},
             margin=dict(l=150, r=50, t=50, b=50)
-        )
+        )        
         st.plotly_chart(fig_supervisor_cierres, use_container_width=True)
 
 def show_temporal_analysis(df):
@@ -1592,6 +1628,7 @@ def show_routes_analysis(df, merged_df):
             textposition='outside',
             marker_line_width=0,
             textfont_size=12,
+           
             textfont_color='white'
         )
         fig_supervisor_cierre.update_layout(
@@ -1688,7 +1725,8 @@ def show_routes_analysis(df, merged_df):
             textfont_color='white'
         )
         fig_motivos_contratista.update_layout(
-            yaxis={'categoryorder': 'total ascending'},
+            yaxis={
+            'categoryorder': 'total ascending'},
             margin=dict(l=300, r=100, t=80, b=50),
             xaxis_title="<b>Número de Casos</b>",
             yaxis_title="<b>Motivo</b>"
@@ -1733,7 +1771,6 @@ def show_routes_analysis(df, merged_df):
         color='puntos_promedio',
         color_continuous_scale='RdYlBu',
         height=700,
-        text='total_casos',
         hover_data={
             'motivo_retro': True,
             'total_casos': True,
@@ -1749,9 +1786,7 @@ def show_routes_analysis(df, merged_df):
     )
     fig_motivos.update_layout(
         yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=200, r=50, t=80, b=50),
-        xaxis_title="<b>Número de Casos</b>",
-        yaxis_title="<b>Motivo de Retroalimentación</b>"
+        margin=dict(l=200, r=50, t=80, b=50)
     )
     st.plotly_chart(fig_motivos, use_container_width=True)
     
@@ -1793,7 +1828,6 @@ def show_routes_analysis(df, merged_df):
         color='puntos_promedio',
         color_continuous_scale='Viridis',
         height=700,
-        text='total_casos',
         hover_data={
             'respuesta_sub': True,
             'total_casos': True,
@@ -1809,9 +1843,7 @@ def show_routes_analysis(df, merged_df):
     )
     fig_respuestas.update_layout(
         yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=200, r=50, t=80, b=50),
-        xaxis_title="<b>Número de Casos</b>",
-        yaxis_title="<b>Tipo de Respuesta</b>"
+        margin=dict(l=200, r=50, t=80, b=50)
     )
     st.plotly_chart(fig_respuestas, use_container_width=True)
     
@@ -1844,7 +1876,6 @@ def show_routes_analysis(df, merged_df):
     
     if not clientes_repetitivos.empty:
         st.markdown(f"##### 🎯 Se encontraron {len(clientes_repetitivos)} clientes con 3+ reportes del mismo motivo real")
-        
         fig_clientes_repetitivos = px.bar(
             clientes_repetitivos.head(20),
             x='total_reportes',
@@ -1861,21 +1892,24 @@ def show_routes_analysis(df, merged_df):
                 'puntos_promedio': ':.2f',
                 'casos_cerrados': True
             }
-                )
+        )
         fig_clientes_repetitivos.update_traces(
-            texttemplate='%{text} reportes',
+            texttemplate='<b>%{text} reportes</b>',
             textposition='outside',
-            marker_line_width=0
+            marker_line_width=0,
+            textfont=dict(size=14, color='white', family='Arial Black')
         )
         fig_clientes_repetitivos.update_layout(
             yaxis={
                 'categoryorder': 'total ascending',
                 'tickformat': '',
-                'type': 'category'
+                'type': 'category',
+                'tickfont': dict(size=12, color='white')
             },
-            margin=dict(l=150, r=50, t=80, b=50),
+            margin=dict(l=150, r=100, t=80, b=50),
             xaxis_title="<b>Número de Reportes</b>",
-            yaxis_title="<b>Cliente</b>"
+            yaxis_title="<b>Código Cliente</b>",
+            font=dict(size=12)
         )
         st.plotly_chart(fig_clientes_repetitivos, use_container_width=True)
         
@@ -1902,7 +1936,7 @@ def show_routes_analysis(df, merged_df):
             orientation='h',
             title="🎯 Top 10 Motivos Reales con Más Clientes con Reportes Repetitivos",
             color='puntos_promedio',
-            color_continuous_scale='RdYlBu_r',
+            color_continuous_scale='RdYlGn',
             height=600,
             text='clientes_afectados'
         )
@@ -1918,10 +1952,625 @@ def show_routes_analysis(df, merged_df):
         
         st.markdown("##### 📋 Detalles de Motivos Problemáticos")
         motivos_problematicos_details = motivos_problematicos[['motivo_real', 'clientes_afectados', 'total_reportes_acumulados', 'puntos_promedio']].copy()
-        motivos_problematicos_details.columns = ['Motivo Real', 'Clientes Afectados', 'Total Reportes', 'Puntos Promedio']
+        motivos_problematicos_details.columns = ['Motivo Real', 'Clientes Afectados', 'Total Reportes', 'Puntos Promedio']        
         st.dataframe(clean_dataframe_for_display(motivos_problematicos_details), use_container_width=True)
     else:
-        st.info("✅ No se encontraron clientes con 3+ reportes del mismo motivo real")
+        st.info("✅ No se encontraron clientes con 3+ reportes del mismo motivo real")    # --- NUEVA SECCIÓN: Cumplimiento de Meta Mensual por Ruta, Supervisor y Contratista ---
+        st.markdown(
+            """
+            <div class="analysis-card">
+                <h3 style="color: white; margin: 0;">📅 Cumplimiento de Meta Mensual (10 registros/ruta)</h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+    )
+    
+    # Filtros dinámicos mejorados
+    col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
+    
+    with col_filtro1:
+        meses_disponibles = sorted(df['mes_nombre'].unique().tolist())
+        mes_meta = st.selectbox("📅 Selecciona el mes:", meses_disponibles, key="meta_mes")
+    
+    with col_filtro2:
+        if 'SUPERVISOR' in merged_df.columns:
+            supervisores_disp = ['Todos'] + sorted(merged_df['SUPERVISOR'].dropna().unique().tolist())
+            supervisor_meta = st.selectbox("👨‍💼 Filtrar por Supervisor:", supervisores_disp, key="meta_supervisor")
+        else:
+            supervisor_meta = 'Todos'
+    
+    with col_filtro3:
+        if 'CONTRATISTA' in merged_df.columns:
+            contratistas_disp = ['Todos'] + sorted(merged_df['CONTRATISTA'].dropna().unique().tolist())
+            contratista_meta = st.selectbox("🏢 Filtrar por Contratista:", contratistas_disp, key="meta_contratista")
+        else:
+            contratista_meta = 'Todos'
+    
+    # Aplicar filtros
+    df_meta = merged_df[merged_df['mes_nombre'] == mes_meta].copy()
+    
+    if supervisor_meta != 'Todos' and 'SUPERVISOR' in df_meta.columns:
+        df_meta = df_meta[df_meta['SUPERVISOR'] == supervisor_meta]
+    
+    if contratista_meta != 'Todos' and 'CONTRATISTA' in df_meta.columns:
+        df_meta = df_meta[df_meta['CONTRATISTA'] == contratista_meta]
+    
+    # --- Análisis por SUPERVISOR ---
+    if 'SUPERVISOR' in df_meta.columns:
+        st.markdown("### 👨‍💼 Análisis por Supervisores")
+        
+        # Calcular métricas por supervisor y ruta
+        supervisor_rutas = df_meta.groupby(['SUPERVISOR', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        supervisor_rutas['Meta Cumplida'] = supervisor_rutas['id_tema'] >= 10
+        supervisor_rutas['Estado'] = supervisor_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
+        supervisor_rutas = supervisor_rutas.rename(columns={'id_tema':'Registros'})
+        
+        # Tabla detallada
+        st.dataframe(
+            clean_dataframe_for_display(supervisor_rutas[['SUPERVISOR', 'ruta', 'Registros', 'Estado']]), 
+            use_container_width=True
+        )
+        
+        # KPIs por supervisor
+        col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
+        
+        with col_kpi1:
+            total_rutas_sup = supervisor_rutas.shape[0]
+            rutas_cumplen_sup = supervisor_rutas['Meta Cumplida'].sum()
+            porcentaje_cumple_sup = (rutas_cumplen_sup/total_rutas_sup*100) if total_rutas_sup > 0 else 0
+            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_sup:.1f}%")
+        
+        with col_kpi2:
+            st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_sup}/{total_rutas_sup}")
+        
+        with col_kpi3:
+            rutas_no_cumplen_sup = total_rutas_sup - rutas_cumplen_sup
+            st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_sup}")
+        
+        # Ranking de supervisores
+        ranking_supervisores = supervisor_rutas.groupby('SUPERVISOR').agg({
+            'Meta Cumplida': ['count', 'sum'],
+            'Registros': 'mean'
+        }).round(2)
+        ranking_supervisores.columns = ['Total_Rutas', 'Rutas_Cumplen', 'Registros_Promedio']
+        ranking_supervisores = ranking_supervisores.reset_index()
+        ranking_supervisores['Porcentaje_Cumplimiento'] = (ranking_supervisores['Rutas_Cumplen'] / ranking_supervisores['Total_Rutas'] * 100).round(1)
+        ranking_supervisores = ranking_supervisores.sort_values('Porcentaje_Cumplimiento', ascending=False)
+        
+        # Gráfica de ranking de supervisores
+        fig_ranking_sup = px.bar(
+            ranking_supervisores, 
+            x='SUPERVISOR', 
+            y='Porcentaje_Cumplimiento',
+            color='Porcentaje_Cumplimiento',
+            color_continuous_scale='RdYlGn',
+            title='🏆 Ranking de Supervisores por % de Cumplimiento de Meta',
+            text='Porcentaje_Cumplimiento'
+        )
+        fig_ranking_sup.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig_ranking_sup.update_layout(
+            xaxis_title="<b>Supervisor</b>",
+            yaxis_title="<b>% de Cumplimiento</b>",
+            height=500
+        )
+        st.plotly_chart(fig_ranking_sup, use_container_width=True)
+    
+    # --- Análisis por CONTRATISTA ---
+    if 'CONTRATISTA' in df_meta.columns:
+        st.markdown("### 🏢 Análisis por Contratistas")
+        
+        # Calcular métricas por contratista y ruta
+        contratista_rutas = df_meta.groupby(['CONTRATISTA', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        contratista_rutas['Meta Cumplida'] = contratista_rutas['id_tema'] >= 10
+        contratista_rutas['Estado'] = contratista_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
+        contratista_rutas = contratista_rutas.rename(columns={'id_tema':'Registros'})
+        
+        # Tabla detallada
+        st.dataframe(
+            clean_dataframe_for_display(contratista_rutas[['CONTRATISTA', 'ruta', 'Registros', 'Estado']]), 
+            use_container_width=True
+        )
+        
+        # KPIs por contratista
+        col_kpi4, col_kpi5, col_kpi6 = st.columns(3)
+        
+        with col_kpi4:
+            total_rutas_con = contratista_rutas.shape[0]
+            rutas_cumplen_con = contratista_rutas['Meta Cumplida'].sum()
+            porcentaje_cumple_con = (rutas_cumplen_con/total_rutas_con*100) if total_rutas_con > 0 else 0
+            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_con:.1f}%")
+        
+        with col_kpi5:
+            st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_con}/{total_rutas_con}")
+        
+        with col_kpi6:
+            rutas_no_cumplen_con = total_rutas_con - rutas_cumplen_con
+            st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_con}")
+        
+        # Ranking de contratistas
+        ranking_contratistas = contratista_rutas.groupby('CONTRATISTA').agg({
+            'Meta Cumplida': ['count', 'sum'],
+            'Registros': 'mean'
+        }).round(2)
+        ranking_contratistas.columns = ['Total_Rutas', 'Rutas_Cumplen', 'Registros_Promedio']
+        ranking_contratistas = ranking_contratistas.reset_index()
+        ranking_contratistas['Porcentaje_Cumplimiento'] = (ranking_contratistas['Rutas_Cumplen'] / ranking_contratistas['Total_Rutas'] * 100).round(1)
+        ranking_contratistas = ranking_contratistas.sort_values('Porcentaje_Cumplimiento', ascending=False)
+        
+        # Gráfica de ranking de contratistas
+        fig_ranking_con = px.bar(
+            ranking_contratistas, 
+            x='CONTRATISTA', 
+            y='Porcentaje_Cumplimiento',
+            color='Porcentaje_Cumplimiento',
+            color_continuous_scale='RdYlGn',
+            title='🏆 Ranking de Contratistas por % de Cumplimiento de Meta',
+            text='Porcentaje_Cumplimiento'
+        )
+        fig_ranking_con.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig_ranking_con.update_layout(
+            xaxis_title="<b>Contratista</b>",
+            yaxis_title="<b>% de Cumplimiento</b>",
+            height=500
+        )
+        st.plotly_chart(fig_ranking_con, use_container_width=True)
+    
+    # --- SECCIÓN 2: Top Performers y Offenders ---
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🏅 Top Performers vs Top Offenders por Mes</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Top Offenders y Best por rutas
+    rutas_mes = df_meta.groupby('ruta').agg({'id_tema':'count'}).reset_index()
+    rutas_mes = rutas_mes.rename(columns={'id_tema':'Registros'})
+    top_offenders = rutas_mes.nsmallest(10, 'Registros')
+    top_performers = rutas_mes.nlargest(10, 'Registros')
+    
+    col_top1, col_top2 = st.columns(2)
+    
+    with col_top1:
+        st.markdown("##### ⚠️ Top 10 Offenders (Menos registros)")
+        fig_offenders = px.bar(
+            top_offenders, 
+            x='Registros', 
+            y='ruta', 
+            orientation='h',
+            color='Registros',
+            color_continuous_scale='Reds',
+            title='⚠️ Rutas con Menos Registros',
+            text='Registros'
+        )
+        fig_offenders.update_traces(texttemplate='%{text}', textposition='outside')
+        fig_offenders.update_layout(height=400)
+        st.plotly_chart(fig_offenders, use_container_width=True)
+    
+    with col_top2:
+        st.markdown("##### 🏆 Top 10 Performers (Más registros)")
+        fig_performers = px.bar(
+            top_performers, 
+            x='Registros', 
+            y='ruta', 
+            orientation='h',
+            color='Registros',
+            color_continuous_scale='Greens',
+            title='🏆 Rutas con Más Registros',
+            text='Registros'
+        )
+        fig_performers.update_traces(texttemplate='%{text}', textposition='outside')
+        fig_performers.update_layout(height=400)
+        st.plotly_chart(fig_performers, use_container_width=True)
+    
+    # --- SECCIÓN 3: Análisis de Impacto ---
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🔥 Análisis de Impacto y Focos de Atención</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    col_impacto1, col_impacto2 = st.columns(2)
+    
+    # Impacto por supervisores
+    if 'SUPERVISOR' in df_meta.columns:
+        with col_impacto1:
+            st.markdown("##### 👨‍💼 Supervisores con Rutas Sin Meta")
+            supervisor_sin_meta = supervisor_rutas[~supervisor_rutas['Meta Cumplida']].groupby('SUPERVISOR').size().reset_index(name='Rutas_Sin_Meta')
+            supervisor_sin_meta = supervisor_sin_meta.sort_values('Rutas_Sin_Meta', ascending=False)
+            
+            if not supervisor_sin_meta.empty:
+                fig_impacto_sup = px.bar(
+                    supervisor_sin_meta.head(10),
+                    x='Rutas_Sin_Meta',
+                    y='SUPERVISOR',
+                    orientation='h',
+                    color='Rutas_Sin_Meta',
+                    color_continuous_scale='Reds',
+                    title='🚨 Supervisores con Más Rutas Sin Meta',
+                    text='Rutas_Sin_Meta'
+                )
+                fig_impacto_sup.update_traces(texttemplate='%{text}', textposition='outside')
+                fig_impacto_sup.update_layout(height=400)
+                st.plotly_chart(fig_impacto_sup, use_container_width=True)
+            else:
+                st.success("✅ Todos los supervisores tienen rutas que cumplen la meta!")
+    
+    # Impacto por contratistas
+    if 'CONTRATISTA' in df_meta.columns:
+        with col_impacto2:
+            st.markdown("##### 🏢 Contratistas con Rutas Sin Meta")
+            contratista_sin_meta = contratista_rutas[~contratista_rutas['Meta Cumplida']].groupby('CONTRATISTA').size().reset_index(name='Rutas_Sin_Meta')
+            contratista_sin_meta = contratista_sin_meta.sort_values('Rutas_Sin_Meta', ascending=False)
+            
+            if not contratista_sin_meta.empty:
+                fig_impacto_con = px.bar(
+                    contratista_sin_meta.head(10),
+                    x='Rutas_Sin_Meta',
+                    y='CONTRATISTA',
+                    orientation='h',
+                    color='Rutas_Sin_Meta',
+                    color_continuous_scale='Reds',
+                    title='🚨 Contratistas con Más Rutas Sin Meta',
+                    text='Rutas_Sin_Meta'
+                )
+                fig_impacto_con.update_traces(texttemplate='%{text}', textposition='outside')
+                fig_impacto_con.update_layout(height=400)
+                st.plotly_chart(fig_impacto_con, use_container_width=True)
+            else:
+                st.success("✅ Todos los contratistas tienen rutas que cumplen la meta!")
+    
+    # --- SECCIÓN 4: Recomendaciones y Acciones ---
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">💡 Recomendaciones y Plan de Acción</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Generar recomendaciones automáticas
+    recomendaciones = []
+    
+    if 'SUPERVISOR' in df_meta.columns and 'supervisor_sin_meta' in locals() and not supervisor_sin_meta.empty:
+        peor_supervisor = supervisor_sin_meta.iloc[0]
+        recomendaciones.append(f"🎯 **Supervisor {peor_supervisor['SUPERVISOR']}** requiere atención inmediata: {peor_supervisor['Rutas_Sin_Meta']} rutas sin meta.")
+    
+    if 'CONTRATISTA' in df_meta.columns and 'contratista_sin_meta' in locals() and not contratista_sin_meta.empty:
+        peor_contratista = contratista_sin_meta.iloc[0]
+        recomendaciones.append(f"🎯 **Contratista {peor_contratista['CONTRATISTA']}** requiere atención inmediata: {peor_contratista['Rutas_Sin_Meta']} rutas sin meta.")
+    
+    if not top_offenders.empty:
+        peor_ruta = top_offenders.iloc[0]
+        recomendaciones.append(f"🚨 **Ruta {peor_ruta['ruta']}** es la menos activa con solo {peor_ruta['Registros']} registros.")
+    
+    if recomendaciones:
+        for i, rec in enumerate(recomendaciones, 1):
+            st.markdown(f"{i}. {rec}")
+    else:
+        st.success("🎉 **¡Excelente!** Todos los indicadores están dentro de los parámetros esperados.")
+    
+    # Botón para exportar datos
+    st.markdown("---")
+    st.markdown("### 📤 Exportar Análisis")
+    if st.button("💾 Generar Reporte de Supervisores y Contratistas", key="export_supervisores"):
+        # Crear datos para exportar
+        export_data = {
+            'Mes_Analizado': mes_meta,
+            'Supervisor_Filtro': supervisor_meta,
+            'Contratista_Filtro': contratista_meta,
+            'Total_Rutas_Analizadas': total_rutas_sup if 'SUPERVISOR' in df_meta.columns else (total_rutas_con if 'CONTRATISTA' in df_meta.columns else 0)
+        }
+        
+        st.json(export_data)
+        st.success("📊 Datos exportados exitosamente para análisis adicional.")
+
+def show_supervisors_contractors_analysis(df, merged_df):
+    """Análisis integral dedicado a Supervisores y Contratistas"""
+    st.subheader("👨‍💼 Análisis Integral por Supervisores y Contratistas")
+    
+    # Verificar que tenemos los datos necesarios
+    if 'SUPERVISOR' not in merged_df.columns and 'CONTRATISTA' not in merged_df.columns:
+        st.warning("⚠️ No hay datos de Supervisores o Contratistas disponibles en el dataset.")
+        return
+    
+    # --- NUEVA SECCIÓN: Cumplimiento de Meta Mensual por Ruta, Supervisor y Contratista ---
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">📅 Cumplimiento de Meta Mensual (10 registros/ruta)</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Filtros dinámicos mejorados
+    col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
+    
+    with col_filtro1:
+        meses_disponibles = sorted(df['mes_nombre'].unique().tolist())
+        mes_meta = st.selectbox("📅 Selecciona el mes:", meses_disponibles, key="meta_mes")
+    
+    with col_filtro2:
+        if 'SUPERVISOR' in merged_df.columns:
+            supervisores_disp = ['Todos'] + sorted(merged_df['SUPERVISOR'].dropna().unique().tolist())
+            supervisor_meta = st.selectbox("👨‍💼 Filtrar por Supervisor:", supervisores_disp, key="meta_supervisor")
+        else:
+            supervisor_meta = 'Todos'
+    
+    with col_filtro3:
+        if 'CONTRATISTA' in merged_df.columns:
+            contratistas_disp = ['Todos'] + sorted(merged_df['CONTRATISTA'].dropna().unique().tolist())
+            contratista_meta = st.selectbox("🏢 Filtrar por Contratista:", contratistas_disp, key="meta_contratista")
+        else:
+            contratista_meta = 'Todos'
+    
+    # Aplicar filtros
+    df_meta = merged_df[merged_df['mes_nombre'] == mes_meta].copy()
+    
+    if supervisor_meta != 'Todos' and 'SUPERVISOR' in df_meta.columns:
+        df_meta = df_meta[df_meta['SUPERVISOR'] == supervisor_meta]
+    
+    if contratista_meta != 'Todos' and 'CONTRATISTA' in df_meta.columns:
+        df_meta = df_meta[df_meta['CONTRATISTA'] == contratista_meta]
+    
+    # --- Análisis por SUPERVISOR ---
+    if 'SUPERVISOR' in df_meta.columns:
+        st.markdown("### 👨‍💼 Análisis por Supervisores")
+        
+        # Calcular métricas por supervisor y ruta
+        supervisor_rutas = df_meta.groupby(['SUPERVISOR', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        supervisor_rutas['Meta Cumplida'] = supervisor_rutas['id_tema'] >= 10
+        supervisor_rutas['Estado'] = supervisor_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
+        supervisor_rutas = supervisor_rutas.rename(columns={'id_tema':'Registros'})
+        
+        # Tabla detallada
+        st.dataframe(
+            clean_dataframe_for_display(supervisor_rutas[['SUPERVISOR', 'ruta', 'Registros', 'Estado']]), 
+            use_container_width=True
+        )
+        
+        # KPIs por supervisor
+        col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
+        
+        with col_kpi1:
+            total_rutas_sup = supervisor_rutas.shape[0]
+            rutas_cumplen_sup = supervisor_rutas['Meta Cumplida'].sum()
+            porcentaje_cumple_sup = (rutas_cumplen_sup/total_rutas_sup*100) if total_rutas_sup > 0 else 0
+            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_sup:.1f}%")
+        
+        with col_kpi2:
+            st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_sup}/{total_rutas_sup}")
+        
+        with col_kpi3:
+            rutas_no_cumplen_sup = total_rutas_sup - rutas_cumplen_sup
+            st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_sup}")
+        
+        # Ranking de supervisores
+        ranking_supervisores = supervisor_rutas.groupby('SUPERVISOR').agg({
+            'Meta Cumplida': ['count', 'sum'],
+            'Registros': 'mean'
+        }).round(2)
+        ranking_supervisores.columns = ['Total_Rutas', 'Rutas_Cumplen', 'Registros_Promedio']
+        ranking_supervisores = ranking_supervisores.reset_index()
+        ranking_supervisores['Porcentaje_Cumplimiento'] = (ranking_supervisores['Rutas_Cumplen'] / ranking_supervisores['Total_Rutas'] * 100).round(1)
+        ranking_supervisores = ranking_supervisores.sort_values('Porcentaje_Cumplimiento', ascending=False)
+        
+        # Gráfica de ranking de supervisores
+        fig_ranking_sup = px.bar(
+            ranking_supervisores, 
+            x='SUPERVISOR', 
+            y='Porcentaje_Cumplimiento',
+            color='Porcentaje_Cumplimiento',
+            color_continuous_scale='RdYlGn',
+            title='🏆 Ranking de Supervisores por % de Cumplimiento de Meta',
+            text='Porcentaje_Cumplimiento'
+        )
+        fig_ranking_sup.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig_ranking_sup.update_layout(
+            xaxis_title="<b>Supervisor</b>",
+            yaxis_title="<b>% de Cumplimiento</b>",
+            height=500
+        )
+        st.plotly_chart(fig_ranking_sup, use_container_width=True)
+    
+    # --- Análisis por CONTRATISTA ---
+    if 'CONTRATISTA' in df_meta.columns:
+        st.markdown("### 🏢 Análisis por Contratistas")
+        
+        # Calcular métricas por contratista y ruta
+        contratista_rutas = df_meta.groupby(['CONTRATISTA', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        contratista_rutas['Meta Cumplida'] = contratista_rutas['id_tema'] >= 10
+        contratista_rutas['Estado'] = contratista_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
+        contratista_rutas = contratista_rutas.rename(columns={'id_tema':'Registros'})
+        
+        # Tabla detallada
+        st.dataframe(
+            clean_dataframe_for_display(contratista_rutas[['CONTRATISTA', 'ruta', 'Registros', 'Estado']]), 
+            use_container_width=True
+        )
+        
+        # KPIs por contratista
+        col_kpi4, col_kpi5, col_kpi6 = st.columns(3)
+        
+        with col_kpi4:
+            total_rutas_con = contratista_rutas.shape[0]
+            rutas_cumplen_con = contratista_rutas['Meta Cumplida'].sum()
+            porcentaje_cumple_con = (rutas_cumplen_con/total_rutas_con*100) if total_rutas_con > 0 else 0
+            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_con:.1f}%")
+        
+        with col_kpi5:
+            st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_con}/{total_rutas_con}")
+        
+        with col_kpi6:
+            rutas_no_cumplen_con = total_rutas_con - rutas_cumplen_con
+            st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_con}")
+        
+        # Ranking de contratistas
+        ranking_contratistas = contratista_rutas.groupby('CONTRATISTA').agg({
+            'Meta Cumplida': ['count', 'sum'],
+            'Registros': 'mean'
+        }).round(2)
+        ranking_contratistas.columns = ['Total_Rutas', 'Rutas_Cumplen', 'Registros_Promedio']
+        ranking_contratistas = ranking_contratistas.reset_index()
+        ranking_contratistas['Porcentaje_Cumplimiento'] = (ranking_contratistas['Rutas_Cumplen'] / ranking_contratistas['Total_Rutas'] * 100).round(1)
+        ranking_contratistas = ranking_contratistas.sort_values('Porcentaje_Cumplimiento', ascending=False)
+        
+        # Gráfica de ranking de contratistas
+        fig_ranking_con = px.bar(
+            ranking_contratistas, 
+            x='CONTRATISTA', 
+            y='Porcentaje_Cumplimiento',
+            color='Porcentaje_Cumplimiento',
+            color_continuous_scale='RdYlGn',
+            title='🏆 Ranking de Contratistas por % de Cumplimiento de Meta',
+            text='Porcentaje_Cumplimiento'
+        )
+        fig_ranking_con.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig_ranking_con.update_layout(
+            xaxis_title="<b>Contratista</b>",
+            yaxis_title="<b>% de Cumplimiento</b>",
+            height=500
+        )
+        st.plotly_chart(fig_ranking_con, use_container_width=True)
+    
+    # --- SECCIÓN 2: Top Performers y Offenders ---
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🏅 Top Performers vs Top Offenders por Mes</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Top Offenders y Best por rutas
+    rutas_mes = df_meta.groupby('ruta').agg({'id_tema':'count'}).reset_index()
+    rutas_mes = rutas_mes.rename(columns={'id_tema':'Registros'})
+    top_offenders = rutas_mes.nsmallest(10, 'Registros')
+    top_performers = rutas_mes.nlargest(10, 'Registros')
+    
+    col_top1, col_top2 = st.columns(2)
+    
+    with col_top1:
+        st.markdown("##### ⚠️ Top 10 Offenders (Menos registros)")
+        fig_offenders = px.bar(
+            top_offenders, 
+            x='Registros', 
+            y='ruta', 
+            orientation='h',
+            color='Registros',
+            color_continuous_scale='Reds',
+            title='⚠️ Rutas con Menos Registros',
+            text='Registros'
+        )
+        fig_offenders.update_traces(texttemplate='%{text}', textposition='outside')
+        fig_offenders.update_layout(height=400)
+        st.plotly_chart(fig_offenders, use_container_width=True)
+    
+    with col_top2:
+        st.markdown("##### 🏆 Top 10 Performers (Más registros)")
+        fig_performers = px.bar(
+            top_performers, 
+            x='Registros', 
+            y='ruta', 
+            orientation='h',
+            color='Registros',
+            color_continuous_scale='Greens',
+            title='🏆 Rutas con Más Registros',
+            text='Registros'
+        )
+        fig_performers.update_traces(texttemplate='%{text}', textposition='outside')
+        fig_performers.update_layout(height=400)
+        st.plotly_chart(fig_performers, use_container_width=True)
+    
+    # --- SECCIÓN 3: Análisis de Impacto ---
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🔥 Análisis de Impacto y Focos de Atención</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    col_impacto1, col_impacto2 = st.columns(2)
+    
+    # Impacto por supervisores
+    if 'SUPERVISOR' in df_meta.columns and 'supervisor_rutas' in locals():
+        with col_impacto1:
+            st.markdown("##### 👨‍💼 Supervisores con Rutas Sin Meta")
+            supervisor_sin_meta = supervisor_rutas[~supervisor_rutas['Meta Cumplida']].groupby('SUPERVISOR').size().reset_index(name='Rutas_Sin_Meta')
+            supervisor_sin_meta = supervisor_sin_meta.sort_values('Rutas_Sin_Meta', ascending=False)
+            
+            if not supervisor_sin_meta.empty:
+                st.dataframe(clean_dataframe_for_display(supervisor_sin_meta), use_container_width=True)
+            else:
+                st.success("🎉 Todos los supervisores tienen rutas que cumplen la meta!")
+    
+    # Impacto por contratistas
+    if 'CONTRATISTA' in df_meta.columns and 'contratista_rutas' in locals():
+        with col_impacto2:
+            st.markdown("##### 🏢 Contratistas con Rutas Sin Meta")
+            contratista_sin_meta = contratista_rutas[~contratista_rutas['Meta Cumplida']].groupby('CONTRATISTA').size().reset_index(name='Rutas_Sin_Meta')
+            contratista_sin_meta = contratista_sin_meta.sort_values('Rutas_Sin_Meta', ascending=False)
+            
+            if not contratista_sin_meta.empty:
+                st.dataframe(clean_dataframe_for_display(contratista_sin_meta), use_container_width=True)
+            else:
+                st.success("🎉 Todos los contratistas tienen rutas que cumplen la meta!")
+    
+    # --- SECCIÓN 4: Recomendaciones y Acciones ---
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">💡 Recomendaciones y Plan de Acción</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Generar recomendaciones automáticas
+    recomendaciones = []
+    
+    if 'SUPERVISOR' in df_meta.columns and 'supervisor_sin_meta' in locals() and not supervisor_sin_meta.empty:
+        peor_supervisor = supervisor_sin_meta.iloc[0]
+        recomendaciones.append(f"🎯 **Supervisor {peor_supervisor['SUPERVISOR']}** requiere atención inmediata: {peor_supervisor['Rutas_Sin_Meta']} rutas sin meta.")
+    
+    if 'CONTRATISTA' in df_meta.columns and 'contratista_sin_meta' in locals() and not contratista_sin_meta.empty:
+        peor_contratista = contratista_sin_meta.iloc[0]
+        recomendaciones.append(f"🎯 **Contratista {peor_contratista['CONTRATISTA']}** requiere atención inmediata: {peor_contratista['Rutas_Sin_Meta']} rutas sin meta.")
+    
+    if not top_offenders.empty:
+        peor_ruta = top_offenders.iloc[0]
+        recomendaciones.append(f"🚨 **Ruta {peor_ruta['ruta']}** es la menos activa con solo {peor_ruta['Registros']} registros.")
+    
+    if recomendaciones:
+        for i, rec in enumerate(recomendaciones, 1):
+            st.markdown(f"{i}. {rec}")
+    else:
+        st.success("🎉 **¡Excelente!** Todos los indicadores están dentro de los parámetros esperados.")
+    
+    # Botón para exportar datos
+    st.markdown("---")
+    st.markdown("### 📤 Exportar Análisis")
+    if st.button("💾 Generar Reporte de Supervisores y Contratistas", key="export_supervisores"):
+        # Crear datos para exportar
+        export_data = {
+            'Mes_Analizado': mes_meta,
+            'Supervisor_Filtro': supervisor_meta,
+            'Contratista_Filtro': contratista_meta,
+            'Total_Rutas_Analizadas': total_rutas_sup if 'SUPERVISOR' in df_meta.columns else (total_rutas_con if 'CONTRATISTA' in df_meta.columns else 0)
+        }
+        
+        st.json(export_data)
+        st.success("📊 Datos exportados exitosamente para análisis adicional.")
 
 def show_personnel_analysis(df, merged_df):
     """Análisis completo del personal con múltiples métricas"""
@@ -1970,54 +2619,12 @@ def show_personnel_analysis(df, merged_df):
         margin=dict(l=150, r=50, t=50, b=50)
     )
     st.plotly_chart(fig_user_performance, use_container_width=True)
-    
-    # Segunda fila - Análisis de usuarios con menos registros (Top Offenders)
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">⚠️ Top 15 Usuarios con Menor Cantidad de Feedbacks</h3>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    
-    # Obtener usuarios con menor cantidad de feedbacks (excluyendo usuarios con 0 registros)
-    bottom_users = user_performance[user_performance['Total_Registros'] > 0].sort_values('Total_Registros', ascending=True).head(15)
-    
-    fig_offenders = px.bar(
-        bottom_users,
-        x='Total_Registros',
-        y='usuario',
-        orientation='h',
-        title="⚠️ Top 15 Usuarios con Menor Cantidad de Feedbacks",
-        color='Puntos_Promedio',
-        color_continuous_scale='Reds',
-        height=800,
-        text='Total_Registros'
-    )
-    fig_offenders.update_traces(
-        texttemplate='<b>%{text}</b>', 
-        textposition='outside',
-        marker_line_width=0
-    )
-    fig_offenders.update_layout(
-        yaxis={'categoryorder': 'total descending'},
-        margin=dict(l=150, r=50, t=80, b=50),
-        xaxis_title="Número de Registros",
-        yaxis_title="Usuario"
-    )
-    st.plotly_chart(fig_offenders, use_container_width=True)
-    
-    # Mostrar tabla adicional con detalles de los Top Offenders
-    st.markdown("#### 📋 Detalles de Top Offenders")
-    offenders_details = bottom_users[['usuario', 'Total_Registros', 'Puntos_Promedio', 'Rutas_Trabajadas', 'Tasa_Cierre']].copy()
-    offenders_details.columns = ['Usuario', 'Total Registros', 'Puntos Promedio', 'Rutas Trabajadas', 'Tasa Cierre (%)']
-    st.dataframe(clean_dataframe_for_display(offenders_details), use_container_width=True)
 
 def show_performance_analysis(df):
     """Análisis de rendimiento completo con múltiples gráficas"""
     st.subheader("🎯 Análisis Detallado de Rendimiento y Calidad")
-      # Primera fila - Top clientes más reportados (usando string para evitar formato de millones)
+    
+    # Primera fila - Top clientes más reportados
     st.markdown(
         """
         <div class="analysis-card">
@@ -2033,32 +2640,21 @@ def show_performance_analysis(df):
         'id_tema': 'count',
         'puntos': 'mean',
         'fecha_cierre': lambda x: x.notna().sum(),
-        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A'  # Motivo real más común
+        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A'
     }).round(2).reset_index()
     clientes_reportados.columns = ['codigo_cliente', 'total_reportes', 'puntos_promedio', 'reportes_cerrados', 'motivo_principal']
     clientes_reportados['tasa_cierre'] = (clientes_reportados['reportes_cerrados'] / clientes_reportados['total_reportes']) * 100    
     clientes_reportados = clientes_reportados.sort_values('total_reportes', ascending=False).head(20)
     
-    # Crear una copia con códigos formateados como strings para evitar formateo automático
-    clientes_display = clientes_reportados.copy()
-    clientes_display['codigo_cliente_display'] = clientes_display['codigo_cliente'].astype(str)
-    
     fig_clientes = px.bar(
-        clientes_display,
+        clientes_reportados,
         x='total_reportes',
-        y='codigo_cliente_display',
+        y='codigo_cliente',
         orientation='h',
         title="🏪 Top 20 Clientes Más Reportados",
         color='motivo_principal',
         height=800,
-        text='total_reportes',
-        hover_data={
-            'codigo_cliente': True,
-            'total_reportes': True,
-            'puntos_promedio': ':.2f',
-            'tasa_cierre': ':.1f',
-            'motivo_principal': True
-        }
+        text='total_reportes'
     )    
     fig_clientes.update_traces(
         texttemplate='<b>%{text}</b>', 
@@ -2066,85 +2662,32 @@ def show_performance_analysis(df):
         marker_line_width=0
     )
     fig_clientes.update_layout(
-        yaxis={
-            'categoryorder': 'total ascending', 
-            'tickformat': '',
-            'type': 'category'
-        },
-        margin=dict(l=200, r=50, t=50, b=50),
-        xaxis_title="<b>Número de Reportes</b>",
-        yaxis_title="<b>Código Cliente</b>"
+        yaxis={'categoryorder': 'total ascending'},
+        margin=dict(l=200, r=50, t=50, b=50)
     )
     st.plotly_chart(fig_clientes, use_container_width=True)
-    
-    # Tabla detallada de clientes más reportados
-    st.markdown("#### 📋 Detalles de Clientes Más Reportados")
-    clientes_details = clientes_reportados[['codigo_cliente', 'total_reportes', 'puntos_promedio', 'motivo_principal', 'tasa_cierre']].copy()
-    clientes_details.columns = ['Código Cliente', 'Total Reportes', 'Puntos Promedio', 'Motivo Principal', 'Tasa Cierre (%)']
-    st.dataframe(clean_dataframe_for_display(clientes_details), use_container_width=True)
-    
-    # Segunda fila - Análisis de respuestas críticas
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🚨 Respuestas Más Críticas (Menor Puntuación)</h3>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    
-    respuestas_criticas = df.groupby('respuesta_sub').agg({
-        'puntos': ['mean', 'count'],
-        'codigo_cliente': 'nunique'
-    }).round(2)
-    respuestas_criticas.columns = ['puntos_promedio', 'total_casos', 'clientes_afectados']
-    respuestas_criticas = respuestas_criticas.reset_index()
-    respuestas_criticas = respuestas_criticas[respuestas_criticas['total_casos'] >= 5]  # Solo respuestas con al menos 5 casos
-    respuestas_criticas = respuestas_criticas.sort_values('puntos_promedio', ascending=True).head(15)
-    
-    fig_criticas = px.bar(
-        respuestas_criticas,
-        x='puntos_promedio',
-        y='respuesta_sub',
-        orientation='h',
-        title="🚨 Top 15 Respuestas Más Críticas (Menor Puntuación Promedio)",
-        color='clientes_afectados',
-        color_continuous_scale='Reds',
-        height=800,
-        text='puntos_promedio'
-    )
-    fig_criticas.update_traces(
-        texttemplate='%{text:.2f}',
-        textposition='outside',
-        marker_line_width=0
-    )
-    fig_criticas.update_layout(
-        yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=250, r=50, t=50, b=50),
-        xaxis_title="Puntos Promedio",
-        yaxis_title="Tipo de Respuesta"
-    )
-    st.plotly_chart(fig_criticas, use_container_width=True)
 
 def show_advanced_analysis(df, merged_df):
     """Análisis avanzado con gráficas especializadas"""
     st.subheader("📊 Análisis Avanzado y Insights Profundos")
     
-    # Primera fila - Análisis de clientes problemáticos (usando respuesta_sub como motivo real)
+    # Primera fila - Análisis de clientes problemáticos
     st.markdown(
         """
         <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🎯 Top 20 Clientes con Más Reportes (Usando Motivos Reales)</h3>
+            <h3 style="color: white; margin: 0;">🎯 Top 20 Clientes con Más Reportes</h3>
         </div>
         """, 
         unsafe_allow_html=True
     )
     
     # Convertir codigo_cliente a string para evitar problemas de formato
-    df['codigo_cliente_str'] = df['codigo_cliente'].astype(str)    # Análisis de clientes usando respuesta_sub como motivo real
+    df['codigo_cliente_str'] = df['codigo_cliente'].astype(str)
+    
+    # Análisis de clientes usando respuesta_sub como motivo real
     clientes_analysis = df.groupby('codigo_cliente_str').agg({
         'id_tema': 'count',
-        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',  # Motivo más común
+        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
         'puntos': 'mean',
         'fecha_cierre': lambda x: x.notna().sum()
     }).round(2).reset_index()
@@ -2157,292 +2700,34 @@ def show_advanced_analysis(df, merged_df):
         x='total_reportes',
         y='codigo_cliente',
         orientation='h',
-        title="🎯 Top 20 Clientes con Más Reportes (Motivos Reales)",
+        title="🎯 Top 20 Clientes con Más Reportes",
         color='motivo_principal',
         height=800,
-        text='total_reportes',
-        hover_data={
-            'codigo_cliente': True,
-            'motivo_principal': True,
-            'total_reportes': True,
-            'puntos_promedio': ':.2f',
-            'tasa_cierre': ':.1f'
-        }
-    )    
+        text='total_reportes'
+    )
     fig_clientes_problematicos.update_traces(
         texttemplate='<b>%{text}</b>',
         textposition='outside',
-        marker_line_width=2
+        marker_line_width=0
     )
     fig_clientes_problematicos.update_layout(
-        yaxis={
-            'categoryorder': 'total ascending', 
-            'tickformat': '',
-            'type': 'category'
-        },
-        margin=dict(l=150, r=50, t=80, b=50),
-        xaxis_title="<b>Número de Reportes</b>",
-        yaxis_title="<b>Código Cliente</b>"
+        yaxis={'categoryorder': 'total ascending'},
+        margin=dict(l=150, r=50, t=80, b=50)
     )
     st.plotly_chart(fig_clientes_problematicos, use_container_width=True)
-    
-    # Tabla detallada de clientes problemáticos
-    st.markdown("##### 📋 Detalles de Clientes con Más Reportes")
-    clientes_details = clientes_analysis[['codigo_cliente', 'motivo_principal', 'total_reportes', 'puntos_promedio', 'tasa_cierre']].copy()
-    clientes_details.columns = ['Código Cliente', 'Motivo Principal', 'Total Reportes', 'Puntos Promedio', 'Tasa Cierre (%)']
-    st.dataframe(clean_dataframe_for_display(clientes_details), use_container_width=True)
-    
-    # Segunda fila - Rutas líderes por tipo de respuesta específica con información de supervisor/contratista
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🚚 Rutas Líderes por Tipo de Respuesta Específica</h3>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    
-    # Crear análisis de rutas con información adicional si está disponible
-    if 'SUPERVISOR' in merged_df.columns:
-        ruta_respuesta_analysis = merged_df.groupby(['respuesta_sub', 'ruta', 'SUPERVISOR']).size().reset_index()
-        ruta_respuesta_analysis.columns = ['respuesta_sub', 'ruta', 'supervisor', 'cantidad']
-        
-        # Obtener la ruta líder para cada tipo de respuesta
-        rutas_lideres_respuesta = ruta_respuesta_analysis.loc[
-            ruta_respuesta_analysis.groupby('respuesta_sub')['cantidad'].idxmax()
-        ]
-        
-        # Crear etiqueta combinada para mejor visualización
-        rutas_lideres_respuesta['ruta_supervisor'] = rutas_lideres_respuesta['ruta'].astype(str) + ' (' + rutas_lideres_respuesta['supervisor'].astype(str) + ')'
-        
-        fig_rutas_respuesta = px.bar(
-            rutas_lideres_respuesta.head(15),
-            x='cantidad',
-            y='respuesta_sub',
-            color='supervisor',
-            orientation='h',
-            title="🚚 Ruta Líder por Cada Tipo de Respuesta (Con Supervisor)",
-            height=800,
-            text='cantidad',
-            hover_data={
-                'respuesta_sub': True,
-                'ruta': True,
-                'supervisor': True,
-                'cantidad': True
-            }
-        )
-    else:
-        ruta_respuesta_analysis = df.groupby(['respuesta_sub', 'ruta']).size().reset_index()
-        ruta_respuesta_analysis.columns = ['respuesta_sub', 'ruta', 'cantidad']
-        
-        rutas_lideres_respuesta = ruta_respuesta_analysis.loc[
-            ruta_respuesta_analysis.groupby('respuesta_sub')['cantidad'].idxmax()
-        ]
-        
-        fig_rutas_respuesta = px.bar(
-            rutas_lideres_respuesta.head(15),
-            x='cantidad',
-            y='respuesta_sub',
-            color='ruta',
-            orientation='h',
-            title="🚚 Ruta Líder por Cada Tipo de Respuesta",
-            height=800,
-            text='cantidad'
-        )
-    fig_rutas_respuesta.update_traces(
-        texttemplate='<b>%{text}</b>',
-        textposition='outside',
-        marker_line_width=0,
-        textfont_size=14,
-        textfont_color='white',
-        textfont_family='Arial Black'
-    )
-    fig_rutas_respuesta.update_layout(
-        yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=200, r=50, t=80, b=50),
-        xaxis_title="<b>Número de Casos</b>",
-        yaxis_title="<b>Tipo de Respuesta</b>"
-    )
-    st.plotly_chart(fig_rutas_respuesta, use_container_width=True)    
-    # Tercera fila - Análisis de motivos específicos más reportados (usando respuesta_sub)
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">💬 Análisis de Motivos Reales Más Reportados</h3>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-      # Análisis usando respuesta_sub como motivo real
-    motivos_reales_analysis = df.groupby('respuesta_sub').agg({
-        'id_tema': 'count',
-        'puntos': 'mean',
-        'codigo_cliente_str': 'nunique',
-        'fecha_cierre': lambda x: x.notna().sum() if not x.empty else 0
-    }).round(2).reset_index()
-    motivos_reales_analysis.columns = ['motivo_real', 'total_casos', 'puntos_promedio', 'clientes_afectados', 'casos_cerrados']
-    motivos_reales_analysis['tasa_cierre'] = (motivos_reales_analysis['casos_cerrados'] / motivos_reales_analysis['total_casos']) * 100
-    motivos_reales_analysis = motivos_reales_analysis.sort_values('total_casos', ascending=False).head(15)
-    
-    fig_motivos_reales = px.scatter(
-        motivos_reales_analysis,
-        x='total_casos',
-        y='puntos_promedio',
-        size='clientes_afectados',
-        hover_data=['motivo_real', 'tasa_cierre'],
-        title="💬 Motivos Reales: Frecuencia vs Calidad vs Clientes Afectados",
-        color='tasa_cierre',
-        color_continuous_scale='RdYlGn',
-        height=800,
-        labels={
-            'total_casos': 'Total de Casos',
-            'puntos_promedio': 'Puntos Promedio',
-            'clientes_afectados': 'Clientes Afectados'
-        }
-    )
-    fig_motivos_reales.update_traces(
-        marker=dict(
-            sizemode='diameter',
-            sizemin=10,
-            line_width=0
-        )
-    )
-    fig_motivos_reales.update_layout(
-        xaxis_title="<b>Total de Casos</b>",
-        yaxis_title="<b>Puntos Promedio</b>",
-        margin=dict(l=50, r=50, t=80, b=50)
-    )
-    st.plotly_chart(fig_motivos_reales, use_container_width=True)
-      # Tabla detallada de motivos reales
-    st.markdown("##### 📋 Detalles de Motivos Reales")
-    motivos_reales_details = motivos_reales_analysis[['motivo_real', 'total_casos', 'puntos_promedio', 'clientes_afectados', 'tasa_cierre']].copy()
-    motivos_reales_details.columns = ['Motivo Real', 'Total Casos', 'Puntos Promedio', 'Clientes Afectados', 'Tasa Cierre (%)']
-    st.dataframe(clean_dataframe_for_display(motivos_reales_details), use_container_width=True)
-    
-    # Nueva sección - Análisis de Frecuencia de Temas por ID
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🔢 Análisis de Frecuencia por ID de Tema (Top Reportes)</h3>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    
-    # Análisis de frecuencia por id_tema
-    tema_frequency_analysis = df.groupby('id_tema').agg({
-        'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',  # Tipo más común
-        'codigo_cliente_str': 'nunique',
-        'puntos': 'mean',
-        'fecha_cierre': lambda x: x.notna().sum(),
-        'ruta': 'nunique'
-    }).round(2).reset_index()
-    
-    # Contar frecuencia de cada id_tema
-    tema_counts = df['id_tema'].value_counts().reset_index()
-    tema_counts.columns = ['id_tema', 'frecuencia_reportes']
-    
-    # Merge para tener datos completos
-    tema_frequency_analysis = tema_frequency_analysis.merge(tema_counts, on='id_tema', how='left')
-    tema_frequency_analysis.columns = ['ID_Tema', 'Tipo_Principal', 'Clientes_Unicos', 'Puntos_Promedio', 'Casos_Cerrados', 'Rutas_Afectadas', 'Frecuencia_Reportes']
-    
-    # Calcular tasa de cierre
-    tema_frequency_analysis['Tasa_Cierre'] = (tema_frequency_analysis['Casos_Cerrados'] / tema_frequency_analysis['Frecuencia_Reportes']) * 100
-    
-    # Ordenar por frecuencia de reportes descendente y tomar top 20
-    tema_frequency_analysis = tema_frequency_analysis.sort_values('Frecuencia_Reportes', ascending=False).head(20)
-      # Gráfico de frecuencia de temas
-    fig_tema_frequency = px.bar(
-        tema_frequency_analysis,
-        x='Frecuencia_Reportes',
-        y='ID_Tema',
-        orientation='h',
-        title="🔢 Top 20 IDs de Tema Más Reportados",
-        color='Puntos_Promedio',
-        color_continuous_scale='Plasma',
-        height=800,
-        text='Frecuencia_Reportes',
-        hover_data={
-            'ID_Tema': True,
-            'Tipo_Principal': True,
-            'Frecuencia_Reportes': True,
-            'Clientes_Unicos': True,
-            'Puntos_Promedio': ':.2f',
-            'Tasa_Cierre': ':.1f',
-            'Rutas_Afectadas': True        }
-    )
-    
-    fig_tema_frequency.update_traces(
-        texttemplate='<b>ID: %{y}</b><br><b>%{text} reportes</b>',
-        textposition='outside',
-        marker_line_width=0,
-        textfont_size=14,
-        textfont_color='white'
-    )
-    fig_tema_frequency.update_layout(
-        yaxis={
-            'categoryorder': 'total ascending',
-            'tickformat': '',
-            'type': 'category',
-            'tickfont_size': 14,
-            'tickfont_color': 'white'
-        },
-        margin=dict(l=150, r=100, t=80, b=50),
-        xaxis_title="<b>Frecuencia de Reportes</b>",
-        yaxis_title="<b>ID de Tema</b>",
-        font=dict(size=14)
-    )
-    
-    st.plotly_chart(fig_tema_frequency, use_container_width=True)
-    
-    # Tabla detallada de frecuencia por ID de tema
-    st.markdown("##### 📋 Detalles de Frecuencia por ID de Tema")
-    tema_details = tema_frequency_analysis[['ID_Tema', 'Tipo_Principal', 'Frecuencia_Reportes', 'Clientes_Unicos', 'Puntos_Promedio', 'Tasa_Cierre', 'Rutas_Afectadas']].copy()
-    tema_details.columns = ['ID Tema', 'Tipo Principal', 'Frecuencia', 'Clientes Únicos', 'Puntos Promedio', 'Tasa Cierre (%)', 'Rutas Afectadas']
-    st.dataframe(clean_dataframe_for_display(tema_details), use_container_width=True)
-    
-    # Cuarta fila - Distribución de Centros
-    st.markdown(
-        """
-        <div class="analysis-card">
-            <h3 style="color: white; margin: 0;">🏢 Distribución de Centros por Registros</h3>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    
-    centro_analysis = df.groupby('centro').agg({
-        'id_tema': 'count',
-        'puntos': 'mean',
-        'usuario': 'nunique'
-    }).round(2).reset_index()
-    centro_analysis.columns = ['centro', 'total_registros', 'puntos_promedio', 'usuarios_unicos']
-    centro_analysis = centro_analysis.sort_values('total_registros', ascending=False)
-    
-    fig_centros = px.treemap(
-        centro_analysis,
-        path=['centro'],
-        values='total_registros',
-        color='puntos_promedio',
-        title="🏢 Distribución de Registros por Centro",
-        color_continuous_scale='viridis',
-        height=800
-    )
-    st.plotly_chart(fig_centros, use_container_width=True)
 
 def show_detailed_data(df, merged_df):
-    """Muestra los datos detallados con filtros avanzados mejorados"""
-    st.subheader("📋 Datos Detallados con Filtros Avanzados Completos")
+    """Muestra los datos detallados con filtros avanzados"""
+    st.subheader("📋 Datos Detallados con Filtros Avanzados")
     
     # Verificar si hay datos disponibles
     if df.empty:
         st.warning("⚠️ No hay datos disponibles para mostrar con los filtros actuales.")
         return
     
-    # Filtros avanzados mejorados
-    st.markdown("### 🔍 Centro de Filtros Avanzados")
-      # Primera fila de filtros
-    col1, col2, col3, col4 = st.columns(4)
+    # Filtros básicos
+    col1, col2, col3 = st.columns(3)
+    
     with col1:
         motivos_unicos = ['Todos'] + sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
         motivo_filtro = st.selectbox("🎯 Filtrar por Motivo", motivos_unicos, key="detailed_motivo_filtro")
@@ -2450,313 +2735,43 @@ def show_detailed_data(df, merged_df):
     with col2:
         min_puntos = int(df['puntos'].min()) if not df.empty else 0
         max_puntos = int(df['puntos'].max()) if not df.empty else 5
-        
-        if min_puntos == max_puntos:
-            max_puntos = min_puntos + 1
-        
         puntos_filtro = st.slider("⭐ Rango de Puntos", min_puntos, max_puntos, (min_puntos, max_puntos), key="detailed_puntos_filtro")
     
     with col3:
-        vendedores_unicos = ['Todos'] + sorted([str(v) for v in df['vendedor'].dropna().unique().tolist()])
-        vendedor_filtro = st.selectbox("💼 Filtrar por Vendedor", vendedores_unicos, key="detailed_vendedor_filtro")
-    
-    with col4:
         solo_cerrados = st.checkbox("📋 Solo mostrar registros cerrados", key="detailed_solo_cerrados")
     
-    # Segunda fila de filtros - NUEVOS FILTROS
-    col5, col6, col7, col8 = st.columns(4)
-    
-    with col5:
-        if 'SUPERVISOR' in merged_df.columns:
-            supervisores_disponibles = merged_df['SUPERVISOR'].dropna().unique()
-            supervisores_unicos = ['Todos'] + sorted([str(s) for s in supervisores_disponibles])
-            supervisor_filtro = st.selectbox("👨‍💼 Filtrar por Supervisor", supervisores_unicos, key="detailed_supervisor_filtro")
-        else:
-            supervisor_filtro = 'Todos'
-    
-    with col6:
-        if 'CONTRATISTA' in merged_df.columns:
-            contratistas_disponibles = merged_df['CONTRATISTA'].dropna().unique()
-            contratistas_unicos = ['Todos'] + sorted([str(c) for c in contratistas_disponibles])
-            contratista_filtro = st.selectbox("🏢 Filtrar por Contratista", contratistas_unicos, key="detailed_contratista_filtro")
-        else:
-            contratista_filtro = 'Todos'
-    
-    with col7:
-        respuestas_unicos = ['Todos'] + sorted([str(r) for r in df['respuesta_sub'].dropna().unique().tolist()])
-        respuesta_filtro = st.selectbox("💬 Filtrar por Tipo Respuesta", respuestas_unicos, key="detailed_respuesta_filtro")
-    
-    with col8:
-        trimestres = ['Todos'] + sorted([str(t) for t in df['trimestre_nombre'].dropna().unique().tolist()])
-        trimestre_filtro = st.selectbox("📅 Filtrar por Trimestre", trimestres, key="detailed_trimestre_filtro")
-    
-    # Tercera fila de filtros
-    col9, col10, col11, col12 = st.columns(4)
-    
-    with col9:
-        meses_disponibles = ['Todos'] + sorted([str(m) for m in df['mes_nombre'].dropna().unique().tolist()])
-        mes_filtro = st.selectbox("📆 Filtrar por Mes", meses_disponibles, key="detailed_mes_filtro")
-    
-    with col10:
-        # Top 20 clientes más reportados para filtro rápido
-        clientes_top = df['codigo_cliente'].value_counts().head(20).index.tolist()
-        opciones_cliente = ['Todos', 'Top 20 más reportados'] + sorted([str(c) for c in df['codigo_cliente'].dropna().unique().tolist()])
-        cliente_filtro = st.selectbox("🏪 Filtrar por Cliente", opciones_cliente, key="detailed_cliente_filtro")
-    
-    with col11:
-        centros_unicos = ['Todos'] + sorted([str(c) for c in df['centro'].dropna().unique().tolist()])
-        centro_filtro = st.selectbox("🏢 Filtrar por Centro", centros_unicos, key="detailed_centro_filtro")
-    
-    with col12:
-        check_estados = ['Todos', 'Supervisado (1)', 'No Supervisado (0)']
-        check_filtro = st.selectbox("✅ Estado Supervisión", check_estados, key="detailed_check_filtro")
-    
-    # Aplicar todos los filtros
+    # Aplicar filtros
     df_tabla = df.copy()
     
     if motivo_filtro != 'Todos':
         df_tabla = df_tabla[df_tabla['motivo_retro'] == motivo_filtro]
+    
     df_tabla = df_tabla[
         (df_tabla['puntos'] >= puntos_filtro[0]) & 
         (df_tabla['puntos'] <= puntos_filtro[1])
     ]
     
-    if vendedor_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['vendedor'].astype(str) == vendedor_filtro]
-    
     if solo_cerrados:
         df_tabla = df_tabla[df_tabla['fecha_cierre'].notna()]
     
-    if respuesta_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['respuesta_sub'].astype(str) == respuesta_filtro]
-    
-    if trimestre_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['trimestre_nombre'] == trimestre_filtro]
-    
-    if mes_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['mes_nombre'] == mes_filtro]
-    
-    if cliente_filtro == 'Top 20 más reportados':
-        df_tabla = df_tabla[df_tabla['codigo_cliente'].isin(clientes_top)]
-    elif cliente_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['codigo_cliente'].astype(str) == cliente_filtro]
-    
-    if centro_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['centro'] == centro_filtro]
-      # APLICAR FILTROS DE SUPERVISOR Y CONTRATISTA
-    if supervisor_filtro != 'Todos' and 'SUPERVISOR' in merged_df.columns:
-        # Filtrar merged_df para obtener rutas del supervisor seleccionado
-        rutas_supervisor = merged_df[merged_df['SUPERVISOR'] == supervisor_filtro]['ruta'].unique()
-        df_tabla = df_tabla[df_tabla['ruta'].isin(rutas_supervisor)]
-    
-    if contratista_filtro != 'Todos' and 'CONTRATISTA' in merged_df.columns:
-        # Filtrar merged_df para obtener rutas del contratista seleccionado
-        rutas_contratista = merged_df[merged_df['CONTRATISTA'] == contratista_filtro]['ruta'].unique()
-        df_tabla = df_tabla[df_tabla['ruta'].isin(rutas_contratista)]
-
-    if check_filtro == 'Supervisado (1)':
-        df_tabla = df_tabla[df_tabla['check_supervisor'] == 1]
-    elif check_filtro == 'No Supervisado (0)':
-        df_tabla = df_tabla[df_tabla['check_supervisor'] == 0]
-      # Mostrar estadísticas de la tabla filtrada
-    col_stats1, col_stats2, col_stats3, col_stats4 = st.columns(4)
+    # Mostrar estadísticas
+    col_stats1, col_stats2, col_stats3 = st.columns(3)
     
     with col_stats1:
-        st.metric("📊 Registros Mostrados", f"{len(df_tabla):,}")
+        st.metric("📊 Total de Registros", len(df_tabla))
     
     with col_stats2:
-        if len(df_tabla) > 0:
-            promedio_puntos_filtrado = df_tabla['puntos'].mean()
-            st.metric("⭐ Puntos Promedio", f"{promedio_puntos_filtrado:.2f}")
-        else:
-            st.metric("⭐ Puntos Promedio", "N/A")
+        st.metric("⭐ Puntos Promedio", f"{df_tabla['puntos'].mean():.2f}" if not df_tabla.empty else "0.00")
     
     with col_stats3:
-        if len(df_tabla) > 0:
-            rutas_unicas_filtrado = df_tabla['ruta'].nunique()
-            st.metric("🚚 Rutas Únicas", f"{rutas_unicas_filtrado}")
-        else:
-            st.metric("🚚 Rutas Únicas", "0")
+        tasa_cierre = (df_tabla['fecha_cierre'].notna().sum() / len(df_tabla) * 100) if not df_tabla.empty else 0
+        st.metric("📋 Tasa de Cierre", f"{tasa_cierre:.1f}%")
     
-    with col_stats4:
-        if len(df_tabla) > 0:
-            tasa_cierre_filtrado = (df_tabla['fecha_cierre'].notna().sum() / len(df_tabla)) * 100
-            st.metric("✅ Tasa de Cierre", f"{tasa_cierre_filtrado:.1f}%")
-        else:
-            st.metric("✅ Tasa de Cierre", "0%")
-    
-    # Estadísticas adicionales de supervisores y contratistas
-    if len(df_tabla) > 0 and ('SUPERVISOR' in merged_df.columns or 'CONTRATISTA' in merged_df.columns):
-        st.markdown("### 📊 Estadísticas de Supervisión y Contratistas")
-        col_extra1, col_extra2, col_extra3, col_extra4 = st.columns(4)
-        
-        with col_extra1:
-            if 'SUPERVISOR' in merged_df.columns:
-                # Contar supervisores únicos en las rutas filtradas
-                rutas_filtradas = df_tabla['ruta'].unique()
-                supervisores_en_filtro = merged_df[merged_df['ruta'].isin(rutas_filtradas)]['SUPERVISOR'].nunique()
-                st.metric("👨‍💼 Supervisores", f"{supervisores_en_filtro}")
-        
-        with col_extra2:
-            if 'CONTRATISTA' in merged_df.columns:
-                # Contar contratistas únicos en las rutas filtradas
-                contratistas_en_filtro = merged_df[merged_df['ruta'].isin(rutas_filtradas)]['CONTRATISTA'].nunique()
-                st.metric("🏢 Contratistas", f"{contratistas_en_filtro}")
-        
-        with col_extra3:
-            # Usuarios únicos en el filtro
-            usuarios_unicos = df_tabla['usuario'].nunique()
-            st.metric("👤 Usuarios Únicos", f"{usuarios_unicos}")
-        
-        with col_extra4:
-            # Clientes únicos en el filtro
-            clientes_unicos = df_tabla['codigo_cliente'].nunique()
-            st.metric("🏪 Clientes Únicos", f"{clientes_unicos}")
-      # Crear tabla enriquecida con información de supervisor y contratista
-    if len(df_tabla) > 0:
-        # Combinar df_tabla con merged_df para obtener información de supervisor y contratista
-        df_tabla_enriquecido = df_tabla.merge(
-            merged_df[['ruta', 'SUPERVISOR', 'CONTRATISTA']].drop_duplicates(),
-            on='ruta',
-            how='left'
-        )
-        
-        # Columnas a mostrar en la tabla (ahora con supervisor y contratista)
-        columnas_mostrar = [
-            'fecha_registro', 'usuario', 'ruta', 'SUPERVISOR', 'CONTRATISTA',
-            'codigo_cliente', 'nombre_cliente', 'motivo_retro', 'puntos', 
-            'vendedor', 'observacion', 'respuesta_sub', 'centro', 
-            'check_supervisor', 'fecha_cierre'
-        ]
-        
-        # Filtrar solo las columnas que existen
-        columnas_existentes = [col for col in columnas_mostrar if col in df_tabla_enriquecido.columns]
-        
-        # Mostrar la tabla enriquecida
-        st.dataframe(
-            clean_dataframe_for_display(df_tabla_enriquecido[columnas_existentes].sort_values('fecha_registro', ascending=False)),
-            use_container_width=True,
-            height=500
-        )        # Opciones de descarga mejoradas
-        col_download1, col_download2, col_download3, col_download4 = st.columns(4)        
-        with col_download1:
-            if st.button("📥 Descargar XLSX"):
-                # Usar la tabla enriquecida para descarga
-                if 'df_tabla_enriquecido' in locals():
-                    excel_data = df_tabla_enriquecido
-                else:
-                    excel_data = df_tabla
-                
-                # Crear un buffer para el archivo Excel
-                excel_buffer = BytesIO()
-                
-                # Crear el archivo Excel con múltiples hojas
-                with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                    # Hoja principal con datos filtrados
-                    excel_data.to_excel(writer, sheet_name='Datos_Filtrados', index=False)
-                    
-                    # Hoja de resumen estadístico
-                    resumen_stats = pd.DataFrame({
-                        'Métrica': ['Total Registros', 'Rutas Únicas', 'Usuarios Únicos', 'Clientes Únicos', 
-                                   'Promedio Puntos', 'Tasa de Cierre (%)'],
-                        'Valor': [
-                            len(excel_data),
-                            excel_data['ruta'].nunique(),
-                            excel_data['usuario'].nunique(),
-                            excel_data['codigo_cliente'].nunique(),
-                            round(excel_data['puntos'].mean(), 2),
-                            round((excel_data['fecha_cierre'].notna().sum() / len(excel_data)) * 100, 1)
-                        ]
-                    })
-                    resumen_stats.to_excel(writer, sheet_name='Resumen_Estadistico', index=False)
-                    
-                    # Hoja de Top 10 motivos
-                    top_motivos_df = excel_data['motivo_retro'].value_counts().head(10).reset_index()
-                    top_motivos_df.columns = ['Motivo', 'Cantidad']
-                    top_motivos_df.to_excel(writer, sheet_name='Top_Motivos', index=False)
-                    
-                    # Hoja de Top 10 rutas
-                    top_rutas_df = excel_data['ruta'].value_counts().head(10).reset_index()
-                    top_rutas_df.columns = ['Ruta', 'Cantidad']
-                    top_rutas_df.to_excel(writer, sheet_name='Top_Rutas', index=False)
-                
-                excel_buffer.seek(0)
-                
-                st.download_button(
-                    label="💾 Descargar Datos Filtrados (XLSX)",
-                    data=excel_buffer.getvalue(),
-                    file_name=f"feedbacks_filtrados_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-        
-        with col_download2:
-            if st.button("📊 Generar Reporte Filtrado"):
-                reporte_filtrado = generate_report(df_tabla, merged_df, "completo")
-                st.download_button(
-                    label="📄 Descargar Reporte",
-                    data=reporte_filtrado,
-                    file_name=f"reporte_filtrado_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                    mime="text/plain"
-                )
-        
-        with col_download3:
-            if st.button("📋 Generar PDF Filtrado"):
-                with st.spinner("📊 Generando PDF con gráficas filtradas..."):
-                    try:
-                        # Usar la tabla enriquecida para el PDF
-                        if 'df_tabla_enriquecido' in locals():
-                            pdf_data = generate_pdf_report(df_tabla_enriquecido, merged_df, "completo")
-                        else:
-                            pdf_data = generate_pdf_report(df_tabla, merged_df, "completo")
-                        
-                        st.download_button(
-                            label="📄 Descargar PDF Filtrado",
-                            data=pdf_data,
-                            file_name=f"reporte_filtrado_PDF_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                            mime="application/pdf"
-                        )
-                        st.success("✅ PDF generado exitosamente!")
-                    except Exception as e:
-                        st.error(f"❌ Error generando PDF: {str(e)}")
-                        st.info("💡 Asegúrese de que kaleido esté instalado correctamente.")
-
-        with col_download4:
-            # Estadísticas rápidas de los datos filtrados
-            if st.button("📈 Ver Estadísticas Rápidas"):
-                st.markdown("### 📊 Estadísticas de Datos Filtrados")
-                
-                stats_col1, stats_col2, stats_col3 = st.columns(3)
-                
-                with stats_col1:
-                    st.markdown("**Top 5 Motivos:**")
-                    top_motivos = df_tabla['motivo_retro'].value_counts().head(5)
-                    for motivo, count in top_motivos.items():
-                        st.write(f"• {motivo}: {count}")
-                
-                with stats_col2:
-                    st.markdown("**Top 5 Rutas:**")
-                    top_rutas = df_tabla['ruta'].value_counts().head(5)
-                    for ruta, count in top_rutas.items():
-                        st.write(f"• {ruta}: {count}")
-                
-                with stats_col3:
-                    if 'SUPERVISOR' in merged_df.columns or 'CONTRATISTA' in merged_df.columns:
-                        st.markdown("**Supervisión:**")
-                        if 'SUPERVISOR' in merged_df.columns:
-                            rutas_con_supervisor = merged_df[merged_df['ruta'].isin(df_tabla['ruta'].unique())]
-                            top_supervisores = rutas_con_supervisor['SUPERVISOR'].value_counts().head(3)
-                            st.write("**Top Supervisores:**")
-                            for supervisor, count in top_supervisores.items():
-                                st.write(f"• {supervisor}: {count} rutas")
-                        
-                        if 'CONTRATISTA' in merged_df.columns:
-                            top_contratistas = rutas_con_supervisor['CONTRATISTA'].value_counts().head(3)
-                            st.write("**Top Contratistas:**")
-                            for contratista, count in top_contratistas.items():
-                                st.write(f"• {contratista}: {count} rutas")
+    # Mostrar tabla
+    if not df_tabla.empty:
+        st.dataframe(clean_dataframe_for_display(df_tabla), use_container_width=True)
     else:
-        st.warning("⚠️ No hay registros que coincidan con los filtros seleccionados.")
-        st.info("💡 Intenta ajustar los filtros para ver más datos.")
+        st.warning("⚠️ No hay datos que coincidan con los filtros seleccionados.")
 
 if __name__ == "__main__":
     main()
