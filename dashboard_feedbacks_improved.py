@@ -734,7 +734,7 @@ def generate_pdf_report(df, merged_df, report_type="completo"):
         story = []
         
         # Título principal
-        story.append(Paragraph("📊 REPORTE FEEDBACKS H1 - ANÁLISIS COMPLETO", title_style))
+        story.append(Paragraph("📊 REPORTE FEEDBACKS - SOYAPANGO", title_style))
         story.append(Paragraph(f"Generado el {datetime.now().strftime('%d/%m/%Y a las %H:%M:%S')}", styles['Normal']))
         story.append(Spacer(1, 20))
         
@@ -889,7 +889,7 @@ def generate_pdf_report(df, merged_df, report_type="completo"):
         
         # Pie de página
         story.append(Spacer(1, 30))
-        story.append(Paragraph("Reporte generado automáticamente por Dashboard Feedbacks H1", styles['Italic']))
+        story.append(Paragraph("Reporte generado automáticamente por Dashboard SOYAPANGO", styles['Italic']))
         
         # Construir PDF
         doc.build(story)
