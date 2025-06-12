@@ -3053,7 +3053,11 @@ def show_routes_analysis(df, merged_df):
     # Este análisis de cumplimiento de meta mensual se movió a la sección "Supervisores y Contratistas" para evitar duplicación
 
 def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
-    """Análisis integral dedicado a Supervisores y Contratistas"""    
+    """Análisis integral dedicado a Supervisores y Contratistas
+    
+    Esta función muestra análisis de supervisores y contratistas, incluyendo rutas con cero feedbacks.
+    Se ha corregido para usar rutas_df directamente para asegurar consistencia entre ambas tablas.
+    """
     st.subheader("👨‍💼 Análisis Integral por Supervisores y Contratistas")
     
     # Verificar que tenemos los datos necesarios
@@ -3110,10 +3114,11 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
     # --- Análisis por SUPERVISOR ---
     if 'SUPERVISOR' in df_meta.columns:
         st.markdown("### 👨‍💼 Análisis por Supervisores")
-        
-        # ========== MEJORA: Incluir rutas con 0 registros ==========
+          # ========== MEJORA: Incluir rutas con 0 registros ==========
         # 1. Obtener todas las rutas asignadas a supervisores (de BD_Rutas completo)
-        todas_rutas_supervisor = merged_df[['SUPERVISOR', 'ruta']].drop_duplicates()
+        # Usar rutas_df en lugar de merged_df para asegurar todas las rutas estén incluidas
+        todas_rutas_supervisor = rutas_df[['SUPERVISOR', 'RUTA']].drop_duplicates()
+        todas_rutas_supervisor = todas_rutas_supervisor.rename(columns={'RUTA': 'ruta'})
         
         # 2. Calcular registros por supervisor-ruta para el período filtrado
         registros_activos = df_meta.groupby(['SUPERVISOR', 'ruta']).agg({'id_tema':'count'}).reset_index()
@@ -3149,9 +3154,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         )
           # KPIs por supervisor
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-        with col_kpi1:
-            # ========== CORREGIDO: Usar total de rutas desde BD_Rutas.xlsx ==========
-            total_rutas_sup = total_rutas_disponibles  # Usar todas las rutas disponibles, no solo las activas
+        with col_kpi1:            # ========== CORREGIDO: Usar el número de rutas del dataframe de supervisores ==========
+            total_rutas_sup = supervisor_rutas.shape[0]  # Usar el número real de rutas del supervisor
             rutas_cumplen_sup = supervisor_rutas['Meta Cumplida'].sum()
             porcentaje_cumple_sup = (rutas_cumplen_sup/total_rutas_sup*100) if total_rutas_sup > 0 else 0
             st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_sup:.1f}%", f"Meta: {meta_mensual} reg/ruta")
@@ -3193,10 +3197,11 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
       # --- Análisis por CONTRATISTA ---
     if 'CONTRATISTA' in df_meta.columns:
         st.markdown("### 🏢 Análisis por Contratistas")
-        
-        # ========== MEJORA: Incluir rutas con 0 registros ==========
+          # ========== MEJORA: Incluir rutas con 0 registros ==========
         # 1. Obtener todas las rutas asignadas a contratistas (de BD_Rutas completo)
-        todas_rutas_contratista = merged_df[['CONTRATISTA', 'ruta']].drop_duplicates()
+        # Usar rutas_df para mantener consistencia con la sección de supervisores
+        todas_rutas_contratista = rutas_df[['CONTRATISTA', 'RUTA']].drop_duplicates()
+        todas_rutas_contratista = todas_rutas_contratista.rename(columns={'RUTA': 'ruta'})
         
         # 2. Calcular registros por contratista-ruta para el período filtrado
         registros_activos_con = df_meta.groupby(['CONTRATISTA', 'ruta']).agg({'id_tema':'count'}).reset_index()
@@ -3225,9 +3230,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         )
           # KPIs por contratista
         col_kpi4, col_kpi5, col_kpi6 = st.columns(3)
-        with col_kpi4:
-            # ========== CORREGIDO: Usar total de rutas desde BD_Rutas.xlsx ==========
-            total_rutas_con = total_rutas_disponibles  # Usar todas las rutas disponibles, no solo las activas
+        with col_kpi4:            # ========== CORREGIDO: Usar el número de rutas del dataframe de contratistas ==========
+            total_rutas_con = contratista_rutas.shape[0]  # Usar el número real de rutas del contratista
             rutas_cumplen_con = contratista_rutas['Meta Cumplida'].sum()
             porcentaje_cumple_con = (rutas_cumplen_con/total_rutas_con*100) if total_rutas_con > 0 else 0
             st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_con:.1f}%", f"Meta: {meta_mensual} reg/ruta")
