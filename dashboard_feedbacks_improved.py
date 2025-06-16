@@ -23,6 +23,8 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 # NUEVA IMPORTACIÓN PARA XLSX
 import xlsxwriter
+# IMPORTAR VISUALIZACIONES MEJORADAS
+from enhanced_visualizations import add_day_hour_heatmap, add_recurrence_analysis, add_comparative_time_analysis, add_problem_resolution_analysis
 warnings.filterwarnings('ignore')
 
 # Configuración de página
@@ -1246,13 +1248,7 @@ def main():
     
     if feedbacks_df is None:
         st.error("❌ No se pudieron cargar los datos. Verifica que los archivos Excel estén en el directorio correcto.")
-        return
-      # Mostrar resumen de calidad de datos en sidebar
-    with st.sidebar.expander("📊 Calidad de Datos", expanded=False):
-        st.metric("Total Feedbacks", f"{data_quality['total_feedbacks']:,}")
-        st.metric("Rutas en Feedbacks", data_quality['rutas_feedbacks'])
-        st.metric("Rutas Matched", data_quality['rutas_matched'])
-        # Mensajes de advertencia removidos para limpiar la interfaz
+        return    # Se eliminó la sección de resumen de calidad de datos en sidebar
       # Sidebar con filtros mejorados
     st.sidebar.markdown("## 🔧 Centro de Control y Filtros")
       # === NUEVA SECCIÓN: GESTIÓN AUTOMÁTICA DE BASE DE DATOS DE RUTAS ===
@@ -2437,7 +2433,6 @@ def show_temporal_analysis(df, merged_df, rutas_df):
             f"{cobertura_promedio:.1f}%",
             "de rutas activas"
         )
-    
     with col4:
         mejor_mes_cobertura = eficiencia_temporal.loc[eficiencia_temporal['Cobertura'].idxmax(), 'mes_nombre']
         mejor_cobertura = eficiencia_temporal['Cobertura'].max()
@@ -2445,7 +2440,19 @@ def show_temporal_analysis(df, merged_df, rutas_df):
             "🎯 Mejor Cobertura",
             f"{mejor_cobertura:.1f}%",
             f"en {mejor_mes_cobertura}"
-        )
+        )    # === SECCIÓN 7: MAPA DE CALOR DE ACTIVIDAD POR DÍA Y HORA ===
+    st.markdown("---")
+    st.markdown("### ⏰ Patrones Temporales Avanzados")
+    add_day_hour_heatmap(df)
+      # === SECCIÓN 9: ANÁLISIS DE CLIENTES RECURRENTES ===
+    st.markdown("---")
+    st.markdown("### 🔄 Análisis de Patrones de Clientes")
+    add_recurrence_analysis(df)
+    
+    # === SECCIÓN 10: ANÁLISIS DE PROBLEMAS Y RESOLUCIÓN ===
+    st.markdown("---")
+    st.markdown("### 🛠️ Análisis de Problemas Reportados y Tiempos de Resolución")
+    add_problem_resolution_analysis(df)
 
 def show_routes_analysis(df, merged_df):
     """Análisis completo por rutas con supervisores y contratistas"""
@@ -2486,8 +2493,7 @@ def show_routes_analysis(df, merged_df):
             height=900,  # Aumentar altura
             text='registros',
             color='registros',
-            color_continuous_scale='Plasma'
-        )        
+            color_continuous_scale='Plasma'        )        
         fig_contratista_rutas.update_traces(
             texttemplate='<b>%{text}</b>',
             textposition='outside',
@@ -2496,83 +2502,79 @@ def show_routes_analysis(df, merged_df):
             textfont_color='white',
             textfont_family='Arial Black'
         )
-        
         fig_contratista_rutas.update_layout(
             yaxis={
                 'categoryorder': 'total ascending',
                 'tickfont_size': 12,
-                'tickfont_color': 'black'
+                'tickfont_color': 'white'  # Cambiado a blanco para mejor visibilidad
             },
             margin=dict(l=350, r=100, t=100, b=80),  # Más espacio para etiquetas descriptivas
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(size=12),
+            font=dict(size=12, color='white'),  # Asegurar que todos los textos sean blancos
             title_font_size=16,
             xaxis_title="<b>Número de Registros</b>",
             yaxis_title="<b>Ruta</b>"
         )
-        st.plotly_chart(fig_contratista_rutas, use_container_width=True)
+    st.plotly_chart(fig_contratista_rutas, use_container_width=True)
           # Segunda fila - Top 3 rutas por supervisor (fila completa)        
-        st.markdown(
+    st.markdown(
             """
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);">
                 <h3 style="color: white; margin: 0; text-align: center;">🏆 Top 3 Rutas por Supervisor</h3>
             </div>
             """, 
             unsafe_allow_html=True
-        )
-          # Análisis por supervisor
-        supervisor_rutas = merged_df.groupby(['SUPERVISOR', 'ruta']).size().reset_index()
-        supervisor_rutas.columns = ['supervisor', 'ruta', 'registros']
-        
-        # Top 3 rutas por cada supervisor
-        top_rutas_supervisor = supervisor_rutas.groupby('supervisor').apply(
-            lambda x: x.nlargest(3, 'registros')
-        ).reset_index(drop=True)
-        
-        # Ordenar por supervisor para mejor visualización
-        top_rutas_supervisor = top_rutas_supervisor.sort_values(['supervisor', 'registros'], ascending=[True, False])
-        
-        # Crear etiquetas más descriptivas para mejor organización
-        top_rutas_supervisor['etiqueta_completa'] = (
-            top_rutas_supervisor['supervisor'].astype(str) + ' → ' + 
-            top_rutas_supervisor['ruta'].astype(str)
-        )        
-        fig_supervisor_rutas = px.bar(
-            top_rutas_supervisor,
-            x='registros',
-            y='etiqueta_completa',
-            title="👨‍💼 Top 3 Rutas por Supervisor - Análisis Detallado",
-            orientation='h',
-            height=900,  # Aumentar altura
-            text='registros',
-            color='registros',
-            color_continuous_scale='Plasma'
-        )        
-        fig_supervisor_rutas.update_traces(
-            texttemplate='<b>%{text}</b>',
-            textposition='outside',
-            marker_line_width=0,
-            textfont_size=14,
-            textfont_color='white',
-            textfont_family='Arial Black'
-        )
-        
-        fig_supervisor_rutas.update_layout(
-            yaxis={
-                'categoryorder': 'total ascending',
-                'tickfont_size': 12,
-                'tickfont_color': 'black'
-            },
-            margin=dict(l=350, r=100, t=100, b=80),  # Más espacio para etiquetas descriptivas
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(size=12),
-            title_font_size=16,
-            xaxis_title="<b>Número de Registros</b>",
-            yaxis_title="<b>Ruta</b>"
-        )
-        st.plotly_chart(fig_supervisor_rutas, use_container_width=True)      
+        )      # Análisis por supervisor
+    supervisor_rutas = merged_df.groupby(['SUPERVISOR', 'ruta']).size().reset_index()
+    supervisor_rutas.columns = ['supervisor', 'ruta', 'registros']
+    
+    # Top 3 rutas por cada supervisor
+    top_rutas_supervisor = supervisor_rutas.groupby('supervisor').apply(
+        lambda x: x.nlargest(3, 'registros')
+    ).reset_index(drop=True)
+      # Ordenar por supervisor para mejor visualización
+    top_rutas_supervisor = top_rutas_supervisor.sort_values(['supervisor', 'registros'], ascending=[True, False])
+    
+    # Crear etiquetas más descriptivas para mejor organización
+    top_rutas_supervisor['etiqueta_completa'] = (
+        top_rutas_supervisor['supervisor'].astype(str) + ' → ' + 
+        top_rutas_supervisor['ruta'].astype(str)
+    )          
+    fig_supervisor_rutas = px.bar(
+        top_rutas_supervisor,
+        x='registros',
+        y='etiqueta_completa',
+        title="👨‍💼 Top 3 Rutas por Supervisor - Análisis Detallado",
+        orientation='h',
+        height=900,  # Aumentar altura
+        text='registros',
+        color='registros',
+        color_continuous_scale='Plasma'
+    )        
+    fig_supervisor_rutas.update_traces(
+        texttemplate='<b>%{text}</b>',
+        textposition='outside',
+        marker_line_width=0,
+        textfont_size=14,
+        textfont_color='white',
+        textfont_family='Arial Black'
+    )          
+    fig_supervisor_rutas.update_layout(
+        yaxis={
+            'categoryorder': 'total ascending',
+            'tickfont_size': 12,
+            'tickfont_color': 'white'  # Cambiado a blanco para mejor visibilidad
+        },
+        margin=dict(l=350, r=100, t=100, b=80),  # Más espacio para etiquetas descriptivas
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(size=12, color='white'),
+        title_font_size=16,
+        xaxis_title="<b>Número de Registros</b>",
+        yaxis_title="<b>Ruta</b>"
+    )
+    st.plotly_chart(fig_supervisor_rutas, use_container_width=True)
     # Cuarta fila - Top rutas con más registros generales (fila completa)
     st.markdown(
         """
@@ -2603,17 +2605,19 @@ def show_routes_analysis(df, merged_df):
         textfont_size=14,
         textfont_color='white',
         textfont_family='Arial Black'
-    )
+    )    
     fig_top_rutas.update_layout(
         yaxis={
             'categoryorder': 'total ascending',
             'tickfont_size': 14,
-            'tickfont_color': 'black'
+            'tickfont_color': 'white'
         },
         margin=dict(l=150, r=100, t=80, b=50),
         xaxis_title="<b>Total de Registros</b>",
         yaxis_title="<b>Ruta</b>",
-        font=dict(size=14)
+        font=dict(size=14, color='white'),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
     )
     st.plotly_chart(fig_top_rutas, use_container_width=True)
       # Tercera fila - Análisis de eficiencia por ruta (fila completa)
@@ -2742,21 +2746,28 @@ def show_routes_analysis(df, merged_df):
             color_continuous_scale='Reds_r',
             height=600,
             text='total_registros'
-        )
+        )        
         fig_offenders_rutas.update_traces(
             texttemplate='%{text} registros',
             textposition='outside',
-            marker_line_width=0
+            marker_line_width=0,
+            textfont=dict(size=12, color='white')
         )
+        
         fig_offenders_rutas.update_layout(
             yaxis={'categoryorder': 'total ascending'},
             margin=dict(l=150, r=50, t=80, b=50),
             xaxis_title="<b>Número de Registros</b>",
-            yaxis_title="<b>Ruta</b>"
+            yaxis_title="<b>Ruta</b>",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(size=12, color='white')
         )
+        
         st.plotly_chart(fig_offenders_rutas, use_container_width=True)
-          # Tabla con detalles de rutas con baja actividad
-        st.markdown("#### 📋 Detalles de Rutas con Baja Actividad")        
+        
+        # Tabla con detalles de rutas con baja actividad
+        st.markdown("#### 📋 Detalles de Rutas con Baja Actividad")
         offenders_details = rutas_con_pocos_registros[['ruta', 'total_registros', 'tiempo_promedio_cierre', 'tasa_cierre']].copy()
         offenders_details.columns = ['Ruta', 'Total Registros', 'Tiempo Promedio Cierre (días)', 'Tasa Cierre (%)']
         st.dataframe(clean_dataframe_for_display(offenders_details), use_container_width=True)
@@ -2797,8 +2808,8 @@ def show_routes_analysis(df, merged_df):
             labels={'value': 'Número de Casos', 'variable': 'Estado', 'supervisor': 'Supervisor'},
             color_discrete_map={'casos_cerrados': '#32CD32', 'casos_pendientes': '#FF6347'},
             height=700,
-            text='value'
-        )          
+            text='value'        )
+        
         fig_supervisor_comparison.update_traces(
             texttemplate='<b>%{text}</b>',
             textposition='outside',
@@ -2806,12 +2817,16 @@ def show_routes_analysis(df, merged_df):
             textfont_size=12,
             textfont_color='white'
         )
+        
         fig_supervisor_comparison.update_layout(
             yaxis={'categoryorder': 'total ascending'},
             margin=dict(l=200, r=100, t=80, b=50),
             xaxis_title="<b>Número de Casos</b>",
             yaxis_title="<b>Supervisor</b>",
-            legend_title="Estado del Caso"
+            legend_title="Estado del Caso",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(size=12, color='white')
         )
         st.plotly_chart(fig_supervisor_comparison, use_container_width=True)
         
@@ -2826,19 +2841,23 @@ def show_routes_analysis(df, merged_df):
             color_continuous_scale='RdYlGn_r',
             height=700,
             text='tasa_cierre'
-        )        
+        )            
         fig_supervisor_cierre.update_traces(
             texttemplate='<b>%{text:.1f}%</b>',
             textposition='outside',
-            marker_line_width=0,        textfont_size=12,
-           
+            marker_line_width=0,
+            textfont_size=12,
             textfont_color='white'
         )
+        
         fig_supervisor_cierre.update_layout(
             yaxis={'categoryorder': 'total ascending'},
             margin=dict(l=200, r=100, t=80, b=50),
             xaxis_title="<b>Tasa de Cierre (%)</b>",
-            yaxis_title="<b>Supervisor</b>"
+            yaxis_title="<b>Supervisor</b>",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(size=12, color='white')
         )
         st.plotly_chart(fig_supervisor_cierre, use_container_width=True)
         
@@ -2891,7 +2910,7 @@ def show_routes_analysis(df, merged_df):
             color_discrete_map={'casos_cerrados': '#1E90FF', 'casos_pendientes': '#FFD700'},
             height=700,
             text='value'
-        )          
+        )            
         fig_contratista_casos.update_traces(
             texttemplate='<b>%{text}</b>',
             textposition='outside',
@@ -2899,12 +2918,16 @@ def show_routes_analysis(df, merged_df):
             textfont_size=12,
             textfont_color='white'
         )
+        
         fig_contratista_casos.update_layout(
             yaxis={'categoryorder': 'total ascending'},
             margin=dict(l=250, r=100, t=80, b=50),
             xaxis_title="<b>Número de Casos</b>",
             yaxis_title="<b>Contratista</b>",
-            legend_title="Estado del Caso"
+            legend_title="Estado del Caso",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(size=12, color='white')
         )
         st.plotly_chart(fig_contratista_casos, use_container_width=True)
         
@@ -2924,21 +2947,28 @@ def show_routes_analysis(df, merged_df):
             textposition='outside',
             marker_line_width=0,
             textfont_size=12,
-            textfont_color='white'
-        )
+            textfont_color='white'        )
+        
         fig_motivos_contratista.update_layout(
             yaxis={
-            'categoryorder': 'total ascending'},
+                'categoryorder': 'total ascending'
+            },
             margin=dict(l=300, r=100, t=80, b=50),
             xaxis_title="<b>Número de Casos</b>",
-            yaxis_title="<b>Motivo</b>"
+            yaxis_title="<b>Motivo</b>",
+            font=dict(color='white', size=12),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
         )
         st.plotly_chart(fig_motivos_contratista, use_container_width=True)
         
-        # Tabla con análisis detallado de contratistas        st.markdown("#### 📊 Análisis Completo de Contratistas")
+        # Tabla con análisis detallado de contratistas
+        st.markdown("#### 📊 Análisis Completo de Contratistas")
         contratista_details = contratista_analysis[['contratista', 'total_casos', 'casos_cerrados', 'casos_pendientes', 'tasa_cierre', 'tiempo_promedio_cierre', 'rutas_trabajadas', 'motivo_principal', 'tipos_respuesta']].copy()
         contratista_details.columns = ['Contratista', 'Total Casos', 'Casos Cerrados', 'Casos Pendientes', 'Tasa Cierre (%)', 'Tiempo Promedio Cierre (días)', 'Rutas Trabajadas', 'Motivo Principal', 'Tipos de Respuesta']
-        st.dataframe(clean_dataframe_for_display(contratista_details), use_container_width=True)# Séptima fila - Análisis de motivos específicos en lugar de números
+        st.dataframe(clean_dataframe_for_display(contratista_details), use_container_width=True)
+        
+    # Séptima fila - Análisis de motivos específicos en lugar de números
     st.markdown(
         """
         <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);">
@@ -2965,7 +2995,8 @@ def show_routes_analysis(df, merged_df):
         x='total_casos',
         y='motivo_retro',
         orientation='h',
-        title="🎯 Top 15 Motivos Específicos de Retroalimentación",        color='tiempo_promedio_cierre',
+        title="🎯 Top 15 Motivos Específicos de Retroalimentación",
+        color='tiempo_promedio_cierre',
         color_continuous_scale='RdYlBu_r',
         height=700,
         hover_data={
@@ -2975,18 +3006,25 @@ def show_routes_analysis(df, merged_df):
             'tasa_cierre': ':.1f',
             'clientes_afectados': True
         }
-    )
+    )    
     fig_motivos.update_traces(
         texttemplate='%{text} casos',
         textposition='outside',
-        marker_line_width=0
+        marker_line_width=0,
+        textfont=dict(size=12, color='white')
     )
+    
     fig_motivos.update_layout(
         yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=200, r=50, t=80, b=50)
+        margin=dict(l=200, r=50, t=80, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(size=12, color='white')
     )
+    
     st.plotly_chart(fig_motivos, use_container_width=True)
-      # Tabla detallada de motivos
+    
+    # Tabla detallada de motivos
     st.markdown("#### 📋 Detalles Completos de Motivos")
     motivos_details = motivos_analysis[['motivo_retro', 'total_casos', 'tiempo_promedio_cierre', 'tasa_cierre', 'clientes_afectados', 'desviacion_tiempo_cierre']].copy()
     motivos_details.columns = ['Motivo', 'Total Casos', 'Tiempo Promedio Cierre (días)', 'Tasa Cierre (%)', 'Clientes Afectados', 'Desviación Tiempo Cierre']
@@ -3029,13 +3067,14 @@ def show_routes_analysis(df, merged_df):
             'tasa_cierre': ':.1f',
             'clientes_afectados': True
         }
-    )    
+    )      
     fig_respuestas.update_traces(
         texttemplate='<b>%{x}</b>',
         textposition='outside',
         marker_line_width=0,
         textfont=dict(size=10, color='white')
-    )    
+    )
+    
     fig_respuestas.update_layout(
         yaxis={'categoryorder': 'total ascending'},
         margin=dict(l=250, r=100, t=80, b=50),
@@ -3045,7 +3084,10 @@ def show_routes_analysis(df, merged_df):
         xaxis_title="<b>Total de Casos</b>",
         yaxis_title="<b>Tipo de Respuesta</b>"
     )
-    st.plotly_chart(fig_respuestas, use_container_width=True)    # Tabla detallada de respuestas
+    
+    st.plotly_chart(fig_respuestas, use_container_width=True)
+    
+    # Tabla detallada de respuestas
     st.markdown("#### 📋 Detalles Completos de Tipos de Respuesta")
     respuestas_details = respuestas_analysis[['respuesta_sub', 'total_casos', 'tiempo_promedio_cierre', 'tasa_cierre', 'clientes_afectados', 'desviacion_tiempo_cierre']].copy()
     respuestas_details.columns = ['Tipo de Respuesta', 'Total Casos', 'Tiempo Promedio Cierre (días)', 'Tasa Cierre (%)', 'Clientes Afectados', 'Desviación Tiempo Cierre']
@@ -3080,8 +3122,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         """,
         unsafe_allow_html=True
     )
-    
-    # Filtros dinámicos mejorados
+      # Filtros dinámicos mejorados en dos filas
+    # Primera fila de filtros - Mes, Supervisor y Contratista
     col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
     with col_filtro1:
         # Ordenar meses cronológicamente
@@ -3101,8 +3143,7 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             contratista_meta = st.selectbox("🏢 Filtrar por Contratista:", contratistas_disp, key="meta_contratista")
         else:
             contratista_meta = 'Todos'
-    
-    # Aplicar filtros
+      # Se removieron los filtros adicionales de Tipo de Reporte y Motivo según lo solicitado    # Aplicar filtros
     df_meta = merged_df[merged_df['mes_nombre'] == mes_meta].copy()
     
     if supervisor_meta != 'Todos' and 'SUPERVISOR' in df_meta.columns:
@@ -3110,6 +3151,15 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
     
     if contratista_meta != 'Todos' and 'CONTRATISTA' in df_meta.columns:
         df_meta = df_meta[df_meta['CONTRATISTA'] == contratista_meta]
+          # Crear mensaje descriptivo de filtros aplicados
+    filtros_aplicados = []
+    if supervisor_meta != 'Todos':
+        filtros_aplicados.append(f"Supervisor: {supervisor_meta}")
+    if contratista_meta != 'Todos':
+        filtros_aplicados.append(f"Contratista: {contratista_meta}")
+    
+    filtros_mensaje = ", ".join(filtros_aplicados) if filtros_aplicados else "ninguno"
+    st.info(f"🔍 Mostrando datos para el mes de {mes_meta}. Filtros aplicados: {filtros_mensaje}.")
     
     # --- Análisis por SUPERVISOR ---
     if 'SUPERVISOR' in df_meta.columns:
@@ -4044,9 +4094,58 @@ def show_advanced_analysis(df, merged_df):
     st.subheader("📊 Análisis Avanzado de Clientes e Insights Profundos")
     
     # Preparar datos de clientes - formatear correctamente el código de cliente
-    df['codigo_cliente_display'] = df['codigo_cliente'].apply(lambda x: f"Cliente-{str(x).zfill(6)}")
+    df['codigo_cliente_display'] = df['codigo_cliente'].apply(lambda x: f"Cliente-{str(x).zfill(6)}")    # === FILTROS PARA ANÁLISIS DE CLIENTES ===
+    st.markdown("#### 🔍 Filtros de Análisis")
+    st.markdown("Utilice los siguientes filtros para refinar el análisis de clientes según sus necesidades.")
+    # Cambiamos de 3 a 4 columnas para agregar el nuevo filtro
+    col_filtro1, col_filtro2, col_filtro3, col_filtro4 = st.columns(4)
     
-    # === SECCIÓN 1: TOP CLIENTES PROBLEMÁTICOS ===
+    with col_filtro1:
+        # Filtro por Tipo de Reporte (antes llamado Motivo) - usa motivo_retro
+        tipos_reporte_disp = ['Todos']
+        if 'motivo_retro' in df.columns:
+            tipos_reporte_disp += sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
+        tipo_reporte_filtro = st.selectbox("📋 Filtrar por Tipo de Reporte:", tipos_reporte_disp, key="cliente_tipo_reporte_filtro")
+    
+    with col_filtro2:
+        # Filtro por Motivo (nuevo) - usa respuesta_sub
+        motivos_disp = ['Todos']
+        if 'respuesta_sub' in df.columns:
+            motivos_disp += sorted([str(m) for m in df['respuesta_sub'].dropna().unique().tolist()])
+        motivo_filtro = st.selectbox("🎯 Filtrar por Motivo:", motivos_disp, key="cliente_motivo_filtro")
+    
+    with col_filtro3:
+        # Filtro por Cliente
+        clientes_disp = ['Todos']
+        clientes_disp += sorted([c for c in df['codigo_cliente_display'].dropna().unique().tolist()])
+        cliente_filtro = st.selectbox("👥 Filtrar por Cliente:", clientes_disp, key="cliente_id_filtro")
+    
+    with col_filtro4:
+        # Filtro por Frecuencia de reportes
+        frecuencia_options = [
+            'Todos',
+            '1 reporte',
+            '2-4 reportes',
+            '5-10 reportes',
+            'Más de 10 reportes'
+        ]
+        frecuencia_filtro = st.selectbox("📊 Filtrar por Frecuencia de Reportes:", 
+                                         frecuencia_options, key="cliente_frecuencia_filtro")
+      # Aplicar filtros
+    df_filtrado = df.copy()
+    
+    # Filtro por Tipo de Reporte (motivo_retro)
+    if tipo_reporte_filtro != 'Todos' and 'motivo_retro' in df_filtrado.columns:
+        df_filtrado = df_filtrado[df_filtrado['motivo_retro'] == tipo_reporte_filtro]
+    
+    # Filtro por Motivo (respuesta_sub)
+    if motivo_filtro != 'Todos' and 'respuesta_sub' in df_filtrado.columns:
+        df_filtrado = df_filtrado[df_filtrado['respuesta_sub'] == motivo_filtro]
+    
+    # Filtro por Cliente
+    if cliente_filtro != 'Todos':
+        df_filtrado = df_filtrado[df_filtrado['codigo_cliente_display'] == cliente_filtro]
+      # === SECCIÓN 1: TOP CLIENTES PROBLEMÁTICOS ===
     st.markdown(
         """
         <div class="analysis-card">
@@ -4055,41 +4154,75 @@ def show_advanced_analysis(df, merged_df):
         """, 
         unsafe_allow_html=True
     )
-      # Análisis completo de clientes
-    clientes_analysis = df.groupby(['codigo_cliente', 'codigo_cliente_display']).agg({
+    
+    # Análisis completo de clientes con dataframe filtrado
+    clientes_analysis = df_filtrado.groupby(['codigo_cliente', 'codigo_cliente_display']).agg({
         'id_tema': 'count',
         'respuesta_sub': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
         'tiempo_cierre_dias': 'mean',
         'fecha_cierre': lambda x: x.notna().sum(),
         'ruta': lambda x: x.mode().iloc[0] if not x.empty and len(x.mode()) > 0 else 'N/A',
         'usuario': 'nunique'
-    }).round(2).reset_index()
+    }).round(2).reset_index()    
     clientes_analysis.columns = ['codigo_cliente', 'codigo_cliente_display', 'total_reportes', 'motivo_principal', 'tiempo_promedio_cierre', 'casos_cerrados', 'ruta_principal', 'usuarios_involucrados']
     clientes_analysis['tasa_cierre'] = (clientes_analysis['casos_cerrados'] / clientes_analysis['total_reportes']) * 100
+    
+    # Aplicar filtro de frecuencia después de agrupar
+    if frecuencia_filtro != 'Todos':
+        if frecuencia_filtro == '1 reporte':
+            clientes_analysis = clientes_analysis[clientes_analysis['total_reportes'] == 1]
+        elif frecuencia_filtro == '2-4 reportes':
+            clientes_analysis = clientes_analysis[(clientes_analysis['total_reportes'] >= 2) & 
+                                               (clientes_analysis['total_reportes'] <= 4)]
+        elif frecuencia_filtro == '5-10 reportes':
+            clientes_analysis = clientes_analysis[(clientes_analysis['total_reportes'] >= 5) & 
+                                               (clientes_analysis['total_reportes'] <= 10)]
+        elif frecuencia_filtro == 'Más de 10 reportes':
+            clientes_analysis = clientes_analysis[clientes_analysis['total_reportes'] > 10]
+    
     clientes_analysis = clientes_analysis.sort_values('total_reportes', ascending=False)
       # Crear categorías de riesgo para TODOS los clientes
     clientes_analysis['categoria_riesgo'] = clientes_analysis.apply(lambda x: 
         'Alto Riesgo' if x['total_reportes'] >= 10 and x['tasa_cierre'] < 50 else
         'Riesgo Medio' if x['total_reportes'] >= 5 and x['tasa_cierre'] < 70 else
-        'Bajo Riesgo', axis=1)
+        'Bajo Riesgo', axis=1)      # Mostrar info de clientes en los filtros actuales
+    total_clientes_filtrados = len(clientes_analysis)
     
-    # Top 20 clientes problemáticos
-    top_clientes = clientes_analysis.head(20).copy()
+    # Crear mensaje descriptivo de filtros aplicados
+    filtros_aplicados = []
+    if tipo_reporte_filtro != 'Todos':
+        filtros_aplicados.append(f"Tipo de Reporte: {tipo_reporte_filtro}")
+    if motivo_filtro != 'Todos':
+        filtros_aplicados.append(f"Motivo: {motivo_filtro}")
+    if cliente_filtro != 'Todos':
+        filtros_aplicados.append(f"Cliente: {cliente_filtro}")
+    if frecuencia_filtro != 'Todos':
+        filtros_aplicados.append(f"Frecuencia: {frecuencia_filtro}")
     
-    # Gráfico principal de barras horizontal con mejor diseño
-    fig_clientes_main = px.bar(
-        top_clientes,
-        x='total_reportes',
-        y='codigo_cliente_display',
-        orientation='h',
-        title="🎯 Top 20 Clientes Problemáticos",
-        color='categoria_riesgo',
-        color_discrete_map={
-            'Alto Riesgo': '#FF4B4B',
-            'Riesgo Medio': '#FFA500', 
-            'Bajo Riesgo': '#32CD32'
-        },
-        height=800,
+    filtros_mensaje = ", ".join(filtros_aplicados) if filtros_aplicados else "ninguno"
+    st.info(f"📊 Se encontraron {total_clientes_filtrados} clientes con los filtros seleccionados. Filtros aplicados: {filtros_mensaje}.")
+    
+    # Top 20 clientes problemáticos o todos si hay menos de 20
+    if total_clientes_filtrados == 0:
+        st.warning("⚠️ No hay clientes que cumplan con los criterios de filtrado seleccionados.")
+        top_clientes = pd.DataFrame()  # DataFrame vacío para manejar el caso de no resultados
+    else:
+        top_clientes = clientes_analysis.head(20).copy()
+      # Gráfico principal de barras horizontal con mejor diseño
+    if not top_clientes.empty:
+        fig_clientes_main = px.bar(
+            top_clientes,
+            x='total_reportes',
+            y='codigo_cliente_display',
+            orientation='h',
+            title="🎯 Top 20 Clientes Problemáticos",
+            color='categoria_riesgo',
+            color_discrete_map={
+                'Alto Riesgo': '#FF4B4B',
+                'Riesgo Medio': '#FFA500', 
+                'Bajo Riesgo': '#32CD32'
+            },
+            height=800,
         text='total_reportes',        
         hover_data={
             'codigo_cliente_display': True,
@@ -4212,43 +4345,47 @@ def show_advanced_analysis(df, merged_df):
         """, 
         unsafe_allow_html=True
     )
-    
-    # Distribución por motivo principal
-    motivos_distribucion = clientes_analysis['motivo_principal'].value_counts().head(10).reset_index()
-    motivos_distribucion.columns = ['motivo_principal', 'cantidad_clientes']
-    
-    fig_motivos_bar = px.bar(
-        motivos_distribucion,
-        x='cantidad_clientes',
-        y='motivo_principal',
-        orientation='h',
-        title="🎯 Top 10 Motivos Principales por Cantidad de Clientes",
-        color='cantidad_clientes',
-        color_continuous_scale='Viridis',
-        height=600,
-        text='cantidad_clientes'
-    )    
-    fig_motivos_bar.update_traces(
-        texttemplate='<b>%{text} clientes</b>',
-        textposition='outside',
-        marker_line_width=1,
-        marker_line_color='white',
-        textfont=dict(size=12, color='white')
-    )
-    fig_motivos_bar.update_layout(
-        yaxis={
-            'categoryorder': 'total ascending',
-            'tickfont': dict(size=11, color='white'),
-            'title': '<b>Motivo del Reporte</b>'
-        },
-        xaxis_title="<b>Cantidad de Clientes</b>",
-        margin=dict(l=200, r=50, t=80, b=50),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white', size=12)
-    )
-    
-    st.plotly_chart(fig_motivos_bar, use_container_width=True)
+      # Distribución por motivo principal
+    if not clientes_analysis.empty:
+        motivos_distribucion = clientes_analysis['motivo_principal'].value_counts().head(10).reset_index()
+        motivos_distribucion.columns = ['motivo_principal', 'cantidad_clientes']
+        
+        fig_motivos_bar = px.bar(
+            motivos_distribucion,
+            x='cantidad_clientes',
+            y='motivo_principal',
+            orientation='h',
+            title="🎯 Top 10 Motivos Principales por Cantidad de Clientes",
+            color='cantidad_clientes',
+            color_continuous_scale='Viridis',
+            height=600,
+            text='cantidad_clientes'
+        )
+    else:
+        st.warning("⚠️ No hay datos disponibles para mostrar la distribución de motivos con los filtros actuales.")
+        motivos_distribucion = pd.DataFrame()    
+        if not motivos_distribucion.empty:
+            fig_motivos_bar.update_traces(
+            texttemplate='<b>%{text} clientes</b>',
+            textposition='outside',
+            marker_line_width=1,
+            marker_line_color='white',
+            textfont=dict(size=12, color='white')
+        )
+        fig_motivos_bar.update_layout(
+            yaxis={
+                'categoryorder': 'total ascending',
+                'tickfont': dict(size=11, color='white'),
+                'title': '<b>Motivo del Reporte</b>'
+            },
+            xaxis_title="<b>Cantidad de Clientes</b>",
+            margin=dict(l=200, r=50, t=80, b=50),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=12)
+        )
+        
+        st.plotly_chart(fig_motivos_bar, use_container_width=True)
     
     # === SECCIÓN 3.1: ANÁLISIS DE FRECUENCIA DE REPORTES ===
     st.markdown(
@@ -4272,65 +4409,66 @@ def show_advanced_analysis(df, merged_df):
             return '2-4 reportes (Bajo)'
         else:
             return '1 reporte (Mínimo)'
-    
-    clientes_analysis['frecuencia_categoria'] = clientes_analysis['total_reportes'].apply(clasificar_frecuencia)
-    
-    # Contar clientes por frecuencia
-    distribucion_frecuencia = clientes_analysis['frecuencia_categoria'].value_counts().reset_index()
-    distribucion_frecuencia.columns = ['frecuencia_categoria', 'cantidad_clientes']
-    
-    # Ordenar de manera lógica
-    orden_frecuencia = ['1 reporte (Mínimo)', '2-4 reportes (Bajo)', '5-9 reportes (Medio)', '10-14 reportes (Alto)', '15+ reportes (Crítico)']
-    distribucion_frecuencia['frecuencia_categoria'] = pd.Categorical(distribucion_frecuencia['frecuencia_categoria'], categories=orden_frecuencia, ordered=True)
-    distribucion_frecuencia = distribucion_frecuencia.sort_values('frecuencia_categoria')
-    
-    # Gráfico de distribución de frecuencia
-    fig_frecuencia = px.bar(
-        distribucion_frecuencia,
-        x='frecuencia_categoria',
-        y='cantidad_clientes',
-        title="📈 Distribución de Clientes por Frecuencia de Reportes",
-        color='cantidad_clientes',
-        color_continuous_scale='Plasma',
-        height=600,
-        text='cantidad_clientes'
-    )
-    
-    fig_frecuencia.update_traces(
-        texttemplate='<b>%{text} clientes</b>',
-        textposition='outside',
-        marker_line_width=2,
-        marker_line_color='white',
-        textfont=dict(size=14, color='white', family='Arial Black')
-    )
-    
-    fig_frecuencia.update_layout(
-        xaxis_title="<b>Categoría de Frecuencia</b>",
-        yaxis_title="<b>Cantidad de Clientes</b>",
-        margin=dict(l=50, r=50, t=80, b=100),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white', size=12),
-        xaxis={'tickangle': 45}
-    )
-    
-    st.plotly_chart(fig_frecuencia, use_container_width=True)
-    
-    # Insight sobre la distribución
-    clientes_criticos = len(clientes_analysis[clientes_analysis['total_reportes'] >= 10])
-    porcentaje_criticos = (clientes_criticos / len(clientes_analysis)) * 100 if len(clientes_analysis) > 0 else 0
-    
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); padding: 15px; border-radius: 10px; margin: 20px 0;">
-        <h4 style="color: white; margin: 0;">🎯 Insights de Frecuencia</h4>
-        <p style="color: white; margin: 10px 0; font-size: 16px;">
-            📊 <strong>{clientes_criticos}</strong> clientes tienen 10+ reportes ({porcentaje_criticos:.1f}% del total)
-        </p>
-        <p style="color: white; margin: 10px 0; font-size: 14px;">
-            💡 <strong>Recomendación:</strong> Estos clientes de alta frecuencia requieren atención prioritaria y seguimiento especializado.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)    # === SECCIÓN 3: ANÁLISIS DE DISTRIBUCIÓN DE TIEMPO DE CIERRE ===
+    if not clientes_analysis.empty:
+        clientes_analysis['frecuencia_categoria'] = clientes_analysis['total_reportes'].apply(clasificar_frecuencia)
+        
+        # Contar clientes por frecuencia
+        distribucion_frecuencia = clientes_analysis['frecuencia_categoria'].value_counts().reset_index()
+        distribucion_frecuencia.columns = ['frecuencia_categoria', 'cantidad_clientes']
+        
+        # Ordenar de manera lógica
+        orden_frecuencia = ['1 reporte (Mínimo)', '2-4 reportes (Bajo)', '5-9 reportes (Medio)', '10-14 reportes (Alto)', '15+ reportes (Crítico)']
+        distribucion_frecuencia['frecuencia_categoria'] = pd.Categorical(distribucion_frecuencia['frecuencia_categoria'], categories=orden_frecuencia, ordered=True)
+        distribucion_frecuencia = distribucion_frecuencia.sort_values('frecuencia_categoria')
+          # Gráfico de distribución de frecuencia
+        fig_frecuencia = px.bar(
+            distribucion_frecuencia,
+            x='frecuencia_categoria',
+            y='cantidad_clientes',
+            title="📈 Distribución de Clientes por Frecuencia de Reportes",
+            color='cantidad_clientes',
+            color_continuous_scale='Plasma',
+            height=600,
+            text='cantidad_clientes'
+        )
+        
+        fig_frecuencia.update_traces(
+            texttemplate='<b>%{text} clientes</b>',
+            textposition='outside',
+            marker_line_width=2,
+            marker_line_color='white',
+            textfont=dict(size=14, color='white', family='Arial Black')
+        )
+        
+        fig_frecuencia.update_layout(
+            xaxis_title="<b>Categoría de Frecuencia</b>",
+            yaxis_title="<b>Cantidad de Clientes</b>",
+            margin=dict(l=50, r=50, t=80, b=100),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=12),
+            xaxis={'tickangle': 45}
+        )
+        
+        st.plotly_chart(fig_frecuencia, use_container_width=True)
+    else:
+        st.warning("⚠️ No hay datos disponibles para mostrar la distribución de frecuencia con los filtros actuales.")
+      # Insight sobre la distribución
+    if not clientes_analysis.empty:
+        clientes_criticos = len(clientes_analysis[clientes_analysis['total_reportes'] >= 10])
+        porcentaje_criticos = (clientes_criticos / len(clientes_analysis)) * 100 if len(clientes_analysis) > 0 else 0
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); padding: 15px; border-radius: 10px; margin: 20px 0;">
+            <h4 style="color: white; margin: 0;">🎯 Insights de Frecuencia</h4>
+            <p style="color: white; margin: 10px 0; font-size: 16px;">
+                📊 <strong>{clientes_criticos}</strong> clientes tienen 10+ reportes ({porcentaje_criticos:.1f}% del total)
+            </p>
+            <p style="color: white; margin: 10px 0; font-size: 14px;">
+                💡 <strong>Recomendación:</strong> Estos clientes de alta frecuencia requieren atención prioritaria y seguimiento especializado.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)# === SECCIÓN 3: ANÁLISIS DE DISTRIBUCIÓN DE TIEMPO DE CIERRE ===
     st.markdown(
         """
         <div class="analysis-card">
@@ -4913,13 +5051,16 @@ def show_detailed_data(df, merged_df):
         return
     
     # Filtros básicos
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        motivos_unicos = ['Todos'] + sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
-        motivo_filtro = st.selectbox("🎯 Filtrar por Motivo", motivos_unicos, key="detailed_motivo_filtro")
-        
+        tipos_reporte_unicos = ['Todos'] + sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
+        tipo_reporte_filtro = st.selectbox("📋 Filtrar por Tipo de Reporte", tipos_reporte_unicos, key="detailed_tipo_reporte_filtro")
+    
     with col2:
+        motivos_unicos = ['Todos'] + sorted([str(m) for m in df['respuesta_sub'].dropna().unique().tolist()])
+        motivo_filtro = st.selectbox("🎯 Filtrar por Motivo", motivos_unicos, key="detailed_motivo_filtro")
+    with col3:
         min_tiempo = int(df['tiempo_cierre_dias'].min()) if not df.empty and not df['tiempo_cierre_dias'].isna().all() else 0
         max_tiempo = int(df['tiempo_cierre_dias'].max()) if not df.empty and not df['tiempo_cierre_dias'].isna().all() else 30
         
@@ -4928,15 +5069,16 @@ def show_detailed_data(df, merged_df):
             max_tiempo = min_tiempo + 30
         
         tiempo_filtro = st.slider("⏱️ Rango de Tiempo de Cierre (días)", min_tiempo, max_tiempo, (min_tiempo, max_tiempo), key="detailed_tiempo_filtro")
-    
-    with col3:
+    with col4:
         solo_cerrados = st.checkbox("📋 Solo mostrar registros cerrados", key="detailed_solo_cerrados")
-    
-    # Aplicar filtros
+      # Aplicar filtros
     df_tabla = df.copy()
     
+    if tipo_reporte_filtro != 'Todos':
+        df_tabla = df_tabla[df_tabla['motivo_retro'] == tipo_reporte_filtro]
+        
     if motivo_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['motivo_retro'] == motivo_filtro]
+        df_tabla = df_tabla[df_tabla['respuesta_sub'] == motivo_filtro]
     
     # Filtrar por tiempo de cierre solo si hay datos disponibles
     if not df_tabla['tiempo_cierre_dias'].isna().all():
@@ -4947,6 +5089,19 @@ def show_detailed_data(df, merged_df):
     
     if solo_cerrados:
         df_tabla = df_tabla[df_tabla['fecha_cierre'].notna()]
+      # Crear mensaje descriptivo de filtros aplicados
+    filtros_aplicados = []
+    if tipo_reporte_filtro != 'Todos':
+        filtros_aplicados.append(f"Tipo de Reporte: {tipo_reporte_filtro}")
+    if motivo_filtro != 'Todos':
+        filtros_aplicados.append(f"Motivo: {motivo_filtro}")
+    if tiempo_filtro != (min_tiempo, max_tiempo):
+        filtros_aplicados.append(f"Tiempo de cierre: entre {tiempo_filtro[0]} y {tiempo_filtro[1]} días")
+    if solo_cerrados:
+        filtros_aplicados.append("Solo registros cerrados")
+    
+    filtros_mensaje = ", ".join(filtros_aplicados) if filtros_aplicados else "ninguno"
+    st.info(f"🔍 Filtros aplicados: {filtros_mensaje}")
     
     # Mostrar estadísticas
     col_stats1, col_stats2, col_stats3 = st.columns(3)
