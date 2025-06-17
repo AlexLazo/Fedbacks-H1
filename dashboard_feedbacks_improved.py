@@ -1375,14 +1375,23 @@ def main():
         fecha_fin = fecha_max
     elif opciones_fecha == "Todo el Período":
         fecha_inicio = fecha_min
-        fecha_fin = fecha_max
+        fecha_fin = fecha_max    
     else:
-        fecha_inicio, fecha_fin = st.sidebar.date_input(
+        rango_fechas = st.sidebar.date_input(
             "📅 Rango de Fechas Personalizado",
             value=(fecha_min, fecha_max),
             min_value=fecha_min,
             max_value=fecha_max
         )
+        
+        # Verificar si se devolvió una tupla o un solo valor
+        if isinstance(rango_fechas, tuple) and len(rango_fechas) == 2:
+            fecha_inicio, fecha_fin = rango_fechas
+        elif len(rango_fechas) == 1:
+            fecha_inicio = fecha_fin = rango_fechas[0]
+        else:
+            # Si solo se devuelve un valor único (no en tupla)
+            fecha_inicio = fecha_fin = rango_fechas
       # Más filtros en sidebar
     st.sidebar.markdown("### 🎯 Filtros de Datos")
     
@@ -3121,93 +3130,157 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         </div>
         """,
         unsafe_allow_html=True
-    )
-      # Filtros dinámicos mejorados en dos filas
-    # Primera fila de filtros - Mes, Supervisor y Contratista
-    col_filtro1, col_filtro2, col_filtro3 = st.columns(3)
-    with col_filtro1:
-        # Ordenar meses cronológicamente
-        meses_ordenados = df.groupby(['mes', 'mes_nombre']).size().reset_index().sort_values('mes')['mes_nombre'].tolist()
-        mes_meta = st.selectbox("📅 Selecciona el mes:", meses_ordenados, key="meta_mes")
-    
-    with col_filtro2:
-        if 'SUPERVISOR' in merged_df.columns:
-            supervisores_disp = ['Todos'] + sorted(merged_df['SUPERVISOR'].dropna().unique().tolist())
-            supervisor_meta = st.selectbox("👨‍💼 Filtrar por Supervisor:", supervisores_disp, key="meta_supervisor")
-        else:
-            supervisor_meta = 'Todos'
-    
-    with col_filtro3:
-        if 'CONTRATISTA' in merged_df.columns:
-            contratistas_disp = ['Todos'] + sorted(merged_df['CONTRATISTA'].dropna().unique().tolist())
-            contratista_meta = st.selectbox("🏢 Filtrar por Contratista:", contratistas_disp, key="meta_contratista")
-        else:
-            contratista_meta = 'Todos'
-      # Se removieron los filtros adicionales de Tipo de Reporte y Motivo según lo solicitado    # Aplicar filtros
-    df_meta = merged_df[merged_df['mes_nombre'] == mes_meta].copy()
-    
-    if supervisor_meta != 'Todos' and 'SUPERVISOR' in df_meta.columns:
-        df_meta = df_meta[df_meta['SUPERVISOR'] == supervisor_meta]
-    
-    if contratista_meta != 'Todos' and 'CONTRATISTA' in df_meta.columns:
-        df_meta = df_meta[df_meta['CONTRATISTA'] == contratista_meta]
-          # Crear mensaje descriptivo de filtros aplicados
-    filtros_aplicados = []
-    if supervisor_meta != 'Todos':
-        filtros_aplicados.append(f"Supervisor: {supervisor_meta}")
-    if contratista_meta != 'Todos':
-        filtros_aplicados.append(f"Contratista: {contratista_meta}")
-    
-    filtros_mensaje = ", ".join(filtros_aplicados) if filtros_aplicados else "ninguno"
-    st.info(f"🔍 Mostrando datos para el mes de {mes_meta}. Filtros aplicados: {filtros_mensaje}.")
-    
-    # --- Análisis por SUPERVISOR ---
-    if 'SUPERVISOR' in df_meta.columns:
+    )    # --- Análisis por SUPERVISOR ---
+    if 'SUPERVISOR' in merged_df.columns:
         st.markdown("### 👨‍💼 Análisis por Supervisores")
-          # ========== MEJORA: Incluir rutas con 0 registros ==========
-        # 1. Obtener todas las rutas asignadas a supervisores (de BD_Rutas completo)
-        # Usar rutas_df en lugar de merged_df para asegurar todas las rutas estén incluidas
+          # Usar todos los datos sin filtros globales - incluir todos los meses
+        df_meta = merged_df.copy()
+        supervisor_meta = 'Todos'  # Sin filtro global
+        
+        # 2. Calcular registros por supervisor-ruta-mes para el período completo
+        registros_activos = df_meta.groupby(['SUPERVISOR', 'ruta', 'mes_nombre']).agg({'id_tema':'count'}).reset_index()
+          # 3. Obtener todas las rutas asignadas a supervisores
         todas_rutas_supervisor = rutas_df[['SUPERVISOR', 'RUTA']].drop_duplicates()
         todas_rutas_supervisor = todas_rutas_supervisor.rename(columns={'RUTA': 'ruta'})
         
-        # 2. Calcular registros por supervisor-ruta para el período filtrado
-        registros_activos = df_meta.groupby(['SUPERVISOR', 'ruta']).agg({'id_tema':'count'}).reset_index()
+        # 4. Crear combinaciones de supervisor-ruta-mes para incluir rutas con 0 registros
+        meses_disponibles = df_meta['mes_nombre'].unique()
+        supervisor_ruta_mes = []
+        for _, row in todas_rutas_supervisor.iterrows():
+            for mes in meses_disponibles:
+                supervisor_ruta_mes.append({
+                    'SUPERVISOR': row['SUPERVISOR'],
+                    'ruta': row['ruta'],
+                    'mes_nombre': mes
+                })
+        todas_rutas_completas = pd.DataFrame(supervisor_ruta_mes)
         
-        # 3. Hacer merge completo para incluir rutas con 0 registros
-        supervisor_rutas = todas_rutas_supervisor.merge(
+        # 5. Hacer merge completo para incluir rutas con 0 registros
+        supervisor_rutas = todas_rutas_completas.merge(
             registros_activos, 
-            on=['SUPERVISOR', 'ruta'], 
+            on=['SUPERVISOR', 'ruta', 'mes_nombre'], 
             how='left'
         )
         supervisor_rutas['id_tema'] = supervisor_rutas['id_tema'].fillna(0).astype(int)
         
-        # 4. Filtrar por supervisor seleccionado si aplica
+        # 6. Filtrar por supervisor seleccionado si aplica
         if supervisor_meta != 'Todos':
             supervisor_rutas = supervisor_rutas[supervisor_rutas['SUPERVISOR'] == supervisor_meta]
-          # 5. Calcular métricas finales con meta variable según el mes
-        # Obtener el número de mes para determinar la meta
-        meses_dict = {
-            'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
-            'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12
-        }
-        mes_numero = meses_dict.get(mes_meta, 6)  # Default a junio si no se encuentra
-        meta_mensual = 6 if mes_numero <= 5 else 10
+        
+        # 7. Calcular métricas finales con meta fija
+        meta_mensual = 6  # Meta estándar
         
         supervisor_rutas['Meta Cumplida'] = supervisor_rutas['id_tema'] >= meta_mensual
         supervisor_rutas['Estado'] = supervisor_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
         supervisor_rutas = supervisor_rutas.rename(columns={'id_tema':'Registros'})
         
-        # Tabla detallada
-        st.dataframe(
-            clean_dataframe_for_display(supervisor_rutas[['SUPERVISOR', 'ruta', 'Registros', 'Estado']]), 
-            use_container_width=True
+        # Traducir meses al español
+        traduccion_meses = {
+            'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
+            'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
+            'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+        }
+        
+        # Agregar mes traducido a los datos de supervisores
+        supervisor_rutas['mes_español'] = supervisor_rutas['mes_nombre'].map(traduccion_meses).fillna(supervisor_rutas['mes_nombre'])
+        
+        # Tabla detallada con filtros por Supervisor, Estado y Mes
+        supervisor_table_data = supervisor_rutas[['SUPERVISOR', 'ruta', 'Registros', 'Estado', 'mes_español']].copy()
+        
+        # Filtros en tres columnas
+        col_filter1, col_filter2, col_filter3 = st.columns(3)
+        
+        with col_filter1:
+            supervisor_filter = st.selectbox(
+                "👨‍💼 Filtrar por Supervisor:", 
+                ['Todos'] + sorted(supervisor_table_data['SUPERVISOR'].unique().tolist()),
+                key="table_supervisor_filter"
+            )
+        
+        with col_filter2:
+            estado_filter = st.selectbox(
+                "📊 Filtrar por Estado:", 
+                ['Todos'] + sorted(supervisor_table_data['Estado'].unique().tolist()),
+                key="table_estado_filter"
+            )
+        
+        with col_filter3:
+            mes_filter_sup = st.selectbox(
+                "📅 Filtrar por Mes:", 
+                ['Todos'] + sorted(supervisor_table_data['mes_español'].unique().tolist()),
+                key="table_mes_supervisor_filter"
+            )
+        
+        # Aplicar filtros
+        if supervisor_filter != 'Todos':
+            supervisor_table_data = supervisor_table_data[supervisor_table_data['SUPERVISOR'] == supervisor_filter]
+        if estado_filter != 'Todos':
+            supervisor_table_data = supervisor_table_data[supervisor_table_data['Estado'] == estado_filter]
+        if mes_filter_sup != 'Todos':
+            supervisor_table_data = supervisor_table_data[supervisor_table_data['mes_español'] == mes_filter_sup]
+          # Mostrar tabla con Plotly para tener controles de zoom, fullscreen, etc.
+        fig_table = go.Figure(data=[go.Table(
+            columnwidth=[180, 120, 80, 120, 100],
+            header=dict(
+                values=['<b>SUPERVISOR</b>', '<b>RUTA</b>', '<b>REGISTROS</b>', '<b>ESTADO</b>', '<b>MES</b>'],
+                fill_color='#667eea',
+                align='center',
+                font=dict(color='white', size=14),
+                height=40
+            ),
+            cells=dict(
+                values=[
+                    supervisor_table_data['SUPERVISOR'].tolist(),
+                    supervisor_table_data['ruta'].tolist(),
+                    supervisor_table_data['Registros'].tolist(),
+                    supervisor_table_data['Estado'].tolist(),
+                    supervisor_table_data['mes_español'].tolist()
+                ],                fill_color=[
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(supervisor_table_data))],
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(supervisor_table_data))],
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(supervisor_table_data))],
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(supervisor_table_data))],
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(supervisor_table_data))]
+                ],
+                align=['center', 'center', 'center', 'center', 'center'],
+                font=dict(color='white', size=12),
+                height=35
+            )
+        )])
+        
+        fig_table.update_layout(
+            title=dict(
+                text=f"📊 Análisis por Supervisores - {len(supervisor_table_data)} registros mostrados",
+                font=dict(size=16, color='white'),
+                x=0.5
+            ),
+            height=600,
+            margin=dict(l=20, r=20, t=60, b=20),
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white')
         )
-          # KPIs por supervisor
+        
+        st.plotly_chart(fig_table, use_container_width=True)        # KPIs por supervisor - Calcular basado en datos filtrados de la tabla
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-        with col_kpi1:            # ========== CORREGIDO: Usar el número de rutas del dataframe de supervisores ==========
-            total_rutas_sup = supervisor_rutas.shape[0]  # Usar el número real de rutas del supervisor
-            rutas_cumplen_sup = supervisor_rutas['Meta Cumplida'].sum()
-            porcentaje_cumple_sup = (rutas_cumplen_sup/total_rutas_sup*100) if total_rutas_sup > 0 else 0
+        with col_kpi1:
+            # Usar los datos filtrados de la tabla (supervisor_table_data)
+            if len(supervisor_table_data) > 0:
+                # Agrupar por ruta para evitar duplicados cuando hay múltiples meses
+                rutas_unicas_sup = supervisor_table_data.groupby(['SUPERVISOR', 'ruta']).agg({
+                    'Registros': 'sum'  # Sumar registros de todos los meses por ruta
+                }).reset_index()
+                
+                # Evaluar si cada ruta cumple meta
+                rutas_unicas_sup['Cumple_Meta'] = rutas_unicas_sup['Registros'] >= meta_mensual
+                
+                total_rutas_sup = len(rutas_unicas_sup)
+                rutas_cumplen_sup = rutas_unicas_sup['Cumple_Meta'].sum()
+                porcentaje_cumple_sup = (rutas_cumplen_sup/total_rutas_sup*100) if total_rutas_sup > 0 else 0
+            else:
+                total_rutas_sup = 0
+                rutas_cumplen_sup = 0
+                porcentaje_cumple_sup = 0
+                
             st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_sup:.1f}%", f"Meta: {meta_mensual} reg/ruta")
         
         with col_kpi2:
@@ -3216,9 +3289,21 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         with col_kpi3:
             rutas_no_cumplen_sup = total_rutas_sup - rutas_cumplen_sup
             st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_sup}")
+          # Ranking de supervisores
+        # Filtro de mes para el ranking
+        meses_disponibles_ranking = sorted(supervisor_rutas['mes_español'].unique().tolist())
+        mes_ranking_filter = st.selectbox(
+            "📅 Filtrar ranking por mes:", 
+            ['Todos los meses'] + meses_disponibles_ranking,
+            key="ranking_supervisor_mes_filter"
+        )
         
-        # Ranking de supervisores
-        ranking_supervisores = supervisor_rutas.groupby('SUPERVISOR').agg({
+        # Aplicar filtro de mes al ranking si se selecciona
+        supervisor_rutas_ranking = supervisor_rutas.copy()
+        if mes_ranking_filter != 'Todos los meses':
+            supervisor_rutas_ranking = supervisor_rutas_ranking[supervisor_rutas_ranking['mes_español'] == mes_ranking_filter]
+        
+        ranking_supervisores = supervisor_rutas_ranking.groupby('SUPERVISOR').agg({
             'Meta Cumplida': ['count', 'sum'],
             'Registros': 'mean'
         }).round(2)
@@ -3226,6 +3311,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         ranking_supervisores = ranking_supervisores.reset_index()
         ranking_supervisores['Porcentaje_Cumplimiento'] = (ranking_supervisores['Rutas_Cumplen'] / ranking_supervisores['Total_Rutas'] * 100).round(1)
         ranking_supervisores = ranking_supervisores.sort_values('Porcentaje_Cumplimiento', ascending=False)
+          # Crear título dinámico basado en el filtro
+        titulo_mes = f" - {mes_ranking_filter}" if mes_ranking_filter != 'Todos los meses' else " - Todos los meses"
         
         # Gráfica de ranking de supervisores
         fig_ranking_sup = px.bar(
@@ -3234,7 +3321,7 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             y='Porcentaje_Cumplimiento',
             color='Porcentaje_Cumplimiento',
             color_continuous_scale='RdYlGn',
-            title='🏆 Ranking de Supervisores por % de Cumplimiento de Meta',
+            title=f'🏆 Ranking de Supervisores por % de Cumplimiento de Meta{titulo_mes}',
             text='Porcentaje_Cumplimiento'
         )
         fig_ranking_sup.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
@@ -3243,47 +3330,156 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             yaxis_title="<b>% de Cumplimiento</b>",
             height=500
         )
-        st.plotly_chart(fig_ranking_sup, use_container_width=True)
-      # --- Análisis por CONTRATISTA ---
+        st.plotly_chart(fig_ranking_sup, use_container_width=True)      # --- Análisis por CONTRATISTA ---
     if 'CONTRATISTA' in df_meta.columns:
         st.markdown("### 🏢 Análisis por Contratistas")
+        
+        # Sin filtro global de contratista
+        contratista_meta = 'Todos'
           # ========== MEJORA: Incluir rutas con 0 registros ==========
         # 1. Obtener todas las rutas asignadas a contratistas (de BD_Rutas completo)
         # Usar rutas_df para mantener consistencia con la sección de supervisores
         todas_rutas_contratista = rutas_df[['CONTRATISTA', 'RUTA']].drop_duplicates()
         todas_rutas_contratista = todas_rutas_contratista.rename(columns={'RUTA': 'ruta'})
+          # 2. Calcular registros por contratista-ruta-mes para el período filtrado
+        registros_activos_con = df_meta.groupby(['CONTRATISTA', 'ruta', 'mes_nombre']).agg({'id_tema':'count'}).reset_index()
+          # 3. Crear combinaciones de contratista-ruta-mes para incluir rutas con 0 registros
+        meses_disponibles = df_meta['mes_nombre'].unique()
+        contratista_ruta_mes = []
+        for _, row in todas_rutas_contratista.iterrows():
+            for mes in meses_disponibles:
+                contratista_ruta_mes.append({
+                    'CONTRATISTA': row['CONTRATISTA'],
+                    'ruta': row['ruta'],
+                    'mes_nombre': mes
+                })
+        todas_rutas_contratista_completas = pd.DataFrame(contratista_ruta_mes)
         
-        # 2. Calcular registros por contratista-ruta para el período filtrado
-        registros_activos_con = df_meta.groupby(['CONTRATISTA', 'ruta']).agg({'id_tema':'count'}).reset_index()
-        
-        # 3. Hacer merge completo para incluir rutas con 0 registros
-        contratista_rutas = todas_rutas_contratista.merge(
+        # 4. Hacer merge completo para incluir rutas con 0 registros
+        contratista_rutas = todas_rutas_contratista_completas.merge(
             registros_activos_con, 
-            on=['CONTRATISTA', 'ruta'], 
+            on=['CONTRATISTA', 'ruta', 'mes_nombre'], 
             how='left'
         )
         contratista_rutas['id_tema'] = contratista_rutas['id_tema'].fillna(0).astype(int)
         
-        # 4. Filtrar por contratista seleccionado si aplica
+        # 5. Filtrar por contratista seleccionado si aplica
         if contratista_meta != 'Todos':
             contratista_rutas = contratista_rutas[contratista_rutas['CONTRATISTA'] == contratista_meta]
-          # 5. Calcular métricas finales con meta variable según el mes
-        # Usar la misma meta calculada anteriormente
+        
+        # 6. Calcular métricas finales con meta fija
+        meta_mensual = 6  # Meta estándar
+        
+        # Traducir meses al español
+        traduccion_meses = {
+            'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
+            'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
+            'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+        }
+        
         contratista_rutas['Meta Cumplida'] = contratista_rutas['id_tema'] >= meta_mensual
         contratista_rutas['Estado'] = contratista_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
         contratista_rutas = contratista_rutas.rename(columns={'id_tema':'Registros'})
         
-        # Tabla detallada
-        st.dataframe(
-            clean_dataframe_for_display(contratista_rutas[['CONTRATISTA', 'ruta', 'Registros', 'Estado']]), 
-            use_container_width=True
+        # Traducir meses al español para contratistas
+        contratista_rutas['mes_español'] = contratista_rutas['mes_nombre'].map(traduccion_meses).fillna(contratista_rutas['mes_nombre'])
+        
+        # Tabla detallada de contratistas con filtros por Contratista, Estado y Mes
+        contratista_table_data = contratista_rutas[['CONTRATISTA', 'ruta', 'Registros', 'Estado', 'mes_español']].copy()
+        
+        # Filtros en tres columnas
+        col_filter1_con, col_filter2_con, col_filter3_con = st.columns(3)
+        
+        with col_filter1_con:
+            contratista_filter = st.selectbox(
+                "🏢 Filtrar por Contratista:", 
+                ['Todos'] + sorted(contratista_table_data['CONTRATISTA'].dropna().unique().astype(str).tolist()),
+                key="table_contratista_filter"
+            )
+        
+        with col_filter2_con:
+            estado_filter_con = st.selectbox(
+                "📊 Filtrar por Estado:", 
+                ['Todos'] + sorted(contratista_table_data['Estado'].unique().tolist()),
+                key="table_estado_contratista_filter"            )
+        
+        with col_filter3_con:
+            mes_filter_con = st.selectbox(
+                "📅 Filtrar por Mes:", 
+                ['Todos'] + sorted(contratista_table_data['mes_español'].unique().tolist()),
+                key="table_mes_contratista_filter"
+            )
+        
+        # Aplicar filtros
+        if contratista_filter != 'Todos':
+            contratista_table_data = contratista_table_data[contratista_table_data['CONTRATISTA'] == contratista_filter]
+        if estado_filter_con != 'Todos':
+            contratista_table_data = contratista_table_data[contratista_table_data['Estado'] == estado_filter_con]
+        if mes_filter_con != 'Todos':
+            contratista_table_data = contratista_table_data[contratista_table_data['mes_español'] == mes_filter_con]
+          # Mostrar tabla con Plotly para tener controles de zoom, fullscreen, etc.
+        fig_table_contratista = go.Figure(data=[go.Table(
+            columnwidth=[180, 120, 80, 120, 100],
+            header=dict(
+                values=['<b>CONTRATISTA</b>', '<b>RUTA</b>', '<b>REGISTROS</b>', '<b>ESTADO</b>', '<b>MES</b>'],
+                fill_color='#764ba2',
+                align='center',
+                font=dict(color='white', size=14),
+                height=40
+            ),
+            cells=dict(
+                values=[
+                    contratista_table_data['CONTRATISTA'].tolist(),
+                    contratista_table_data['ruta'].tolist(),
+                    contratista_table_data['Registros'].tolist(),
+                    contratista_table_data['Estado'].tolist(),
+                    contratista_table_data['mes_español'].tolist()
+                ],
+                fill_color=[
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(contratista_table_data))],
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(contratista_table_data))],
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(contratista_table_data))],
+                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(contratista_table_data))],                    ['#2b2b2b' if i % 2 == 0 else '#1e1e1e' for i in range(len(contratista_table_data))]
+                ],
+                align=['center', 'center', 'center', 'center', 'center'],
+                font=dict(color='white', size=12),
+                height=35
+            )
+        )])
+        
+        fig_table_contratista.update_layout(
+            title=dict(
+                text=f"🏢 Análisis por Contratistas - {len(contratista_table_data)} registros mostrados",
+                font=dict(size=16, color='white'),
+                x=0.5
+            ),
+            height=600,
+            margin=dict(l=20, r=20, t=60, b=20),
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white')
         )
-          # KPIs por contratista
+        
+        st.plotly_chart(fig_table_contratista, use_container_width=True)        # KPIs por contratista - Calcular basado en datos filtrados de la tabla
         col_kpi4, col_kpi5, col_kpi6 = st.columns(3)
-        with col_kpi4:            # ========== CORREGIDO: Usar el número de rutas del dataframe de contratistas ==========
-            total_rutas_con = contratista_rutas.shape[0]  # Usar el número real de rutas del contratista
-            rutas_cumplen_con = contratista_rutas['Meta Cumplida'].sum()
-            porcentaje_cumple_con = (rutas_cumplen_con/total_rutas_con*100) if total_rutas_con > 0 else 0
+        with col_kpi4:
+            # Usar los datos filtrados de la tabla (contratista_table_data)
+            if len(contratista_table_data) > 0:
+                # Agrupar por ruta para evitar duplicados cuando hay múltiples meses
+                rutas_unicas_con = contratista_table_data.groupby(['CONTRATISTA', 'ruta']).agg({
+                    'Registros': 'sum'  # Sumar registros de todos los meses por ruta
+                }).reset_index()
+                
+                # Evaluar si cada ruta cumple meta
+                rutas_unicas_con['Cumple_Meta'] = rutas_unicas_con['Registros'] >= meta_mensual
+                
+                total_rutas_con = len(rutas_unicas_con)
+                rutas_cumplen_con = rutas_unicas_con['Cumple_Meta'].sum()
+                porcentaje_cumple_con = (rutas_cumplen_con/total_rutas_con*100) if total_rutas_con > 0 else 0
+            else:
+                total_rutas_con = 0
+                rutas_cumplen_con = 0
+                porcentaje_cumple_con = 0
+                
             st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_con:.1f}%", f"Meta: {meta_mensual} reg/ruta")
         
         with col_kpi5:
@@ -3292,9 +3488,21 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         with col_kpi6:
             rutas_no_cumplen_con = total_rutas_con - rutas_cumplen_con
             st.metric("⚠️ Rutas que NO Cumplen", f"{rutas_no_cumplen_con}")
+          # Ranking de contratistas
+        # Filtro de mes para el ranking de contratistas
+        meses_disponibles_ranking_con = sorted(contratista_rutas['mes_español'].unique().tolist())
+        mes_ranking_filter_con = st.selectbox(
+            "📅 Filtrar ranking de contratistas por mes:", 
+            ['Todos los meses'] + meses_disponibles_ranking_con,
+            key="ranking_contratista_mes_filter"
+        )
         
-        # Ranking de contratistas
-        ranking_contratistas = contratista_rutas.groupby('CONTRATISTA').agg({
+        # Aplicar filtro de mes al ranking si se selecciona
+        contratista_rutas_ranking = contratista_rutas.copy()
+        if mes_ranking_filter_con != 'Todos los meses':
+            contratista_rutas_ranking = contratista_rutas_ranking[contratista_rutas_ranking['mes_español'] == mes_ranking_filter_con]
+        
+        ranking_contratistas = contratista_rutas_ranking.groupby('CONTRATISTA').agg({
             'Meta Cumplida': ['count', 'sum'],
             'Registros': 'mean'
         }).round(2)
@@ -3303,6 +3511,9 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         ranking_contratistas['Porcentaje_Cumplimiento'] = (ranking_contratistas['Rutas_Cumplen'] / ranking_contratistas['Total_Rutas'] * 100).round(1)
         ranking_contratistas = ranking_contratistas.sort_values('Porcentaje_Cumplimiento', ascending=False)
         
+        # Crear título dinámico basado en el filtro
+        titulo_mes_con = f" - {mes_ranking_filter_con}" if mes_ranking_filter_con != 'Todos los meses' else " - Todos los meses"
+        
         # Gráfica de ranking de contratistas
         fig_ranking_con = px.bar(
             ranking_contratistas, 
@@ -3310,7 +3521,7 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             y='Porcentaje_Cumplimiento',
             color='Porcentaje_Cumplimiento',
             color_continuous_scale='RdYlGn',
-            title='🏆 Ranking de Contratistas por % de Cumplimiento de Meta',
+            title=f'🏆 Ranking de Contratistas por % de Cumplimiento de Meta{titulo_mes_con}',
             text='Porcentaje_Cumplimiento'
         )
         fig_ranking_con.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
@@ -3441,13 +3652,12 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
     # Botón para exportar datos
     st.markdown("---")
     st.markdown("### 📤 Exportar Análisis")
-    if st.button("💾 Generar Reporte de Supervisores y Contratistas", key="export_supervisores"):
-        # Crear datos para exportar
+    if st.button("💾 Generar Reporte de Supervisores y Contratistas", key="export_supervisores"):        # Crear datos para exportar
         export_data = {
-            'Mes_Analizado': mes_meta,
+            'Mes_Analizado': 'Todos los meses disponibles',
             'Supervisor_Filtro': supervisor_meta,
             'Contratista_Filtro': contratista_meta,
-            'Total_Rutas_Analizadas': total_rutas_sup if 'SUPERVISOR' in df_meta.columns else (total_rutas_con if 'CONTRATISTA' in df_meta.columns else 0)
+            'Total_Rutas_Analizadas': 'Ver tablas individuales para detalles'
         }
         
         st.json(export_data)
