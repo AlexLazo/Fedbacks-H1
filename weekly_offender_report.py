@@ -1,0 +1,1138 @@
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import plotly.graph_objects as go
+import plotly.express as px
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+import calendar
+import os
+import re
+import io
+
+# Define the required signatures for the report - exactly matching the example names
+SIGNATURES = [
+    {"name": "Roney Rivas", "title": "TL de Ventas"},
+    {"name": "Félix Chávez", "title": "Gerente CD Soyapango"},
+    {"name": "Óscar Portillo", "title": "Jefe de Distribución"},
+    {"name": "Óscar Cuellar", "title": "Supervisor de Distribución"}
+]
+
+# Planes de acción específicos basados en el análisis histórico real
+MOTIVO_ACTION_PLANS = {
+    # Top 1: Cliente demorado en recibir o pagar (30.2% de casos)
+    'Cliente demorado en recibir o pagar': {
+        'plan': 'Coordinación previa con cliente, establecimiento de ventana horaria específica y protocolo de seguimiento para pagos pendientes',
+        'intro': 'problemas de coordinación horaria y demoras en atención',
+        'accion_especifica': 'coordinación previa con cliente y establecimiento de ventanas horarias específicas',
+        'objetivo': 'optimizar los tiempos de atención y reducir demoras en la ruta',
+        'conclusion': 'mejorando la eficiencia operativa y satisfacción del cliente'
+    },
+    
+    # Top 2: Cliente crítico en atención (Safety) (25.4% de casos)
+    'Cliente critico en atención (ubicación y/o acceso) - Requiere visita de Safety': {
+        'plan': 'Evaluación de seguridad especializada, mapeo de rutas de acceso seguras y protocolo de entrega adaptado',
+        'intro': 'situaciones críticas de seguridad y acceso complicado',
+        'accion_especifica': 'evaluación de seguridad especializada y mapeo de accesos seguros',
+        'objetivo': 'garantizar la seguridad del personal y establecer protocolos de entrega seguros',
+        'conclusion': 'protegiendo a nuestro equipo y asegurando entregas efectivas'
+    },
+    
+    # Top 3: Cliente con novedad en envase (5.9% de casos)
+    'Cliente con novedad en envase': {
+        'plan': 'Inspección previa de envases, protocolo de limpieza y mantenimiento, y gestión de inventario de envases',
+        'intro': 'problemas relacionados con el estado y disponibilidad de envases',
+        'accion_especifica': 'inspección sistemática de envases y protocolo de limpieza y mantenimiento',
+        'objetivo': 'asegurar la entrega de envases en perfecto estado',
+        'conclusion': 'eliminando reclamos por envases defectuosos o sucios'
+    },
+    
+    # Top 4: Cliente reiterativo en rechazo (5.6% de casos)
+    'Cliente reiterativo en rechazo': {
+        'plan': 'Análisis de causas de rechazo, ajuste de pedidos según histórico y seguimiento especializado de satisfacción',
+        'intro': 'patrones repetitivos de rechazo de productos',
+        'accion_especifica': 'análisis de causas de rechazo y ajuste de pedidos según histórico del cliente',
+        'objetivo': 'reducir rechazos mediante mejor comprensión de las necesidades del cliente',
+        'conclusion': 'mejorando la aceptación de productos y rentabilidad de la ruta'
+    },
+    
+    # Top 5: Cliente problemático o grosero (4.9% de casos)
+    'Cliente problemático o grosero': {
+        'plan': 'Capacitación en manejo de clientes difíciles, protocolo de escalamiento y seguimiento gerencial',
+        'intro': 'situaciones de atención complicada por comportamiento inadecuado del cliente',
+        'accion_especifica': 'capacitación especializada en manejo de clientes difíciles y protocolo de escalamiento',
+        'objetivo': 'mantener un ambiente de trabajo respetuoso y profesional',
+        'conclusion': 'asegurando el bienestar del personal y la calidad del servicio'
+    },
+    
+    # Otros motivos identificados en el análisis
+    'Faltante de producto': {
+        'plan': 'Verificación de inventario en tiempo real, mejora en proceso de picking y checklist pre-despacho',
+        'intro': 'faltantes de productos en las entregas',
+        'accion_especifica': 'implementación de checklist de verificación y mejora en control de inventario',
+        'objetivo': 'asegurar la disponibilidad completa de productos solicitados',
+        'conclusion': 'eliminando faltantes y mejorando la satisfacción del cliente'
+    },
+    
+    'Calidad del producto (avería, rotura, mal olor, mala presentación)': {
+        'plan': 'Protocolo de control de calidad pre-despacho, verificación de fechas de vencimiento y manejo cuidadoso',
+        'intro': 'problemas de calidad en los productos entregados',
+        'accion_especifica': 'implementación de protocolo de control de calidad antes del despacho',
+        'objetivo': 'asegurar la entrega de productos con calidad óptima',
+        'conclusion': 'eliminando reclamos por productos defectuosos'
+    }
+}
+
+def load_data():
+    """Load and preprocess the feedback data"""
+    try:
+        # Load the feedbacks data
+        feedbacks_df = pd.read_excel('Feedbacks H1.xlsx')
+        
+        # Convert date columns
+        feedbacks_df['fecha_registro'] = pd.to_datetime(feedbacks_df['fecha_registro'])
+        feedbacks_df['fecha_cierre'] = pd.to_datetime(feedbacks_df['fecha_cierre'])
+        
+        # Create time-based columns for analysis
+        feedbacks_df['year'] = feedbacks_df['fecha_registro'].dt.year
+        feedbacks_df['month'] = feedbacks_df['fecha_registro'].dt.month
+        feedbacks_df['week'] = feedbacks_df['fecha_registro'].dt.isocalendar().week
+        feedbacks_df['weekday'] = feedbacks_df['fecha_registro'].dt.day_name()
+        
+        # Calculate resolution time in days for closed issues
+        feedbacks_df['tiempo_cierre_dias'] = (
+            feedbacks_df['fecha_cierre'] - feedbacks_df['fecha_registro']
+        ).dt.days.fillna(0)
+        
+        # Try to load the routes database
+        try:
+            # First try to load the most recent month-specific database
+            current_month = datetime.now().strftime("%B")
+            month_map = {
+                'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo',
+                'April': 'Abril', 'May': 'Mayo', 'June': 'Junio',
+                'July': 'Julio', 'August': 'Agosto', 'September': 'Septiembre',
+                'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+            }
+            month_esp = month_map.get(current_month, current_month)
+            
+            month_file = f'BD_Rutas_{month_esp}.xlsx'
+            if os.path.exists(month_file):
+                rutas_df = pd.read_excel(month_file)
+            else:
+                rutas_df = pd.read_excel('BD_Rutas.xlsx')
+                
+            # Merge with the routes data
+            merged_df = feedbacks_df.merge(
+                rutas_df,
+                left_on='ruta',
+                right_on='RUTA',
+                how='left'
+            )
+            
+            return merged_df, rutas_df
+            
+        except Exception as e:
+            print(f"Warning: Could not load routes database. Using only feedbacks data: {e}")
+            return feedbacks_df, None
+            
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        return None, None
+
+def is_valid_client(client_code, client_name):
+    """
+    Check if a client code and name are valid based on requirements
+    Invalid examples: 'Cliente-0 Bodega', 'Cliente-00 000', 'Cliente-0001', points, commas, etc.
+    """
+    # Check for invalid patterns in code
+    if not isinstance(client_code, str):
+        client_code = str(client_code)
+        
+    invalid_code_patterns = [
+        r'^0+$',                  # All zeros
+        r'^0+\s*[Bb]odega$',      # Zeros followed by "Bodega"
+        r'^[0]+\s*$',             # Just zeros with spaces
+        r'^[.,]+$',               # Just dots or commas
+        r'^\s*$',                 # Empty or just spaces
+        r'^0001\.*$'              # "0001" pattern possibly followed by dots
+    ]
+    
+    # Check for invalid patterns in name
+    if not isinstance(client_name, str):
+        client_name = str(client_name)
+        
+    invalid_name_patterns = [
+        r'^[.,]+$',               # Just dots or commas
+        r'^\s*$',                 # Empty or just spaces
+        r'^[Bb]odega$',           # Just "Bodega"
+        r'^[0-9,.\s]+$'           # Just numbers, commas, dots and/or spaces
+    ]
+    
+    # Check if any invalid pattern matches
+    for pattern in invalid_code_patterns:
+        if re.match(pattern, client_code):
+            return False
+    
+    for pattern in invalid_name_patterns:
+        if re.match(pattern, client_name):
+            return False
+    
+    return True
+
+def get_weekly_offenders(data, week=None, year=None, top_n=5):
+    """
+    Get the top N clients with the most reported issues for a specific week
+    """
+    # If week is not provided, use the current week
+    if week is None:
+        today = datetime.now()
+        week = today.isocalendar()[1]
+    
+    # If year is not provided, use the current year
+    if year is None:
+        year = datetime.now().year
+    
+    # Filter by week and year
+    weekly_data = data[
+        (data['week'] == week) &
+        (data['year'] == year)
+    ]
+    
+    # If there's no data for the specified week, return empty dataframe
+    if weekly_data.empty:
+        return pd.DataFrame()
+    
+    # Find the most reported issue for the week
+    issue_counts = weekly_data['respuesta_sub'].value_counts()
+    if issue_counts.empty:
+        return pd.DataFrame()
+    
+    most_reported_issue = issue_counts.idxmax()    # Filter by the most reported issue
+    issue_data = weekly_data[weekly_data['respuesta_sub'] == most_reported_issue]
+    
+    # PRIMERO: Limpiar nombres duplicados en los datos originales
+    def clean_name_universal(name):
+        """Limpiar nombres duplicados universalmente"""
+        clean_name = str(name).strip()
+        clean_name = re.sub(r'\s+', ' ', clean_name.strip())
+        
+        # Método 1: División de palabras para detectar duplicaciones
+        words = clean_name.split()
+        total_words = len(words)
+        
+        if total_words >= 2:
+            for split_point in range(1, total_words):
+                first_part = words[:split_point]
+                remaining_words = words[split_point:]
+                
+                if len(remaining_words) == len(first_part):
+                    if [w.lower() for w in first_part] == [w.lower() for w in remaining_words]:
+                        clean_name = " ".join(first_part)
+                        break
+        
+        # Método 2: Regex para duplicaciones
+        iteration = 0
+        max_iterations = 10
+        
+        while iteration < max_iterations:
+            prev_name = clean_name
+            clean_name = re.sub(r'(.+?)\s+\1$', r'\1', clean_name, flags=re.IGNORECASE)
+            clean_name = re.sub(r'^(.+?)\s+\1\s*$', r'\1', clean_name, flags=re.IGNORECASE)
+            clean_name = re.sub(r'^(.{2,})\1$', r'\1', clean_name, flags=re.IGNORECASE)
+            
+            if clean_name == prev_name:
+                break
+            iteration += 1
+        
+        # Método 3: Verificación de caracteres sin espacios
+        if len(clean_name) > 4:
+            text_no_spaces = clean_name.replace(' ', '')
+            text_length = len(text_no_spaces)
+            
+            if text_length % 2 == 0:
+                mid = text_length // 2
+                first_half = text_no_spaces[:mid]
+                second_half = text_no_spaces[mid:]
+                
+                if first_half.lower() == second_half.lower():
+                    original_words = clean_name.split()
+                    if len(original_words) % 2 == 0:
+                        half_words = len(original_words) // 2
+                        clean_name = " ".join(original_words[:half_words])
+        
+        # Método 4: Eliminar palabras duplicadas consecutivas
+        final_words = []
+        words = clean_name.split()
+        prev_word = ""
+        
+        for word in words:
+            if word.lower() != prev_word.lower():
+                final_words.append(word)
+                prev_word = word
+        
+        if final_words:
+            clean_name = " ".join(final_words)
+            
+        return clean_name    # Aplicar limpieza de nombres ANTES del groupby (corregir warning de pandas)
+    issue_data = issue_data.copy()  # Crear una copia para evitar el warning
+    issue_data['nombre_cliente_clean'] = issue_data['nombre_cliente'].apply(clean_name_universal)
+    
+    # Extraer solo el código numérico del inicio de codigo_cliente
+    issue_data['codigo_numerico'] = issue_data['codigo_cliente'].str.extract(r'^(\d+)')[0]
+    
+    # Group by NUMERIC client CODE only and count occurrences
+    # Esto evita que el mismo cliente aparezca múltiples veces con nombres diferentes
+    client_counts = issue_data.groupby('codigo_numerico').agg({
+        'nombre_cliente_clean': 'first',  # Tomar el primer nombre limpio
+        'codigo_numerico': 'size'          # Contar ocurrencias
+    }).rename(columns={'codigo_numerico': 'count'}).reset_index()
+    
+    # Renombrar la columna para que el resto del código funcione
+    client_counts = client_counts.rename(columns={'nombre_cliente_clean': 'nombre_cliente', 'codigo_numerico': 'codigo_cliente'})
+    client_counts = client_counts.sort_values('count', ascending=False)
+      # Filter out invalid clients 
+    valid_clients = client_counts[client_counts.apply(lambda x: is_valid_client(x['codigo_cliente'], x['nombre_cliente']), axis=1)]
+    
+    # Remove duplicates by client code only - keep first occurrence
+    valid_clients = valid_clients.drop_duplicates(subset=['codigo_cliente'], keep='first')
+      # Get top N valid clients (limit to requested number)
+    top_clients = valid_clients.head(top_n)
+    
+    # Add details for each client
+    results = []
+    for _, client in top_clients.iterrows():
+        client_code = client['codigo_cliente']
+        client_name = client['nombre_cliente']
+        client_issue_count = client['count']
+          # Get the client's specific data using numeric code
+        client_data = issue_data[issue_data['codigo_numerico'] == client_code]        # Generate a comprehensive action plan based on the specific issue and client data
+        def generate_specific_action_plan(issue_type, client_feedback_data):
+            """Generate specific action plan based on the issue type and historical analysis"""
+            
+            # Buscar el plan específico en nuestro diccionario de motivos
+            if issue_type in MOTIVO_ACTION_PLANS:
+                return MOTIVO_ACTION_PLANS[issue_type]['plan']
+            
+            # Si no encuentra el motivo exacto, buscar por palabras clave
+            issue_lower = issue_type.lower()
+            
+            # Buscar coincidencias parciales para motivos similares
+            for motivo_key, motivo_data in MOTIVO_ACTION_PLANS.items():
+                motivo_key_lower = motivo_key.lower()
+                
+                # Coincidencias específicas por palabras clave
+                if ('demorado' in issue_lower or 'demora' in issue_lower or 'espera' in issue_lower) and 'demorado' in motivo_key_lower:
+                    return motivo_data['plan']
+                elif ('safety' in issue_lower or 'critico' in issue_lower or 'acceso' in issue_lower) and 'critico' in motivo_key_lower:
+                    return motivo_data['plan']
+                elif ('envase' in issue_lower or 'canasta' in issue_lower) and 'envase' in motivo_key_lower:
+                    return motivo_data['plan']
+                elif ('rechazo' in issue_lower or 'rechaza' in issue_lower) and 'rechazo' in motivo_key_lower:
+                    return motivo_data['plan']
+                elif ('problemático' in issue_lower or 'grosero' in issue_lower) and 'problemático' in motivo_key_lower:
+                    return motivo_data['plan']
+                elif ('faltante' in issue_lower or 'falta' in issue_lower) and 'faltante' in motivo_key_lower:
+                    return motivo_data['plan']
+                elif ('calidad' in issue_lower or 'rotura' in issue_lower or 'avería' in issue_lower) and 'calidad' in motivo_key_lower:
+                    return motivo_data['plan']
+            
+            # Plan genérico si no encuentra coincidencia específica
+            return "Análisis personalizado de la situación, identificación de causa raíz y implementación de plan de mejora específico"
+        
+        action_plan = generate_specific_action_plan(most_reported_issue, client_data)
+        
+        # Add to results - el nombre ya está limpio del groupby
+        results.append({
+            'codigo_cliente': client_code,
+            'nombre_cliente': client_name,  # Ya está limpio
+            'count': client_issue_count,
+            'most_reported_issue': most_reported_issue,
+            'action_plan': action_plan,
+            'routes': client_data['ruta'].unique().tolist(),
+            'last_date': client_data['fecha_registro'].max().strftime('%d/%m/%Y')
+        })
+    
+    return pd.DataFrame(results)
+
+def generate_weekly_report(offenders_data, week, year, output_file="weekly_offender_report.pdf"):
+    """
+    Generate a PDF report with the weekly offenders and action plans
+    """
+    if offenders_data.empty:
+        print(f"No data available for week {week}, year {year}")
+        return None
+    
+    # Create a buffer for PDF
+    buffer = io.BytesIO()    # Create the PDF document with optimized margins to fit everything on one page
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=letter,
+        leftMargin=0.5*inch,     # Reduce left margin
+        rightMargin=0.5*inch,    # Reduce right margin
+        topMargin=0.4*inch,      # Reduce top margin further
+        bottomMargin=0.3*inch,   # Reduce bottom margin further
+        title="Reporte de clientes más reportados",
+        author="CD Soyapango",
+        subject=f"Reporte Semana {week} del {year}"
+    )
+      # Get styles - refined to match the example
+    styles = getSampleStyleSheet()
+    normal_style = styles['Normal']
+    
+    # Define styles for table cells with proper wrapping
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        parent=normal_style,
+        fontSize=7,
+        leading=9,  # line spacing
+        alignment=0  # left aligned
+    )
+    
+    centered_cell_style = ParagraphStyle(
+        'CenteredCellStyle',
+        parent=normal_style,
+        fontSize=7,
+        leading=9,
+        alignment=1  # center aligned
+    )
+      # Main title style with reduced spacing
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        alignment=1,  # Center
+        fontSize=13,  # Slightly smaller font
+        fontName='Helvetica-Bold',
+        spaceAfter=0.05*inch,  # Reduce space after title
+        spaceBefore=0
+    )
+      # Subtitle style for week and problem with reduced spacing
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Heading2'],
+        fontSize=11,  # Slightly smaller
+        fontName='Helvetica-Bold',
+        alignment=1,  # Center
+        spaceAfter=0.1*inch,  # Reduce space after
+        spaceBefore=0
+    )
+      # Normal text style with compact line spacing
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=11,   # Smaller font size
+        leading=13,   # Tighter line spacing
+        spaceBefore=3,  # Reduce space before
+        spaceAfter=3    # Reduce space after
+    )
+    
+    # Heading style for section headers
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading3'],
+        fontSize=11,
+        fontName='Helvetica-Bold'
+    )
+    
+    # Current date string
+    current_date = datetime.now().strftime("%d de %B de %Y")
+    # Convert English month names to Spanish if needed
+    month_map = {
+        'January': 'enero', 'February': 'febrero', 'March': 'marzo',
+        'April': 'abril', 'May': 'mayo', 'June': 'junio',
+        'July': 'julio', 'August': 'agosto', 'September': 'septiembre',
+        'October': 'octubre', 'November': 'noviembre', 'December': 'diciembre'
+    }
+    for eng_month, es_month in month_map.items():
+        current_date = current_date.replace(eng_month, es_month)
+      # Calcular el martes de la semana evaluada
+    # ISO: lunes=1, martes=2, ...
+    tuesday_of_week = datetime.strptime(f'{year}-W{int(week)}-2', "%Y-W%W-%w")
+    tuesday_str = tuesday_of_week.strftime("%d de %B de %Y")
+    # Convertir el mes a español
+    for eng_month, es_month in month_map.items():
+        tuesday_str = tuesday_str.replace(eng_month, es_month)
+    
+    # Start building the document
+    story = []    # Add the LA CONSTANCIA logo - smaller and left-aligned like in the example
+    try:
+        logo_path = "LogoConst.png"
+        logo_img = Image(logo_path, width=2*inch, height=0.8*inch)
+        logo_table = Table([[logo_img]], colWidths=[6*inch])
+        logo_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),  # Left-aligned like the example
+            ('VALIGN', (0, 0), (0, 0), 'TOP'),
+        ]))
+        story.append(logo_table)
+    except Exception as e:
+        print(f"Warning: Could not load logo image: {e}")
+        # Fallback to text if image fails
+        company_name = "LA CONSTANCIA"
+        subtitle = "ABInBev"
+        header_data = [[company_name], [subtitle]]
+        header_table = Table(header_data, colWidths=[6*inch])
+        header_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),  # Left-aligned to match logo
+            ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (0, 0), 16),
+            ('FONTNAME', (0, 1), (0, 1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (0, 1), 12),
+        ]))
+        story.append(header_table)
+    story.append(Spacer(1, 0.05*inch))  # Minimal spacing after logo
+
+    # Add the date on the right side - positioned at the top right like in the example
+    date_style = ParagraphStyle(
+        'Date',
+        parent=styles['Normal'],
+        alignment=2,  # Right-aligned
+        fontSize=10
+    )
+    date_paragraph = Paragraph(tuesday_str, date_style)
+    story.append(date_paragraph)
+    story.append(Spacer(1, 0.1*inch))  # Minimal spacing after date# Add title - centered and bold with reduced spacing
+    most_reported_issue = offenders_data.iloc[0]['most_reported_issue']
+    story.append(Paragraph("REPORTE DE CLIENTES OFENSORES", title_style))
+    story.append(Spacer(1, 0.03*inch))  # Minimal spacing
+    story.append(Paragraph(f"Semana {week} del {year} - Problema: {most_reported_issue}", subtitle_style))
+    story.append(Spacer(1, 0.15*inch))  # Reduce spacing    # Introduction paragraph - automatically adapted to the specific issue
+    def generate_intro_text(issue_type, week_num):
+        """Generate specific introduction text based on the issue type and historical analysis"""
+        
+        # Buscar el texto específico en nuestro diccionario de motivos
+        if issue_type in MOTIVO_ACTION_PLANS:
+            motivo_data = MOTIVO_ACTION_PLANS[issue_type]
+            intro = motivo_data['intro']
+            accion_especifica = motivo_data['accion_especifica'] 
+            objetivo = motivo_data['objetivo']
+            conclusion = motivo_data['conclusion']
+        else:
+            # Buscar coincidencias parciales para motivos similares
+            issue_lower = issue_type.lower()
+            motivo_data = None
+            
+            for motivo_key, data in MOTIVO_ACTION_PLANS.items():
+                motivo_key_lower = motivo_key.lower()
+                
+                if ('demorado' in issue_lower or 'demora' in issue_lower) and 'demorado' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('safety' in issue_lower or 'critico' in issue_lower) and 'critico' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('envase' in issue_lower) and 'envase' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('rechazo' in issue_lower) and 'rechazo' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('problemático' in issue_lower or 'grosero' in issue_lower) and 'problemático' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('faltante' in issue_lower) and 'faltante' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('calidad' in issue_lower) and 'calidad' in motivo_key_lower:
+                    motivo_data = data
+                    break
+            
+            if motivo_data:
+                intro = motivo_data['intro']
+                accion_especifica = motivo_data['accion_especifica']
+                objetivo = motivo_data['objetivo']
+                conclusion = motivo_data['conclusion']
+            else:
+                # Texto genérico si no encuentra coincidencia
+                intro = "diversos problemas operativos"
+                accion_especifica = "análisis personalizado y plan de mejora específico"
+                objetivo = "resolver las problemáticas identificadas"
+                conclusion = "mejorando nuestros procesos de atención al cliente"
+          # Generar el texto completo
+        return f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron {intro}. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>{accion_especifica}</b>, esto para {objetivo} y para que la ruta pueda completar su jornada laboral de manera eficiente, {conclusion}. Los detalles se presentan en la siguiente tabla:"""
+    
+    intro_text = generate_intro_text(most_reported_issue, week)
+      # Create justified paragraph
+    justified_style = ParagraphStyle(
+        'Justified',
+        parent=normal_style,
+        alignment=4,  # 4 = justified
+        spaceBefore=6,
+        spaceAfter=6
+    )
+    story.append(Paragraph(intro_text, justified_style))
+    story.append(Spacer(1, 0.2*inch))  # Add space before the table
+    
+    # Add action plans table - prevent ALL duplicated entries with forced text wrapping
+    action_plan_data = [
+        ['Cliente', 'Rutas', 'Plan de Acción', 'Fecha']
+    ]    # Function to create wrapped text as Paragraph
+    def wrap_text_paragraph(text, max_width=1.8*inch, style_name='Normal'):
+        """Create a Paragraph object with proper wrapping"""
+        if not text:
+            return Paragraph("", styles[style_name])
+        
+        # Clean the text
+        clean_text = str(text).strip()
+        
+        # Create paragraph with automatic wrapping
+        return Paragraph(clean_text, styles[style_name])
+
+    def wrap_routes_paragraph(routes_text, max_width=0.8*inch):
+        """Create a Paragraph for routes with line breaks"""
+        if not routes_text:
+            return Paragraph("", styles['Normal'])
+        
+        # Split by commas and create HTML line breaks
+        routes = [route.strip() for route in str(routes_text).split(',')]
+        formatted_routes = '<br/>'.join(routes)
+        
+        return Paragraph(formatted_routes, styles['Normal'])
+      # Use a set to track unique clients and limit to top 5
+    seen_clients = set()
+    clients_added = 0
+    max_clients = 3  # Limitar a solo 3 clientes para asegurar que quepa en una sola página
+    
+    for _, client in offenders_data.iterrows():
+        if clients_added >= max_clients:
+            break
+        client_key = f"{client['codigo_cliente']}-{client['nombre_cliente']}".strip().lower()
+        if client_key not in seen_clients:
+            seen_clients.add(client_key)
+              # El nombre ya está limpio del groupby, solo combinar con código
+            client_display = f"{client['codigo_cliente']} {client['nombre_cliente']}"
+            
+            # Create wrapped paragraphs for table cells
+            client_paragraph = wrap_text_paragraph(client_display, max_width=2.0*inch)
+            action_plan_paragraph = wrap_text_paragraph(client['action_plan'], max_width=2.5*inch)
+            
+            # Wrap the routes text with line breaks
+            routes_text = ", ".join(client['routes'])
+            routes_paragraph = wrap_routes_paragraph(routes_text, max_width=0.8*inch)
+            
+            # Use current date for consistency with header
+            current_report_date = datetime.now().strftime("%d/%m/%Y")
+            
+            action_plan_data.append([
+                client_paragraph,
+                routes_paragraph,
+                action_plan_paragraph,
+                tuesday_of_week.strftime("%d/%m/%Y")
+            ])
+            
+            clients_added += 1
+              # Create simple table without complex formatting
+    if len(action_plan_data) > 1:  # Only if we have data rows
+        # Simple table con anchos de columna optimizados
+        action_table = Table(action_plan_data, colWidths=[2.0*inch, 0.8*inch, 2.5*inch, 0.8*inch])
+        action_table.setStyle(TableStyle([
+            # Headers
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            
+            # Data cells
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('ALIGN', (0, 1), (0, -1), 'LEFT'),      # Cliente
+            ('ALIGN', (1, 1), (1, -1), 'CENTER'),    # Rutas
+            ('ALIGN', (2, 1), (2, -1), 'LEFT'),      # Plan de Acción
+            ('ALIGN', (3, 1), (3, -1), 'CENTER'),    # Fecha
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            
+            # Grid y padding
+            ('GRID', (0, 0), (-1, -1), 0.75, colors.black),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+    else:
+        # Simple placeholder when no data
+        action_table = Table([['No se encontraron clientes']], colWidths=[5.7*inch])
+        action_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (0, 0), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (0, 0), 10),        ]))
+    
+    story.append(action_table)
+    story.append(Spacer(1, 0.2*inch))  # Minimal spacing before signatures
+    
+    # Add signature section    
+    signature_style = ParagraphStyle(
+        'SignatureHeader',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=9,    # Smaller font
+        leading=10,    # Tighter spacing
+        spaceBefore=6,  # Reduce space before        
+        spaceAfter=8   # Reduce space after
+    )
+    story.append(Paragraph("Firma de enterados:", signature_style))
+    story.append(Spacer(1, 0.15*inch))  # Reduce space for signatures
+      # Create signatures table - matching the example layout exactly with more space
+    sig_data = []
+      # Create rows with 2 signatures per row, with more space for actual signatures
+    for i in range(0, len(SIGNATURES), 2):
+        row = []
+        for j in range(2):
+            idx = i + j
+            if idx < len(SIGNATURES):
+                sig = SIGNATURES[idx]
+                # Más espacio entre línea de firma y nombre para firmar adecuadamente
+                sig_cell = f"F.________________________________\n{sig['name']} - {sig['title']}"
+            else:
+                sig_cell = ""
+            row.append(sig_cell)
+        sig_data.append(row)
+    
+    # Create signature table with increased spacing for proper signing
+    sig_table = Table(sig_data, colWidths=[3*inch, 3*inch], rowHeights=[1.0*inch]*len(sig_data))  # Altura aumentada para más espacio
+    sig_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # Align to top for better spacing
+        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Tamaño de letra
+        ('LEADING', (0, 0), (-1, -1), 12),  # Más espacio entre líneas
+        ('TOPPADDING', (0, 0), (-1, -1), 8),  # Más padding arriba
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12)  # Más padding abajo para separar filas
+    ]))
+    
+    story.append(sig_table)
+    # Add footer with DPO logo - reduced spacing to fit on one page
+    story.append(Spacer(1, 0.2*inch))  # Reducir más el espacio
+    
+    try:
+        dpo_logo_path = "dpo.png"
+        # Make DPO logo bigger and more visible like in the example
+        dpo_img = Image(dpo_logo_path, width=1.2*inch, height=0.8*inch)
+        dpo_table = Table([[dpo_img]], colWidths=[6*inch])
+        dpo_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+            ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
+        ]))
+        story.append(dpo_table)
+    except Exception as e:
+        print(f"Warning: Could not load DPO logo: {e}")
+        # Fallback to text if image fails - make it more visible
+        footer_table = Table([["DPO 2.0"]], colWidths=[6*inch])
+        footer_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (0, 0), 14),  # Bigger font size
+        ]))
+        story.append(footer_table)
+    
+    # Build the PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Save to file
+    with open(output_file, 'wb') as f:
+        f.write(buffer.read())
+    
+    print(f"Report generated successfully: {output_file}")
+    return output_file
+
+def main(specific_week=None, specific_year=None, output_dir=None):
+    """Main function to generate the weekly offender report
+    
+    Args:
+        specific_week: Optional specific week number to generate report for
+        specific_year: Optional specific year to generate report for
+        output_dir: Optional directory to save the report
+    """
+    # Get current week number and year if not specified
+    today = datetime.now()
+    current_week = specific_week if specific_week else today.isocalendar()[1]
+    current_year = specific_year if specific_year else today.year
+    
+    print(f"Generating report for week {current_week}, year {current_year}")
+      # Load the data
+    data, routes_df = load_data()
+    if data is None:
+        print("Error: Could not load data. Verify that 'Feedbacks H1.xlsx' exists.")
+        return None
+    
+    # Get the weekly offenders
+    offenders = get_weekly_offenders(data, week=current_week, year=current_year)
+    week_used = current_week
+    year_used = current_year
+    
+    # If no offenders found, try the previous week
+    if offenders.empty and not specific_week:
+        print(f"No data found for week {current_week}. Trying previous week...")
+        prev_week = current_week - 1
+        prev_year = current_year
+        if prev_week < 1:
+            prev_week = 52  # Last week of previous year
+            prev_year -= 1
+        
+        offenders = get_weekly_offenders(data, week=prev_week, year=prev_year)
+        
+        if not offenders.empty:
+            week_used = prev_week
+            year_used = prev_year
+            print(f"Using data from week {week_used}, year {year_used}")
+    
+    # Generate the report
+    if not offenders.empty:
+        # Create output directory if specified
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, f"weekly_offender_report_w{week_used}_{year_used}.pdf")
+        else:
+            output_path = f"weekly_offender_report_w{week_used}_{year_used}.pdf"
+            
+        report_path = generate_weekly_report(offenders, week_used, year_used, output_path)
+        
+        if report_path:
+            print(f"Report generated successfully at: {report_path}")
+            return report_path
+        else:
+            print("Error: Failed to generate report")
+            return None
+    else:
+        msg = f"No offenders found for week {current_week}, year {current_year}"
+        if not specific_week:
+            msg += " or the previous week"
+        print(msg)
+        return None
+
+def generate_all_weekly_reports(year=None, output_dir=None):
+    """Generate reports for all weeks with data in the specified year
+    
+    Args:
+        year: Year to generate reports for (default: current year)
+        output_dir: Directory to save all reports
+    """
+    if year is None:
+        year = datetime.now().year
+    
+    print(f"Generating reports for all weeks with data in {year}...")
+    
+    # Load the data
+    data = load_data()
+    if data is None:
+        print("Error: Could not load data. Verify that 'Feedbacks H1.xlsx' exists.")
+        return []
+    
+    # Find all weeks with data
+    weekly_data = data[data['year'] == year]
+    weeks_with_data = sorted(weekly_data['week'].unique())
+    
+    print(f"Found data for {len(weeks_with_data)} weeks: {weeks_with_data}")
+    
+    generated_reports = []
+    
+    for week in weeks_with_data:
+        print(f"\n--- Generating report for week {week} ---")
+        
+        # Get offenders for this week
+        offenders = get_weekly_offenders(data, week=week, year=year)
+        
+        if not offenders.empty:
+            # Create output path
+            if output_dir:
+                import os
+                os.makedirs(output_dir, exist_ok=True)
+                output_path = os.path.join(output_dir, f"weekly_offender_report_w{week}_{year}.pdf")
+            else:
+                output_path = f"weekly_offender_report_w{week}_{year}.pdf"
+            
+            # Generate the report
+            report_path = generate_weekly_report(offenders, week, year, output_path)
+            
+            if report_path:
+                generated_reports.append(report_path)
+                print(f"✅ Report generated: {report_path}")
+            else:
+                print(f"❌ Failed to generate report for week {week}")
+        else:
+            print(f"⚠️  No valid offenders found for week {week}")
+    
+    print(f"\n🎉 Generation completed! Created {len(generated_reports)} reports.")
+    return generated_reports
+
+def generate_weekly_report_for_any_week(week_num, year_num=None):
+    """Generate report for any specified week and year"""
+    if year_num is None:
+        year_num = datetime.now().year
+    
+    print(f"Generating report for week {week_num}, year {year_num}")
+    
+    # Load data
+    feedbacks_df, routes_df = load_data()
+    
+    # Get weekly offenders for the specified week/year
+    offenders_data = get_weekly_offenders(feedbacks_df, week_num, year_num)
+    
+    if offenders_data.empty:
+        print(f"No data available for week {week_num}, year {year_num}")
+        return None
+    
+    # Generate the PDF report
+    output_file = f"weekly_offender_report_w{week_num}_{year_num}.pdf"
+    return generate_weekly_report(offenders_data, week_num, year_num, output_file)
+
+def generate_all_weekly_reports(year=None):
+    """Generate reports for all weeks with data from the beginning of the year until current week"""
+    if year is None:
+        year = datetime.now().year
+    
+    print(f"Generando reportes para todas las semanas con datos en el año {year}")
+    
+    # Load data to find the range of weeks with data
+    data, routes_df = load_data()
+    if data is None:
+        print("Error: No se pudo cargar los datos")
+        return 0, 1
+    
+    # Filter data for the specified year
+    data_year = data[data['year'] == year].copy()
+    if data_year.empty:
+        print(f"No hay datos disponibles para el año {year}")
+        return 0, 1
+    
+    # Get all unique weeks with data in the year
+    weeks_with_data = sorted(data_year['week'].unique())
+    
+    # Get current week to avoid generating future reports
+    current_week = datetime.now().isocalendar().week
+    current_year = datetime.now().year
+    
+    # If we're looking at current year, limit to current week
+    if year == current_year:
+        weeks_with_data = [w for w in weeks_with_data if w <= current_week]
+    
+    print(f"Semanas con datos encontradas: {weeks_with_data}")
+    print(f"Total de semanas a procesar: {len(weeks_with_data)}")
+    
+    generated_reports = []
+    error_count = 0
+    
+    for i, week in enumerate(weeks_with_data, 1):
+        print(f"\n--- Procesando Semana {week} ({i}/{len(weeks_with_data)}) ---")
+        try:
+            result = generate_weekly_report_for_any_week(week, year)
+            if result:
+                filename = f"weekly_offender_report_w{week}_{year}.pdf"
+                generated_reports.append(filename)
+                print(f"✅ Reporte generado: {filename}")
+            else:
+                print(f"⚠️ No se pudieron generar datos para la semana {week}")
+                error_count += 1
+        except Exception as e:
+            print(f"❌ Error generando reporte para la semana {week}: {str(e)}")
+            error_count += 1
+    
+    print(f"\n📋 Resumen final:")
+    print(f"✅ Reportes generados exitosamente: {len(generated_reports)}")
+    print(f"❌ Errores encontrados: {error_count}")
+    
+    if generated_reports:
+        print(f"\n📁 Archivos generados:")
+        for report in generated_reports:
+            print(f"  - {report}")
+    
+    return len(generated_reports), error_count
+
+def classify_issue_type(issue_text):
+    """Classify the issue type for proper action plan assignment"""
+    if not issue_text:
+        return 'generic'
+    
+    issue_lower = str(issue_text).lower()
+    
+    # Clasificación específica por palabras clave
+    if any(word in issue_lower for word in ['faltante', 'producto', 'inventario', 'stock']):
+        return 'faltante_producto'
+    elif any(word in issue_lower for word in ['envase', 'canasta', 'sucio', 'roto', 'dañado']):
+        return 'envase_canasta'
+    elif any(word in issue_lower for word in ['pedido', 'orden', 'cantidad', 'solicitud']):
+        return 'pedido_orden'
+    elif any(word in issue_lower for word in ['entrega', 'delivery', 'tarde', 'hora', 'puntual']):
+        return 'entrega_delivery'
+    elif any(word in issue_lower for word in ['factura', 'documento', 'precio', 'dato']):
+        return 'factura_documento'
+    elif any(word in issue_lower for word in ['calidad', 'caducidad', 'fecha', 'vencimiento', 'sabor', 'olor']):
+        return 'calidad_caducidad'
+    elif any(word in issue_lower for word in ['servicio', 'atención', 'cordial', 'trato']):
+        return 'servicio_atencion'
+    elif any(word in issue_lower for word in ['ruta', 'vendedor', 'personal', 'ventas']):
+        return 'ruta_vendedor'
+    elif any(word in issue_lower for word in ['demora', 'demorado', 'recibir', 'pagar', 'espera']):
+        return 'cliente_demora'
+    elif any(word in issue_lower for word in ['safety', 'seguridad', 'crítico', 'peligro', 'riesgo']):
+        return 'safety_critico'
+    else:
+        return 'generic'
+
+def get_action_plan_for_issue(issue_type):
+    """Get the appropriate action plan for the classified issue type"""
+    action_plans = {
+        'faltante_producto': 'Implementación de checklist de verificación pre-despacho y capacitación en control de inventario en tiempo real',
+        'envase_canasta': 'Protocolo de inspección visual de envases, capacitación en manejo cuidadoso y proceso de limpieza',
+        'pedido_orden': 'Sistema de doble verificación de cantidades y validación cruzada de códigos de producto',
+        'entrega_delivery': 'Optimización de rutas, comunicación proactiva de horarios y coordinación previa con clientes',
+        'factura_documento': 'Capacitación en facturación, actualización de base de datos y verificación de precios',
+        'calidad_caducidad': 'Protocolo FIFO estricto, control de calidad sensorial y verificación de fechas de vencimiento',
+        'servicio_atencion': 'Capacitación en servicio al cliente, protocolo de atención cordial y manejo de quejas',
+        'ruta_vendedor': 'Revisión de procedimientos de ruta, capacitación del personal y optimización de tiempos',
+        'cliente_demora': 'Protocolo de comunicación previa, coordinación de horarios y seguimiento de compromisos',
+        'safety_critico': 'Evaluación de seguridad, protocolo de visita especializada y verificación de condiciones'
+    }
+    
+    issue_key = classify_issue_type(issue_type)
+    return action_plans.get(issue_key, "Seguimiento personalizado, análisis de causa raíz y plan de mejora específico según la naturaleza del problema identificado")
+
+def get_intro_text_for_issue(issue_type, week_num):
+    """Get the appropriate intro text for the classified issue type"""
+    intro_texts = {
+        'faltante_producto': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>faltante de productos</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>implementación de checklist de verificación y control de inventario</b>, esto para asegurar la disponibilidad completa de productos solicitados, optimizando el control de inventario y previniendo faltantes, para que la ruta cumpla eficientemente con su jornada laboral. Los detalles se presentan en la siguiente tabla:""",
+        
+        'envase_canasta': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>envases y canastas</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>protocolo de inspección y manejo adecuado de envases</b>, esto para garantizar la entrega de envases en perfecto estado, evitando quejas por esta causa y para que la ruta realice sus entregas sin contratiempos. Los detalles se presentan en la siguiente tabla:""",
+        
+        'pedido_orden': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>toma y procesamiento de pedidos</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>implementación de sistema de verificación dual</b>, esto para asegurar precisión en la toma y procesamiento de pedidos, evitando discrepancias y para que la ruta complete su jornada eficientemente. Los detalles se presentan en la siguiente tabla:""",
+        
+        'entrega_delivery': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>puntualidad y proceso de entrega</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>optimización logística y comunicación efectiva</b>, esto para mejorar la puntualidad y eficiencia en las entregas, asegurando que la ruta pueda completar su cronograma establecido. Los detalles se presentan en la siguiente tabla:""",
+        
+        'factura_documento': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>documentación y facturación</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>mejora en procesos administrativos y documentales</b>, esto para eliminar errores en documentación y facturación, evitando reprocesos que afecten la eficiencia de la ruta. Los detalles se presentan en la siguiente tabla:""",
+        
+        'calidad_caducidad': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>calidad de productos</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>implementación de controles de calidad rigurosos</b>, esto para asegurar la entrega de productos con calidad óptima, eliminando reclamos por producto en mal estado y para que la ruta mantenga su eficiencia operativa. Los detalles se presentan en la siguiente tabla:""",
+        
+        'servicio_atencion': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>servicio al cliente</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>capacitación en excelencia en servicio al cliente</b>, esto para mejorar la experiencia y satisfacción del cliente, fidelizando a nuestros clientes y para que la ruta pueda completar sus tareas eficientemente. Los detalles se presentan en la siguiente tabla:""",
+        
+        'ruta_vendedor': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>procedimientos de ruta y ventas</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>optimización de procesos de ruta y ventas</b>, esto para mejorar la eficiencia operativa de las rutas, asegurando el cumplimiento de objetivos y metas establecidas. Los detalles se presentan en la siguiente tabla:""",
+        
+        'cliente_demora': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>demoras en recepción o pago</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>mejora en comunicación y coordinación con clientes</b>, esto para minimizar tiempos de espera y mejorar la coordinación, optimizando el tiempo de la ruta para cumplir con la jornada establecida. Los detalles se presentan en la siguiente tabla:""",
+        
+        'safety_critico': f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas relacionados al tema de <b>condiciones de seguridad</b>. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>implementación de protocolos de seguridad</b>, esto para garantizar condiciones seguras para la operación comercial, protegiendo a nuestro personal y asegurando que la ruta pueda operar sin riesgos. Los detalles se presentan en la siguiente tabla:"""    }
+    
+    issue_key = classify_issue_type(issue_type)
+    return intro_texts.get(issue_key, f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron problemas diversos. Como equipo de distribución se solicita su valiosa ayuda para <b>implementar mejoras específicas según la naturaleza de cada problema</b>, esto para optimizar nuestros procesos de atención al cliente y asegurar que la ruta pueda completar eficientemente su jornada laboral. Los detalles se presentan en la siguiente tabla:""")
+
+def generate_monthly_reports(month=None, year=None):
+    """Generate reports for all weeks in a specified month that have data"""
+    if month is None:
+        month = datetime.now().month
+    if year is None:
+        year = datetime.now().year
+    
+    print(f"Generando reportes para todas las semanas con datos en {calendar.month_name[month]} {year}")
+    
+    # Load data to find the range of weeks with data
+    data, routes_df = load_data()
+    if data is None:
+        print("Error: No se pudo cargar los datos")
+        return 0, 1
+    
+    # Filter data for the specified month and year
+    data_filtered = data[(data['year'] == year) & (data['month'] == month)].copy()
+    if data_filtered.empty:
+        print(f"No hay datos disponibles para {calendar.month_name[month]} {year}")
+        return 0, 1
+    
+    # Get all unique weeks with data in the month
+    weeks_with_data = sorted(data_filtered['week'].unique())
+    
+    print(f"Semanas con datos en {calendar.month_name[month]}: {weeks_with_data}")
+    print(f"Total de semanas a procesar: {len(weeks_with_data)}")
+    
+    generated_reports = []
+    error_count = 0
+    
+    for i, week in enumerate(weeks_with_data, 1):
+        print(f"\n--- Procesando Semana {week} ({i}/{len(weeks_with_data)}) ---")
+        try:
+            result = generate_weekly_report_for_any_week(week, year)
+            if result:
+                filename = f"weekly_offender_report_w{week}_{year}.pdf"
+                generated_reports.append(filename)
+                print(f"✅ Reporte generado: {filename}")
+            else:
+                print(f"⚠️ No se pudieron generar datos para la semana {week}")
+                error_count += 1
+        except Exception as e:
+            print(f"❌ Error generando reporte para la semana {week}: {str(e)}")
+            error_count += 1
+    
+    print(f"\n📋 Resumen del mes:")
+    print(f"✅ Reportes generados exitosamente: {len(generated_reports)}")
+    print(f"❌ Errores encontrados: {error_count}")
+    
+    if generated_reports:
+        print(f"\n📁 Archivos generados:")
+        for report in generated_reports:
+            print(f"  - {report}")
+    
+    return len(generated_reports), error_count
+
+if __name__ == "__main__":
+    import sys
+    import argparse
+      # Setup argument parser
+    parser = argparse.ArgumentParser(description='Generate weekly offender reports')
+    parser.add_argument('--all', action='store_true', 
+                        help='Generate reports for all weeks with data in the year')
+    parser.add_argument('--week', type=int, 
+                        help='Generate report for specific week number')
+    parser.add_argument('--year', type=int, 
+                        help='Year for the report (default: current year)')
+    parser.add_argument('--month', type=int, 
+                        help='Generate reports for all weeks of specified month')
+    parser.add_argument('--output-dir', type=str, 
+                        help='Output directory for generated reports')
+    
+    args = parser.parse_args()
+    
+    try:
+        if args.all:
+            print("🔄 Generando reportes para todas las semanas del año con datos...")
+            current_year = args.year or datetime.now().year
+            
+            print(f"📅 Procesando todas las semanas del año {current_year}")
+            success_count, error_count = generate_all_weekly_reports(year=current_year)
+            
+            print(f"\n✅ Proceso completado:")
+            print(f"   - Reportes generados exitosamente: {success_count}")
+            print(f"   - Errores encontrados: {error_count}")
+            
+            if success_count > 0:
+                print(f"\n📁 Reportes guardados en el directorio actual")
+            
+        elif args.month:
+            print(f"🔄 Generando reportes para todas las semanas del mes {args.month}...")
+            year = args.year or datetime.now().year
+            
+            success_count, error_count = generate_monthly_reports(
+                month=args.month, 
+                year=year
+            )
+            
+            print(f"\n✅ Proceso completado:")
+            print(f"   - Reportes generados exitosamente: {success_count}")
+            print(f"   - Errores encontrados: {error_count}")
+            
+        elif args.week:
+            print(f"🔄 Generando reporte para la semana {args.week}...")
+            year = args.year or datetime.now().year
+            
+            success = generate_weekly_report_for_any_week(args.week, year)
+            if success:
+                print(f"✅ Reporte generado exitosamente para la semana {args.week} del {year}")
+            else:
+                print(f"❌ Error al generar el reporte para la semana {args.week}")
+            
+        else:
+            # Default behavior: generate report for current week
+            print("🔄 Generando reporte para la semana actual...")
+            main(output_dir=args.output_dir)
+            print("✅ Reporte generado exitosamente")
+            
+    except Exception as e:
+        print(f"❌ Error al generar el reporte: {str(e)}")
+        sys.exit(1)

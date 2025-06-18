@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"args": [
+				"weekly_offender_report.py"
+			],
+			"label": "Run Weekly Offender Report",
+			"type": "shell",
+			"problemMatcher": [
+				"$python"
+			],
+			"command": "python",
+			"group": "build"
+		}
+	]
+}
