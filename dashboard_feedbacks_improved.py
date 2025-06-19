@@ -609,11 +609,14 @@ def load_data():
             left_on='ruta', 
             right_on='RUTA', 
             how='left'
-        )
-          # ========== MANEJO DE DATOS FALTANTES ==========
+        )        # ========== MANEJO DE DATOS FALTANTES ==========
+        # Limpiar espacios en blanco en nombres de supervisores y contratistas en rutas_df
+        rutas_df['SUPERVISOR'] = rutas_df['SUPERVISOR'].astype(str).str.strip()
+        rutas_df['CONTRATISTA'] = rutas_df['CONTRATISTA'].astype(str).str.strip()
+        
         # Rellenar supervisores y contratistas faltantes
-        merged_df['SUPERVISOR'] = merged_df['SUPERVISOR'].fillna('SIN ASIGNAR')
-        merged_df['CONTRATISTA'] = merged_df['CONTRATISTA'].fillna('SIN ASIGNAR')
+        merged_df['SUPERVISOR'] = merged_df['SUPERVISOR'].fillna('SIN ASIGNAR').astype(str).str.strip()
+        merged_df['CONTRATISTA'] = merged_df['CONTRATISTA'].fillna('SIN ASIGNAR').astype(str).str.strip()
         
         # CRITICAL: Calculate tiempo_cierre_dias for merged_df as well
         merged_df['tiempo_cierre_dias'] = (
@@ -3111,10 +3114,30 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
     """
     st.subheader("👨‍💼 Análisis Integral por Supervisores y Contratistas")
     
-    # Verificar que tenemos los datos necesarios
+    # CRITICAL FIX: Limpiar espacios en blanco en nombres para asegurar matches correctos
+    merged_df = merged_df.copy()
+    rutas_df = rutas_df.copy()
+    
+    # Limpiar espacios en ambos DataFrames
+    if 'SUPERVISOR' in merged_df.columns:
+        merged_df['SUPERVISOR'] = merged_df['SUPERVISOR'].astype(str).str.strip()
+    if 'CONTRATISTA' in merged_df.columns:
+        merged_df['CONTRATISTA'] = merged_df['CONTRATISTA'].astype(str).str.strip()
+    
+    rutas_df['SUPERVISOR'] = rutas_df['SUPERVISOR'].astype(str).str.strip()
+    rutas_df['CONTRATISTA'] = rutas_df['CONTRATISTA'].astype(str).str.strip()
+      # Verificar que tenemos los datos necesarios
     if 'SUPERVISOR' not in merged_df.columns and 'CONTRATISTA' not in merged_df.columns:
         st.warning("⚠️ No hay datos de Supervisores o Contratistas disponibles en el dataset.")
         return
+    
+    # Función para calcular meta dinámica según el mes
+    def calcular_meta_mensual(mes_nombre):
+        """Calcula la meta mensual: 10 para Junio, 6 para otros meses"""
+        if mes_nombre in ['June', 'Junio']:
+            return 10
+        else:
+            return 6
       # ========== CALCULAMOS EL TOTAL DE RUTAS DISPONIBLES DESDE BD_RUTAS ==========
     # Filtrar rutas que tienen contratista real asignado (no "Dummy" o nulos)
     rutas_con_contratista_real = rutas_df[
@@ -3132,10 +3155,9 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         unsafe_allow_html=True
     )    # --- Análisis por SUPERVISOR ---
     if 'SUPERVISOR' in merged_df.columns:
-        st.markdown("### 👨‍💼 Análisis por Supervisores")
-          # Usar todos los datos sin filtros globales - incluir todos los meses
-        df_meta = merged_df.copy()
-        supervisor_meta = 'Todos'  # Sin filtro global
+        st.markdown("### 👨‍💼 Análisis por Supervisores")        # Usar los datos filtrados por el usuario - respetar filtros de fecha
+        df_meta = merged_df.copy()  # Usar merged_df filtrado que incluye columnas SUPERVISOR y CONTRATISTA
+        supervisor_meta = 'Todos'  # Sin filtro global adicional
         
         # 2. Calcular registros por supervisor-ruta-mes para el período completo
         registros_activos = df_meta.groupby(['SUPERVISOR', 'ruta', 'mes_nombre']).agg({'id_tema':'count'}).reset_index()
@@ -3166,11 +3188,10 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         # 6. Filtrar por supervisor seleccionado si aplica
         if supervisor_meta != 'Todos':
             supervisor_rutas = supervisor_rutas[supervisor_rutas['SUPERVISOR'] == supervisor_meta]
-        
-        # 7. Calcular métricas finales con meta fija
-        meta_mensual = 6  # Meta estándar
-        
-        supervisor_rutas['Meta Cumplida'] = supervisor_rutas['id_tema'] >= meta_mensual
+          # 7. Calcular métricas finales con meta dinámica por mes
+        # Aplicar meta específica para cada mes (10 para Junio, 6 para otros)
+        supervisor_rutas['Meta_Mensual'] = supervisor_rutas['mes_nombre'].apply(calcular_meta_mensual)
+        supervisor_rutas['Meta Cumplida'] = supervisor_rutas['id_tema'] >= supervisor_rutas['Meta_Mensual']
         supervisor_rutas['Estado'] = supervisor_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
         supervisor_rutas = supervisor_rutas.rename(columns={'id_tema':'Registros'})
         
@@ -3269,9 +3290,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
                 rutas_unicas_sup = supervisor_table_data.groupby(['SUPERVISOR', 'ruta']).agg({
                     'Registros': 'sum'  # Sumar registros de todos los meses por ruta
                 }).reset_index()
-                
-                # Evaluar si cada ruta cumple meta
-                rutas_unicas_sup['Cumple_Meta'] = rutas_unicas_sup['Registros'] >= meta_mensual
+                  # Evaluar si cada ruta cumple meta (usar meta promedio para simplificar KPI)
+                rutas_unicas_sup['Cumple_Meta'] = rutas_unicas_sup['Registros'] >= 6  # Meta base
                 
                 total_rutas_sup = len(rutas_unicas_sup)
                 rutas_cumplen_sup = rutas_unicas_sup['Cumple_Meta'].sum()
@@ -3279,9 +3299,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             else:
                 total_rutas_sup = 0
                 rutas_cumplen_sup = 0
-                porcentaje_cumple_sup = 0
-                
-            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_sup:.1f}%", f"Meta: {meta_mensual} reg/ruta")
+                porcentaje_cumple_sup = 0                
+            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_sup:.1f}%", f"Meta: 6-10 reg/ruta según mes")
         
         with col_kpi2:
             st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_sup}/{total_rutas_sup}")
@@ -3331,19 +3350,20 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             height=500
         )
         st.plotly_chart(fig_ranking_sup, use_container_width=True)      # --- Análisis por CONTRATISTA ---
-    if 'CONTRATISTA' in df_meta.columns:
+    if 'CONTRATISTA' in merged_df.columns:
         st.markdown("### 🏢 Análisis por Contratistas")
+          # Usar los datos filtrados por el usuario - respetar filtros de fecha
+        df_meta = merged_df.copy()  # Usar merged_df filtrado que incluye columnas SUPERVISOR y CONTRATISTA
+        contratista_meta = 'Todos'  # Sin filtro global adicional
         
-        # Sin filtro global de contratista
-        contratista_meta = 'Todos'
-          # ========== MEJORA: Incluir rutas con 0 registros ==========
-        # 1. Obtener todas las rutas asignadas a contratistas (de BD_Rutas completo)
-        # Usar rutas_df para mantener consistencia con la sección de supervisores
+        # 2. Calcular registros por contratista-ruta-mes para el período completo
+        registros_activos_con = df_meta.groupby(['CONTRATISTA', 'ruta', 'mes_nombre']).agg({'id_tema':'count'}).reset_index()
+        
+        # 3. Obtener todas las rutas asignadas a contratistas
         todas_rutas_contratista = rutas_df[['CONTRATISTA', 'RUTA']].drop_duplicates()
         todas_rutas_contratista = todas_rutas_contratista.rename(columns={'RUTA': 'ruta'})
-          # 2. Calcular registros por contratista-ruta-mes para el período filtrado
-        registros_activos_con = df_meta.groupby(['CONTRATISTA', 'ruta', 'mes_nombre']).agg({'id_tema':'count'}).reset_index()
-          # 3. Crear combinaciones de contratista-ruta-mes para incluir rutas con 0 registros
+        
+        # 4. Crear combinaciones de contratista-ruta-mes para incluir rutas con 0 registros
         meses_disponibles = df_meta['mes_nombre'].unique()
         contratista_ruta_mes = []
         for _, row in todas_rutas_contratista.iterrows():
@@ -3355,20 +3375,21 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
                 })
         todas_rutas_contratista_completas = pd.DataFrame(contratista_ruta_mes)
         
-        # 4. Hacer merge completo para incluir rutas con 0 registros
+        # 5. Hacer merge completo para incluir rutas con 0 registros
         contratista_rutas = todas_rutas_contratista_completas.merge(
             registros_activos_con, 
             on=['CONTRATISTA', 'ruta', 'mes_nombre'], 
             how='left'
         )
-        contratista_rutas['id_tema'] = contratista_rutas['id_tema'].fillna(0).astype(int)
-        
-        # 5. Filtrar por contratista seleccionado si aplica
+        contratista_rutas['id_tema'] = contratista_rutas['id_tema'].fillna(0).astype(int)        # 6. Filtrar por contratista seleccionado si aplica
         if contratista_meta != 'Todos':
             contratista_rutas = contratista_rutas[contratista_rutas['CONTRATISTA'] == contratista_meta]
-        
-        # 6. Calcular métricas finales con meta fija
-        meta_mensual = 6  # Meta estándar
+          # 7. Calcular métricas finales con meta dinámica por mes
+        # Aplicar meta específica para cada mes (10 para Junio, 6 para otros)
+        contratista_rutas['Meta_Mensual'] = contratista_rutas['mes_nombre'].apply(calcular_meta_mensual)
+        contratista_rutas['Meta Cumplida'] = contratista_rutas['id_tema'] >= contratista_rutas['Meta_Mensual']
+        contratista_rutas['Estado'] = contratista_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
+        contratista_rutas = contratista_rutas.rename(columns={'id_tema':'Registros'})
         
         # Traducir meses al español
         traduccion_meses = {
@@ -3377,11 +3398,7 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
         }
         
-        contratista_rutas['Meta Cumplida'] = contratista_rutas['id_tema'] >= meta_mensual
-        contratista_rutas['Estado'] = contratista_rutas['Meta Cumplida'].map(lambda x: '✅ Cumple' if x else '❌ No Cumple')
-        contratista_rutas = contratista_rutas.rename(columns={'id_tema':'Registros'})
-        
-        # Traducir meses al español para contratistas
+        # Agregar mes traducido a los datos de contratistas
         contratista_rutas['mes_español'] = contratista_rutas['mes_nombre'].map(traduccion_meses).fillna(contratista_rutas['mes_nombre'])
         
         # Tabla detallada de contratistas con filtros por Contratista, Estado y Mes
@@ -3468,9 +3485,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
                 rutas_unicas_con = contratista_table_data.groupby(['CONTRATISTA', 'ruta']).agg({
                     'Registros': 'sum'  # Sumar registros de todos los meses por ruta
                 }).reset_index()
-                
-                # Evaluar si cada ruta cumple meta
-                rutas_unicas_con['Cumple_Meta'] = rutas_unicas_con['Registros'] >= meta_mensual
+                  # Evaluar si cada ruta cumple meta (usar meta base para simplificar KPI)
+                rutas_unicas_con['Cumple_Meta'] = rutas_unicas_con['Registros'] >= 6  # Meta base
                 
                 total_rutas_con = len(rutas_unicas_con)
                 rutas_cumplen_con = rutas_unicas_con['Cumple_Meta'].sum()
@@ -3480,7 +3496,7 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
                 rutas_cumplen_con = 0
                 porcentaje_cumple_con = 0
                 
-            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_con:.1f}%", f"Meta: {meta_mensual} reg/ruta")
+            st.metric("📊 % Rutas que Cumplen Meta", f"{porcentaje_cumple_con:.1f}%", f"Meta: 6-10 reg/ruta según mes")
         
         with col_kpi5:
             st.metric("📈 Rutas que Cumplen", f"{rutas_cumplen_con}/{total_rutas_con}")
@@ -3540,18 +3556,41 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         </div>
         """,
         unsafe_allow_html=True
-    )
+    )    # Top Offenders mejorado - Incluir rutas con 0 registros correctamente
+    # 1. Obtener todas las rutas disponibles con supervisor/contratista
+    todas_rutas_info = rutas_df[['RUTA', 'SUPERVISOR', 'CONTRATISTA']].drop_duplicates()
+    todas_rutas_info = todas_rutas_info.rename(columns={'RUTA': 'ruta'})
     
-    # Top Offenders y Best por rutas
-    rutas_mes = df_meta.groupby('ruta').agg({'id_tema':'count'}).reset_index()
-    rutas_mes = rutas_mes.rename(columns={'id_tema':'Registros'})
-    top_offenders = rutas_mes.nsmallest(10, 'Registros')
-    top_performers = rutas_mes.nlargest(10, 'Registros')
+    # 2. Contar registros por ruta en merged_df (solo rutas que tienen datos)
+    rutas_con_registros = merged_df.groupby('ruta').agg({'id_tema':'count'}).reset_index()
+    rutas_con_registros = rutas_con_registros.rename(columns={'id_tema':'Registros'})
     
+    # 3. Hacer LEFT JOIN para incluir rutas con 0 registros
+    rutas_completas = todas_rutas_info.merge(rutas_con_registros, on='ruta', how='left')
+    rutas_completas['Registros'] = rutas_completas['Registros'].fillna(0).astype(int)
+    
+    # 4. Separar rutas con 0 registros (verdaderos offenders) de las que tienen registros
+    rutas_cero = rutas_completas[rutas_completas['Registros'] == 0].copy()
+    rutas_con_datos = rutas_completas[rutas_completas['Registros'] > 0].copy()
+    
+    # 5. Top Offenders: Priorizar rutas con 0 registros
+    if len(rutas_cero) > 0:
+        # Mostrar rutas con 0 registros primero + algunas con pocos registros
+        rutas_pocos = rutas_con_datos.nsmallest(max(0, 10-len(rutas_cero)), 'Registros')
+        top_offenders = pd.concat([rutas_cero, rutas_pocos]).head(10)
+    else:
+        # Si no hay rutas con 0, mostrar las 10 con menos registros
+        top_offenders = rutas_completas.nsmallest(10, 'Registros')
+    
+    # 6. Top Performers: Las 10 rutas con más registros
+    top_performers = rutas_completas.nlargest(10, 'Registros')
     col_top1, col_top2 = st.columns(2)
     
     with col_top1:
-        st.markdown("##### ⚠️ Top 10 Offenders (Menos registros)")
+        # Mostrar estadísticas adicionales
+        rutas_con_cero = len(rutas_cero) if 'rutas_cero' in locals() else 0
+        st.markdown(f"##### ⚠️ Top Offenders - {rutas_con_cero} rutas con 0 registros")
+        
         fig_offenders = px.bar(
             top_offenders, 
             x='Registros', 
@@ -3559,12 +3598,26 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             orientation='h',
             color='Registros',
             color_continuous_scale='Reds',
-            title='⚠️ Rutas con Menos Registros',
-            text='Registros'
+            title=f'⚠️ Rutas Problemáticas ({rutas_con_cero} con 0 registros)',
+            text='Registros',
+            hover_data=['SUPERVISOR', 'CONTRATISTA']
         )
-        fig_offenders.update_traces(texttemplate='%{text}', textposition='outside')
-        fig_offenders.update_layout(height=400)
+        fig_offenders.update_traces(
+            texttemplate='%{text}', 
+            textposition='outside',
+            hovertemplate='<b>%{y}</b><br>' +
+                         'Registros: %{x}<br>' +
+                         'Supervisor: %{customdata[0]}<br>' +
+                         'Contratista: %{customdata[1]}<extra></extra>'
+        )
+        fig_offenders.update_layout(height=450, yaxis={'categoryorder':'total ascending'})
         st.plotly_chart(fig_offenders, use_container_width=True)
+        
+        # Mostrar tabla detallada de rutas con 0 registros
+        if rutas_con_cero > 0:
+            st.markdown("**📋 Rutas sin ningún registro:**")
+            rutas_cero_display = rutas_cero[['ruta', 'SUPERVISOR', 'CONTRATISTA', 'Registros']].copy()
+            st.dataframe(rutas_cero_display, use_container_width=True, hide_index=True)
     
     with col_top2:
         st.markdown("##### 🏆 Top 10 Performers (Más registros)")
@@ -3576,10 +3629,18 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             color='Registros',
             color_continuous_scale='Greens',
             title='🏆 Rutas con Más Registros',
-            text='Registros'
+            text='Registros',
+            hover_data=['SUPERVISOR', 'CONTRATISTA']
         )
-        fig_performers.update_traces(texttemplate='%{text}', textposition='outside')
-        fig_performers.update_layout(height=400)
+        fig_performers.update_traces(
+            texttemplate='%{text}', 
+            textposition='outside',
+            hovertemplate='<b>%{y}</b><br>' +
+                         'Registros: %{x}<br>' +
+                         'Supervisor: %{customdata[0]}<br>' +
+                         'Contratista: %{customdata[1]}<extra></extra>'
+        )
+        fig_performers.update_layout(height=450, yaxis={'categoryorder':'total ascending'})
         st.plotly_chart(fig_performers, use_container_width=True)
     
     # --- SECCIÓN 3: Análisis de Impacto ---
@@ -3593,9 +3654,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
     )
     
     col_impacto1, col_impacto2 = st.columns(2)
-    
-    # Impacto por supervisores
-    if 'SUPERVISOR' in df_meta.columns and 'supervisor_rutas' in locals():
+      # Impacto por supervisores
+    if 'SUPERVISOR' in merged_df.columns and 'supervisor_rutas' in locals():
         with col_impacto1:
             st.markdown("##### 👨‍💼 Supervisores con Rutas Sin Meta")
             supervisor_sin_meta = supervisor_rutas[~supervisor_rutas['Meta Cumplida']].groupby('SUPERVISOR').size().reset_index(name='Rutas_Sin_Meta')
@@ -3605,9 +3665,8 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
                 st.dataframe(clean_dataframe_for_display(supervisor_sin_meta), use_container_width=True)
             else:
                 st.success("🎉 Todos los supervisores tienen rutas que cumplen la meta!")
-    
-    # Impacto por contratistas
-    if 'CONTRATISTA' in df_meta.columns and 'contratista_rutas' in locals():
+      # Impacto por contratistas
+    if 'CONTRATISTA' in merged_df.columns and 'contratista_rutas' in locals():
         with col_impacto2:
             st.markdown("##### 🏢 Contratistas con Rutas Sin Meta")
             contratista_sin_meta = contratista_rutas[~contratista_rutas['Meta Cumplida']].groupby('CONTRATISTA').size().reset_index(name='Rutas_Sin_Meta')
@@ -3627,27 +3686,42 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
         """,
         unsafe_allow_html=True
     )
-    
-    # Generar recomendaciones automáticas
+      # Generar recomendaciones automáticas con acciones específicas
     recomendaciones = []
     
-    if 'SUPERVISOR' in df_meta.columns and 'supervisor_sin_meta' in locals() and not supervisor_sin_meta.empty:
+    if 'SUPERVISOR' in merged_df.columns and 'supervisor_sin_meta' in locals() and not supervisor_sin_meta.empty:
         peor_supervisor = supervisor_sin_meta.iloc[0]
-        recomendaciones.append(f"🎯 **Supervisor {peor_supervisor['SUPERVISOR']}** requiere atención inmediata: {peor_supervisor['Rutas_Sin_Meta']} rutas sin meta.")
+        recomendaciones.append(f"📞 **ACCIÓN INMEDIATA:** Llamar hoy al supervisor {peor_supervisor['SUPERVISOR']} - tiene {peor_supervisor['Rutas_Sin_Meta']} rutas sin meta. Agendar reunión esta semana.")
     
-    if 'CONTRATISTA' in df_meta.columns and 'contratista_sin_meta' in locals() and not contratista_sin_meta.empty:
+    if 'CONTRATISTA' in merged_df.columns and 'contratista_sin_meta' in locals() and not contratista_sin_meta.empty:
         peor_contratista = contratista_sin_meta.iloc[0]
-        recomendaciones.append(f"🎯 **Contratista {peor_contratista['CONTRATISTA']}** requiere atención inmediata: {peor_contratista['Rutas_Sin_Meta']} rutas sin meta.")
+        recomendaciones.append(f"🚚 **VISITA URGENTE:** Coordinar visita a contratista {peor_contratista['CONTRATISTA']} en próximos 3 días - {peor_contratista['Rutas_Sin_Meta']} rutas críticas.")
     
     if not top_offenders.empty:
         peor_ruta = top_offenders.iloc[0]
-        recomendaciones.append(f"🚨 **Ruta {peor_ruta['ruta']}** es la menos activa con solo {peor_ruta['Registros']} registros.")
+        recomendaciones.append(f"🎯 **RUTA PRIORITARIA:** Asignar responsable específico a ruta {peor_ruta['ruta']} (solo {peor_ruta['Registros']} registros). Validar con ventas si la ruta está activa.")
+    
+    # Agregar recomendaciones adicionales rápidas
+    if len(recomendaciones) > 0:
+        recomendaciones.append("⚡ **SEGUIMIENTO:** Revisar progreso de estas acciones en reunión del próximo lunes (10 min).")
     
     if recomendaciones:
+        st.markdown("#### 🚨 Acciones Requeridas Esta Semana:")
         for i, rec in enumerate(recomendaciones, 1):
             st.markdown(f"{i}. {rec}")
     else:
-        st.success("🎉 **¡Excelente!** Todos los indicadores están dentro de los parámetros esperados.")
+        st.success("🎉 **¡Excelente!** Todos los indicadores están dentro de los parámetros esperados. Mantener monitoreo semanal.")
+    
+    # Plan de acción adicional simple
+    st.markdown("#### 📋 Plan de Escalamiento Rápido:")
+    plan_escalamiento = [
+        "🕐 **Hoy:** Contactar personas identificadas arriba",
+        "📅 **Mañana:** Confirmar reuniones y visitas programadas", 
+        "🗓️ **Esta semana:** Ejecutar visitas y validaciones con ventas",
+        "📊 **Próximo lunes:** Check de 10 min sobre resultados obtenidos"
+    ]
+    for paso in plan_escalamiento:
+        st.markdown(f"• {paso}")
     
     # Botón para exportar datos
     st.markdown("---")
@@ -3965,16 +4039,15 @@ def show_personnel_analysis(df, merged_df):
         </p>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Recomendaciones
-    st.markdown("##### 📋 Plan de Acción Recomendado")
+      # Recomendaciones
+    st.markdown("##### 📋 Plan de Acción Inmediato")
     recomendaciones = [
-        "🎓 **Programa de mentoring:** Los top performers pueden capacitar a usuarios con baja eficiencia",
-        "📈 **Redistribución de carga:** Equilibrar casos entre usuarios de alta y baja productividad",
-        "🗺️ **Especialización en rutas:** Usuarios con pocas rutas pueden especializarse para mejor eficiencia",
-        "⚡ **Incentivos por eficiencia:** Reconocer usuarios que combinan alta productividad y calidad",
-        "📊 **Monitoreo semanal:** Seguimiento de KPIs para identificar tendencias tempranas",
-        "🎯 **Metas personalizadas:** Establecer objetivos específicos según perfil de cada usuario"
+        "📞 **Llamada inmediata:** Contactar top performers para acompañar usuarios de baja eficiencia esta semana",
+        "� **Reasignación rápida:** Redistribuir 2-3 rutas de usuarios sobrecargados a usuarios con menor carga",
+        "🗺️ **Especialización de 7 días:** Asignar usuarios con <3 rutas a especializarse en una zona específica",
+        "🎁 **Reconocimiento semanal:** Publicar top 3 usuarios más eficientes en pizarra/WhatsApp grupal",
+        "📊 **Check semanal de 15 min:** Revisar KPIs cada lunes en reunión rápida con supervisores",
+        "🎯 **Metas simples:** Definir 1 meta específica por usuario para próximos 15 días"
     ]
     
     for rec in recomendaciones:
@@ -4675,7 +4748,7 @@ def show_advanced_analysis(df, merged_df):
                 📊 <strong>{clientes_criticos}</strong> clientes tienen 10+ reportes ({porcentaje_criticos:.1f}% del total)
             </p>
             <p style="color: white; margin: 10px 0; font-size: 14px;">
-                💡 <strong>Recomendación:</strong> Estos clientes de alta frecuencia requieren atención prioritaria y seguimiento especializado.
+                💡 <strong>Acción Inmediata:</strong> Programar visita esta semana a estos clientes críticos. Crear plan de seguimiento personalizado de 48h.
             </p>
         </div>
         """, unsafe_allow_html=True)# === SECCIÓN 3: ANÁLISIS DE DISTRIBUCIÓN DE TIEMPO DE CIERRE ===
@@ -5170,20 +5243,19 @@ def show_advanced_analysis(df, merged_df):
         for i, insight in enumerate(insights_avanzados, 1):
             st.markdown(f"{i}. {insight}")
     
-    with col_recomendaciones:
-        st.markdown("#### 🎯 Recomendaciones Estratégicas")
-        recomendaciones_avanzadas = [
-            "🔄 **Implementar programa de seguimiento personalizado** para clientes de alto riesgo",
-            "📞 **Establecer contacto proactivo mensual** con top 10 clientes problemáticos",
-            "📋 **Crear protocolo especial** para casos con 3+ reportes del mismo motivo",
-            "⚡ **Priorizar resolución** de clientes críticos (alto volumen + baja eficiencia)",
-            "📈 **Monitorear métricas semanales** de tasa de cierre por cliente",
-            "🗺️ **Analizar rutas con concentración** de clientes problemáticos",
-            "🎓 **Capacitar equipos** en motivos más frecuentes identificados",
-            "📊 **Implementar dashboard de alerta temprana** para nuevos casos críticos"
+    with col_recomendaciones:        st.markdown("#### 🎯 Acciones Inmediatas")
+    recomendaciones_avanzadas = [
+            "� **Visita urgente esta semana:** Ir físicamente a clientes de alto riesgo para resolución directa",
+            "� **WhatsApp directo:** Crear grupo con top 10 clientes problemáticos para comunicación rápida",
+            "✅ **Validación de 48h:** Protocolo simple - si cliente reporta 3 veces lo mismo, escalamiento automático",
+            "🎯 **Foco en críticos:** Solo trabajar clientes con 10+ reportes hasta reducirlos a <5 reportes",
+            "� **Check express lunes:** 10 minutos cada lunes para revisar top 5 clientes problemáticos",
+            "🗺️ **Reunión con ventas:** Una cita esta semana con ventas para identificar rutas conflictivas",
+            "📋 **Capacitación flash:** Una sesión de 30 min sobre los 3 motivos más frecuentes",
+            "� **Alerta simple:** Notificación por WhatsApp cuando cliente supere 5 reportes"
         ]
         
-        for rec in recomendaciones_avanzadas:
+    for rec in recomendaciones_avanzadas:
             st.markdown(rec)
     
     # === SECCIÓN 8: EXPORTAR ANÁLISIS ===

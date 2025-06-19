@@ -13,34 +13,7 @@ import os
 import re
 import io
 
-# Define function to get signatures based on date
-def get_signatures_for_date(week, year):
-    """Return appropriate signatures based on the date"""
-    # Calcular la fecha aproximada de la semana
-    # Usar el primer día de la semana para determinar el período
-    date_obj = datetime.strptime(f'{year}-W{week:02d}-1', "%Y-W%W-%w")
-    
-    # 14 de marzo como fecha de cambio (asumiendo 2025)
-    cutoff_date = datetime(2025, 3, 14)
-    
-    if date_obj < cutoff_date:
-        # Firmas antes del 14 de marzo
-        return [
-            {"name": "Roney Rivas", "title": "TL de Ventas"},
-            {"name": "Rafael Osorio", "title": "Gerente CD Soyapango"},
-            {"name": "Manuel Elías", "title": "Coordinador de Distribución"},
-            {"name": "Elías Montesinos", "title": "Supervisor de Distribución"}
-        ]
-    else:
-        # Firmas después del 14 de marzo (actuales)
-        return [
-            {"name": "Roney Rivas", "title": "TL de Ventas"},
-            {"name": "Félix Chávez", "title": "Gerente CD Soyapango"},
-            {"name": "Óscar Portillo", "title": "Jefe de Distribución"},
-            {"name": "Óscar Cuellar", "title": "Coordinador de Distribución"}
-        ]
-
-# Define the default signatures for backward compatibility
+# Define the required signatures for the report - exactly matching the example names
 SIGNATURES = [
     {"name": "Roney Rivas", "title": "TL de Ventas"},
     {"name": "Félix Chávez", "title": "Gerente CD Soyapango"},
@@ -50,66 +23,54 @@ SIGNATURES = [
 
 # Planes de acción simplificados y escalables
 MOTIVO_ACTION_PLANS = {
-    # Top 1: Cliente demorado en recibir o pagar (30.2% de casos)
+    # Problemas más frecuentes según análisis histórico
     'Cliente demorado en recibir o pagar': {
-        'plan': 'Coordinación previa con cliente y ventana horaria específica',
-        'intro': 'demoras en recepción y pago',
-        'accion_especifica': 'coordinación previa y ventanas horarias',
-        'objetivo': 'reducir demoras en la ruta',
-        'conclusion': 'mejorando la eficiencia operativa'
+        'plan': 'Coordinación previa y ventanas horarias específicas',
+        'intro': 'demoras en coordinación y atención',
+        'accion': 'establecer ventanas horarias específicas',
+        'objetivo': 'reducir tiempos de espera'
     },
     
-    # Top 2: Cliente crítico en atención (Safety) (25.4% de casos)
     'Cliente critico en atención (ubicación y/o acceso) - Requiere visita de Safety': {
-        'plan': 'Evaluación de seguridad y protocolo de entrega segura',
+        'plan': 'Evaluación de seguridad y protocolos de acceso',
         'intro': 'situaciones críticas de seguridad',
-        'accion_especifica': 'evaluación de seguridad especializada',
-        'objetivo': 'garantizar la seguridad del personal',
-        'conclusion': 'protegiendo al equipo'
+        'accion': 'mapear rutas seguras y protocolos',
+        'objetivo': 'garantizar seguridad del personal'
     },
     
-    # Top 3: Cliente con novedad en envase (5.9% de casos)
     'Cliente con novedad en envase': {
-        'plan': 'Inspección de envases y protocolo de limpieza',
-        'intro': 'problemas con envases',
-        'accion_especifica': 'inspección y limpieza de envases',
-        'objetivo': 'entregar envases en buen estado',
-        'conclusion': 'eliminando reclamos'
+        'plan': 'Inspección y mantenimiento de envases',
+        'intro': 'problemas con estado de envases',
+        'accion': 'protocolo de inspección y limpieza',
+        'objetivo': 'entregar envases en óptimo estado'
     },
     
-    # Top 4: Cliente reiterativo en rechazo (5.6% de casos)
     'Cliente reiterativo en rechazo': {
-        'plan': 'Análisis de causas y ajuste de pedidos',
-        'intro': 'rechazos repetitivos',
-        'accion_especifica': 'análisis de causas y ajuste según histórico',
-        'objetivo': 'reducir rechazos',
-        'conclusion': 'mejorando la aceptación'
+        'plan': 'Análisis de patrones y ajuste de pedidos',
+        'intro': 'rechazos repetitivos de productos',
+        'accion': 'ajustar pedidos según histórico',
+        'objetivo': 'reducir índice de rechazos'
     },
     
-    # Top 5: Cliente problemático o grosero (4.9% de casos)
     'Cliente problemático o grosero': {
-        'plan': 'Capacitación en manejo de clientes difíciles',
-        'intro': 'clientes problemáticos',
-        'accion_especifica': 'capacitación especializada',
-        'objetivo': 'mantener ambiente profesional',
-        'conclusion': 'asegurando calidad del servicio'
+        'plan': 'Capacitación y protocolo de escalamiento',
+        'intro': 'situaciones de atención complicada',
+        'accion': 'manejo profesional y escalamiento',
+        'objetivo': 'mantener ambiente respetuoso'
     },
     
-    # Otros motivos identificados en el análisis
     'Faltante de producto': {
-        'plan': 'Checklist de verificación y control de inventario',
-        'intro': 'faltantes de productos',
-        'accion_especifica': 'checklist de verificación',
-        'objetivo': 'asegurar disponibilidad completa',
-        'conclusion': 'eliminando faltantes'
+        'plan': 'Verificación de inventario y checklist',
+        'intro': 'faltantes en entregas',
+        'accion': 'checklist pre-despacho mejorado',
+        'objetivo': 'asegurar disponibilidad completa'
     },
     
     'Calidad del producto (avería, rotura, mal olor, mala presentación)': {
         'plan': 'Control de calidad pre-despacho',
-        'intro': 'problemas de calidad',
-        'accion_especifica': 'control de calidad previo',
-        'objetivo': 'asegurar calidad óptima',
-        'conclusion': 'eliminando reclamos'
+        'intro': 'problemas de calidad en productos',
+        'accion': 'protocolo de verificación de calidad',
+        'objetivo': 'entregar productos en óptimo estado'
     }
 }
 
@@ -160,7 +121,58 @@ def load_data():
                 how='left'
             )
             
-            return merged_df, rutas_df
+    def generate_intro_text(issue_type, week_num):
+    """Generate specific introduction text based on the issue type and historical analysis"""
+    
+    # Buscar el texto específico en nuestro diccionario de motivos
+    if issue_type in MOTIVO_ACTION_PLANS:
+        motivo_data = MOTIVO_ACTION_PLANS[issue_type]
+        intro = motivo_data['intro']
+        accion = motivo_data['accion'] 
+        objetivo = motivo_data['objetivo']
+    else:
+        # Buscar coincidencias parciales para motivos similares
+        issue_lower = issue_type.lower()
+        motivo_data = None
+        
+        for motivo_key, data in MOTIVO_ACTION_PLANS.items():
+            motivo_key_lower = motivo_key.lower()
+            
+            if ('demorado' in issue_lower or 'demora' in issue_lower) and 'demorado' in motivo_key_lower:
+                motivo_data = data
+                break
+            elif ('safety' in issue_lower or 'critico' in issue_lower) and 'critico' in motivo_key_lower:
+                motivo_data = data
+                break
+            elif ('envase' in issue_lower) and 'envase' in motivo_key_lower:
+                motivo_data = data
+                break
+            elif ('rechazo' in issue_lower) and 'rechazo' in motivo_key_lower:
+                motivo_data = data
+                break
+            elif ('problemático' in issue_lower or 'grosero' in issue_lower) and 'problemático' in motivo_key_lower:
+                motivo_data = data
+                break
+            elif ('faltante' in issue_lower) and 'faltante' in motivo_key_lower:
+                motivo_data = data
+                break
+            elif ('calidad' in issue_lower) and 'calidad' in motivo_key_lower:
+                motivo_data = data
+                break
+        
+        if motivo_data:
+            intro = motivo_data['intro']
+            accion = motivo_data['accion']
+            objetivo = motivo_data['objetivo']
+        else:
+            # Texto genérico si no encuentra coincidencia
+            intro = "diversos problemas operativos"
+            accion = "análisis personalizado y plan de mejora específico"
+            objetivo = "mejorar la eficiencia operativa"
+    
+    return f"""Durante la semana {week_num}, hemos identificado {intro} que requieren atención inmediata. 
+
+Este reporte presenta un análisis detallado de las rutas que han presentado el mayor número de incidencias y propone {accion} para {objetivo}."""
             
         except Exception as e:
             print(f"Warning: Could not load routes database. Using only feedbacks data: {e}")
@@ -402,7 +414,7 @@ def generate_weekly_report(offenders_data, week, year, output_file="weekly_offen
         rightMargin=0.5*inch,    # Reduce right margin
         topMargin=0.4*inch,      # Reduce top margin further
         bottomMargin=0.3*inch,   # Reduce bottom margin further
-        title="Reporte de clientes más reportados",
+        title="Reporte de Clientes Ofensores",
         author="CD Soyapango",
         subject=f"Reporte Semana {week} del {year}"
     )
@@ -450,8 +462,8 @@ def generate_weekly_report(offenders_data, week, year, output_file="weekly_offen
     normal_style = ParagraphStyle(
         'CustomNormal',
         parent=styles['Normal'],
-        fontSize=11,   # Smaller font size
-        leading=13,   # Tighter line spacing
+        fontSize=9,   # Smaller font size
+        leading=11,   # Tighter line spacing
         spaceBefore=3,  # Reduce space before
         spaceAfter=3    # Reduce space after
     )
@@ -518,21 +530,72 @@ def generate_weekly_report(offenders_data, week, year, output_file="weekly_offen
         alignment=2,  # Right-aligned
         fontSize=10
     )
-    date_paragraph = Paragraph(tuesday_str, date_style)    
+    date_paragraph = Paragraph(tuesday_str, date_style)
     story.append(date_paragraph)
-    story.append(Spacer(1, 0.1*inch))  # Minimal spacing after date
-    
-    # Add title - centered and bold with reduced spacing
+    story.append(Spacer(1, 0.1*inch))  # Minimal spacing after date# Add title - centered and bold with reduced spacing
     most_reported_issue = offenders_data.iloc[0]['most_reported_issue']
     story.append(Paragraph("REPORTE DE CLIENTES OFENSORES", title_style))
     story.append(Spacer(1, 0.03*inch))  # Minimal spacing
     story.append(Paragraph(f"Semana {week} del {year} - Problema: {most_reported_issue}", subtitle_style))
-    story.append(Spacer(1, 0.15*inch))  # Reduce spacing
+    story.append(Spacer(1, 0.15*inch))  # Reduce spacing    # Introduction paragraph - automatically adapted to the specific issue    def generate_intro_text(issue_type, week_num):
+        """Generate specific introduction text based on the issue type and historical analysis"""
+        
+        # Buscar el texto específico en nuestro diccionario de motivos
+        if issue_type in MOTIVO_ACTION_PLANS:
+            motivo_data = MOTIVO_ACTION_PLANS[issue_type]
+            intro = motivo_data['intro']
+            accion = motivo_data['accion'] 
+            objetivo = motivo_data['objetivo']
+        else:
+            # Buscar coincidencias parciales para motivos similares
+            issue_lower = issue_type.lower()
+            motivo_data = None
+            
+            for motivo_key, data in MOTIVO_ACTION_PLANS.items():
+                motivo_key_lower = motivo_key.lower()
+                
+                if ('demorado' in issue_lower or 'demora' in issue_lower) and 'demorado' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('safety' in issue_lower or 'critico' in issue_lower) and 'critico' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('envase' in issue_lower) and 'envase' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('rechazo' in issue_lower) and 'rechazo' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('problemático' in issue_lower or 'grosero' in issue_lower) and 'problemático' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('faltante' in issue_lower) and 'faltante' in motivo_key_lower:
+                    motivo_data = data
+                    break
+                elif ('calidad' in issue_lower) and 'calidad' in motivo_key_lower:
+                    motivo_data = data
+                    break
+            
+            if motivo_data:
+                intro = motivo_data['intro']
+                accion = motivo_data['accion']
+                objetivo = motivo_data['objetivo']
+            else:
+                # Texto genérico si no encuentra coincidencia
+                intro = "diversos problemas operativos"
+                accion = "análisis personalizado y plan de mejora específico"
+                objetivo = "mejorar la eficiencia operativa"
+        
+        return f"""Durante la semana {week_num}, hemos identificado {intro} que requieren atención inmediata. 
+        
+Este reporte presenta un análisis detallado de las rutas que han presentado el mayor número de incidencias y propone {accion} para {objetivo}."""
+                objetivo = "resolver las problemáticas identificadas"
+                conclusion = "mejorando nuestros procesos de atención al cliente"
+          # Generar el texto completo
+        return f"""Por medio de la presente, el equipo de distribución del CD Soyapango, damos a conocer los clientes los cuales en la semana {week_num} nos presentaron {intro}. Como equipo de distribución se solicita su valiosa ayuda en el tema de <b>{accion_especifica}</b>, esto para {objetivo} y para que la ruta pueda completar su jornada laboral de manera eficiente, {conclusion}. Los detalles se presentan en la siguiente tabla:"""
     
-    # Introduction paragraph - automatically adapted to the specific issue
     intro_text = generate_intro_text(most_reported_issue, week)
-    
-    # Create justified paragraph
+      # Create justified paragraph
     justified_style = ParagraphStyle(
         'Justified',
         parent=normal_style,
@@ -641,7 +704,8 @@ def generate_weekly_report(offenders_data, week, year, output_file="weekly_offen
     story.append(Spacer(1, 0.2*inch))  # Minimal spacing before signatures
     
     # Add signature section    
-    signature_style = ParagraphStyle(        'SignatureHeader',
+    signature_style = ParagraphStyle(
+        'SignatureHeader',
         parent=styles['Normal'],
         fontName='Helvetica',
         fontSize=9,    # Smaller font
@@ -649,22 +713,17 @@ def generate_weekly_report(offenders_data, week, year, output_file="weekly_offen
         spaceBefore=6,  # Reduce space before        
         spaceAfter=8   # Reduce space after
     )
-    
     story.append(Paragraph("Firma de enterados:", signature_style))
     story.append(Spacer(1, 0.15*inch))  # Reduce space for signatures
-    
-    # Get appropriate signatures based on the week/year
-    current_signatures = get_signatures_for_date(week, year)
-    
-    # Create signatures table - matching the example layout exactly with more space
+      # Create signatures table - matching the example layout exactly with more space
     sig_data = []
-    # Create rows with 2 signatures per row, with more space for actual signatures
-    for i in range(0, len(current_signatures), 2):
+      # Create rows with 2 signatures per row, with more space for actual signatures
+    for i in range(0, len(SIGNATURES), 2):
         row = []
         for j in range(2):
             idx = i + j
-            if idx < len(current_signatures):
-                sig = current_signatures[idx]
+            if idx < len(SIGNATURES):
+                sig = SIGNATURES[idx]
                 # Más espacio entre línea de firma y nombre para firmar adecuadamente
                 sig_cell = f"F.________________________________\n{sig['name']} - {sig['title']}"
             else:
@@ -956,46 +1015,68 @@ def classify_issue_type(issue_text):
 def get_action_plan_for_issue(issue_type):
     """Get the appropriate action plan for the classified issue type"""
     action_plans = {
-        'faltante_producto': 'Checklist de verificación y control de inventario',
-        'envase_canasta': 'Inspección y limpieza de envases a ',
-        'pedido_orden': 'Verificación dual de cantidades',
-        'entrega_delivery': 'Optimización de rutas y comunicación',
-        'factura_documento': 'Capacitación en facturación',
-        'calidad_caducidad': 'Control de calidad y fechas',
-        'servicio_atencion': 'Capacitación en servicio al cliente',
-        'ruta_vendedor': 'Optimización de procedimientos',
-        'cliente_demora': 'Coordinación previa con clientes y BDR',
-        'safety_critico': 'Evaluación en RCOG con ventas de clientes criticos'
+        'faltante_producto': 'Checklist pre-carga + validación con ventas',
+        'envase_canasta': 'Inspección visual + coordinación con supervisor',
+        'pedido_orden': 'Doble verificación + confirmación con cliente',
+        'entrega_delivery': 'Optimización de ruta + comunicación previa',
+        'factura_documento': 'Verificación documentos + validación administrativa',
+        'calidad_caducidad': 'Control FIFO + verificación fechas',
+        'servicio_atencion': 'Reunión con ventas + seguimiento especial',
+        'ruta_vendedor': 'Revisión procesos + ajuste cronograma',
+        'cliente_demora': 'Coordinación horarios + confirmación previa',
+        'safety_critico': 'Evaluación acceso + medidas de seguridad'
     }
     
     issue_key = classify_issue_type(issue_type)
-    return action_plans.get(issue_key, "Análisis personalizado y plan de mejora específico")
+    return action_plans.get(issue_key, "Análisis específico + seguimiento con área responsable")
 
 def get_intro_text_for_issue(issue_type, week_num):
     """Get the appropriate intro text for the classified issue type"""
     intro_texts = {
-        'faltante_producto': f"""El equipo de distribución del CD Soyapango informa sobre clientes con <b>faltante de productos</b> en la semana {week_num}. Se solicita implementar <b>checklist de verificación</b> para asegurar disponibilidad completa y optimizar la eficiencia de ruta. Detalles:""",
+        'faltante_producto': f"""Clientes con <b>faltante de productos</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Revisar inventario previo a carga y validar pedidos con ventas.<br>
+        Detalles en la siguiente tabla:""",
         
-        'envase_canasta': f"""El equipo de distribución del CD Soyapango informa sobre problemas con <b>envases y canastas</b> en la semana {week_num}. Se solicita implementar <b>protocolo de inspección</b> para garantizar entrega en perfecto estado. Detalles:""",
+        'envase_canasta': f"""Clientes con problemas de <b>envases y canastas</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Inspeccionar envases en carga y verificar disponibilidad con supervisor.<br>
+        Detalles en la siguiente tabla:""",
         
-        'pedido_orden': f"""El equipo de distribución del CD Soyapango informa sobre problemas en <b>toma de pedidos</b> en la semana {week_num}. Se solicita implementar <b>verificación dual</b> para asegurar precisión y evitar discrepancias. Detalles:""",
+        'pedido_orden': f"""Clientes con problemas en <b>toma de pedidos</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Validar pedidos con cliente antes de cargar y confirmar con ventas.<br>
+        Detalles en la siguiente tabla:""",
         
-        'entrega_delivery': f"""El equipo de distribución del CD Soyapango informa sobre problemas de <b>puntualidad en entregas</b> en la semana {week_num}. Se solicita <b>optimización logística</b> para mejorar eficiencia y cumplir cronogramas. Detalles:""",
+        'entrega_delivery': f"""Clientes con problemas de <b>puntualidad y entrega</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Coordinar horarios con cliente y optimizar ruta con supervisor.<br>
+        Detalles en la siguiente tabla:""",
         
-        'factura_documento': f"""El equipo de distribución del CD Soyapango informa sobre problemas de <b>documentación</b> en la semana {week_num}. Se solicita <b>mejora en procesos administrativos</b> para eliminar errores y reprocesos. Detalles:""",
+        'factura_documento': f"""Clientes con problemas de <b>documentación</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Verificar facturación en carga y validar documentos con administración.<br>
+        Detalles en la siguiente tabla:""",
         
-        'calidad_caducidad': f"""El equipo de distribución del CD Soyapango informa sobre problemas de <b>calidad de productos</b> en la semana {week_num}. Se solicita implementar <b>controles de calidad</b> para asegurar productos óptimos. Detalles:""",
+        'calidad_caducidad': f"""Clientes con problemas de <b>calidad de productos</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Revisar fechas de vencimiento en carga y verificar estado físico.<br>
+        Detalles en la siguiente tabla:""",
         
-        'servicio_atencion': f"""El equipo de distribución del CD Soyapango informa sobre problemas de <b>servicio al cliente</b> en la semana {week_num}. Se solicita <b>capacitación en excelencia</b> para mejorar experiencia y satisfacción. Detalles:""",
+        'servicio_atencion': f"""Clientes con problemas de <b>servicio al cliente</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Reunión con ventas para mejorar atención y seguimiento especial.<br>
+        Detalles en la siguiente tabla:""",
         
-        'ruta_vendedor': f"""El equipo de distribución del CD Soyapango informa sobre problemas en <b>procedimientos de ruta</b> en la semana {week_num}. Se solicita <b>optimización de procesos</b> para mejorar eficiencia operativa. Detalles:""",
+        'ruta_vendedor': f"""Clientes con problemas de <b>procedimientos de ruta</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Revisar proceso con supervisor y ajustar cronograma de visitas.<br>
+        Detalles en la siguiente tabla:""",
         
-        'cliente_demora': f"""El equipo de distribución del CD Soyapango informa sobre <b>demoras en recepción</b> en la semana {week_num}. Se solicita <b>mejora en comunicación</b> para minimizar tiempos de espera. Detalles:""",
+        'cliente_demora': f"""Clientes con <b>demoras en recepción</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Contactar cliente para coordinar horarios y confirmar disponibilidad.<br>
+        Detalles en la siguiente tabla:""",
         
-        'safety_critico': f"""El equipo de distribución del CD Soyapango informa sobre <b>condiciones de seguridad</b> en la semana {week_num}. Se solicita implementar <b>protocolos de seguridad</b> para garantizar operación segura. Detalles:"""    }
+        'safety_critico': f"""Clientes con problemas de <b>seguridad</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Evaluar condiciones de acceso y coordinar medidas de seguridad.<br>
+        Detalles en la siguiente tabla:"""    }
     
     issue_key = classify_issue_type(issue_type)
-    return intro_texts.get(issue_key, f"""El equipo de distribución del CD Soyapango informa sobre problemas diversos en la semana {week_num}. Se solicita <b>implementar mejoras específicas</b> para optimizar procesos y completar jornadas eficientemente. Detalles:""")
+    return intro_texts.get(issue_key, f"""Clientes con <b>problemas diversos</b> - Semana {week_num}.<br>
+        <b>Acciones inmediatas:</b> Análisis específico según cada caso y seguimiento con área responsable.<br>
+        Detalles en la siguiente tabla:""")
 
 def generate_monthly_reports(month=None, year=None):
     """Generate reports for all weeks in a specified month that have data"""
@@ -1052,62 +1133,6 @@ def generate_monthly_reports(month=None, year=None):
             print(f"  - {report}")
     
     return len(generated_reports), error_count
-
-# Nueva función para generar el texto introductorio específico
-def generate_intro_text(issue_type, week_num):
-    """Generate specific introduction text based on the issue type and historical analysis"""
-    
-    # Buscar el texto específico en nuestro diccionario de motivos
-    if issue_type in MOTIVO_ACTION_PLANS:
-        motivo_data = MOTIVO_ACTION_PLANS[issue_type]
-        intro = motivo_data['intro']
-        accion_especifica = motivo_data['accion_especifica'] 
-        objetivo = motivo_data['objetivo']
-        conclusion = motivo_data['conclusion']
-    else:
-        # Buscar coincidencias parciales para motivos similares
-        issue_lower = issue_type.lower()
-        motivo_data = None
-        
-        for motivo_key, data in MOTIVO_ACTION_PLANS.items():
-            motivo_key_lower = motivo_key.lower()
-            
-            if ('demorado' in issue_lower or 'demora' in issue_lower) and 'demorado' in motivo_key_lower:
-                motivo_data = data
-                break
-            elif ('safety' in issue_lower or 'critico' in issue_lower) and 'critico' in motivo_key_lower:
-                motivo_data = data
-                break
-            elif ('envase' in issue_lower) and 'envase' in motivo_key_lower:
-                motivo_data = data
-                break
-            elif ('rechazo' in issue_lower) and 'rechazo' in motivo_key_lower:
-                motivo_data = data
-                break
-            elif ('problemático' in issue_lower or 'grosero' in issue_lower) and 'problemático' in motivo_key_lower:
-                motivo_data = data
-                break
-            elif ('faltante' in issue_lower) and 'faltante' in motivo_key_lower:
-                motivo_data = data
-                break
-            elif ('calidad' in issue_lower) and 'calidad' in motivo_key_lower:
-                motivo_data = data
-                break
-        
-        if motivo_data:
-            intro = motivo_data['intro']
-            accion_especifica = motivo_data['accion_especifica']
-            objetivo = motivo_data['objetivo']
-            conclusion = motivo_data['conclusion']
-        else:
-            # Texto genérico si no encuentra coincidencia
-            intro = "diversos problemas operativos"
-            accion_especifica = "análisis personalizado y plan de mejora"
-            objetivo = "resolver las problemáticas identificadas"
-            conclusion = "mejorando procesos"
-        
-    # Generar el texto completo simplificado
-    return f"""El equipo de distribución del CD Soyapango informa sobre clientes con {intro} en la semana {week_num}. Se solicita apoyo en <b>{accion_especifica}</b> para {objetivo}, {conclusion}. Detalles en la tabla:"""
 
 if __name__ == "__main__":
     import sys
