@@ -1717,7 +1717,8 @@ def show_general_overview(df, merged_df):
     )
     
     respuestas_data = df['respuesta_sub'].value_counts().head(15).reset_index()
-    respuestas_data.columns = ['respuesta', 'cantidad']
+    respuestas_data.columns = ['respuesta', 'cantidad']      
+    
     fig_respuestas = px.bar(
         respuestas_data,
         x='cantidad',
@@ -1732,11 +1733,14 @@ def show_general_overview(df, merged_df):
     fig_respuestas.update_traces(
         texttemplate='<b>%{text}</b>', 
         textposition='outside',
-        marker_line_width=0
+        marker_line_width=0,
+        textfont=dict(size=16, color='white', family='Arial Black')
     )
     fig_respuestas.update_layout(
         yaxis={'categoryorder': 'total ascending'},
-        margin=dict(l=200, r=50, t=50, b=50)
+        margin=dict(l=200, r=100, t=50, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
     )
     st.plotly_chart(fig_respuestas, use_container_width=True)
     
@@ -1754,7 +1758,7 @@ def show_general_overview(df, merged_df):
         'tiempo_cierre_dias': 'mean'
     }).round(2).reset_index()
     rutas_respuestas.columns = ['ruta', 'total_respuestas', 'tiempo_promedio_cierre']
-    rutas_respuestas = rutas_respuestas.sort_values('total_respuestas', ascending=False).head(20)
+    rutas_respuestas = rutas_respuestas.sort_values('total_respuestas', ascending=False).head(20)    
     fig_rutas = px.scatter(
         rutas_respuestas,
         x='total_respuestas',
@@ -1764,13 +1768,23 @@ def show_general_overview(df, merged_df):
         title="🚚 Rutas: Cantidad vs Tiempo de Cierre (Top 20)",
         color='tiempo_promedio_cierre',
         color_continuous_scale='RdYlBu_r',
-        height=700
+        height=700,        
+        text='ruta'
     )
     fig_rutas.update_traces(
         marker=dict(
             sizemode='diameter',
-            line_width=0
-        )
+            line_width=2,
+            line_color='white'
+        ),
+        textposition='middle center',
+        textfont=dict(size=8, color='black', family='Arial Black'),
+        mode='markers+text'
+    )
+    fig_rutas.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=50, r=50, t=50, b=50)
     )
     st.plotly_chart(fig_rutas, use_container_width=True)
     

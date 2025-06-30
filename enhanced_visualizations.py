@@ -155,23 +155,33 @@ def add_day_hour_heatmap(df):
                 if 'semana_año' in df_analisis.columns:
                     df_semanal = df_analisis.groupby('semana_año').size().reset_index()
                     df_semanal.columns = ['Semana', 'Cantidad']
-                    
-                    # Crear gráfico de línea con tendencia
+                      # Crear gráfico de línea con tendencia
                     fig_semanal = px.line(
                         df_semanal,
                         x='Semana',
                         y='Cantidad',
                         title='📅 Tendencia de Actividad por Semana',
-                        markers=True
+                        markers=True,
+                        text='Cantidad'
                     )
                     
-                    # Añadir línea de tendencia
+                    # Actualizar las trazas principales para mostrar números
+                    fig_semanal.update_traces(
+                        texttemplate='<b>%{text}</b>',
+                        textposition='top center',
+                        textfont=dict(size=12, color='white', family='Arial Black'),
+                        marker=dict(size=8, line=dict(width=2, color='white')),
+                        line=dict(width=3)
+                    )
+                      # Añadir línea de tendencia
                     fig_semanal.add_trace(
                         go.Scatter(
                             x=df_semanal['Semana'],
                             y=df_semanal['Cantidad'].rolling(window=3, min_periods=1).mean(),
                             name='Tendencia',
-                            line=dict(color='rgba(255, 255, 255, 0.5)', width=3, dash='dot')
+                            line=dict(color='rgba(255, 255, 255, 0.5)', width=3, dash='dot'),
+                            mode='lines',
+                            hovertemplate='<b>Semana %{x}</b><br>Tendencia: %{y:.0f}<extra></extra>'
                         )
                     )
                     
@@ -999,20 +1009,23 @@ def add_problem_resolution_analysis(df):
                                   'July', 'August', 'September', 'October', 'November', 'December']
                     tendencia_mensual['mes_num'] = tendencia_mensual['Mes'].apply(lambda x: meses_orden.index(x) if x in meses_orden else 0)
                     tendencia_mensual = tendencia_mensual.sort_values('mes_num')
-                    
-                    # Crear gráfico de línea
+                      # Crear gráfico de línea
                     fig = px.line(
                         tendencia_mensual,
                         x='Mes',
                         y='Cantidad',
                         title=f"Tendencia Mensual: {'Todos los Problemas' if problema_seleccionado == 'Todos' else problema_seleccionado}",
                         markers=True,
-                        line_shape='spline'
+                        line_shape='spline',
+                        text='Cantidad'
                     )
                     
                     fig.update_traces(
                         line=dict(width=3, color='#4e54c8'),
-                        marker=dict(size=8, color='#4e54c8')
+                        marker=dict(size=8, color='#4e54c8'),
+                        texttemplate='<b>%{text}</b>',
+                        textposition='top center',
+                        textfont=dict(size=12, color='white', family='Arial Black')
                     )
                     
                     fig.update_layout(
