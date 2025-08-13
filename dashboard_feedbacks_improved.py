@@ -4394,22 +4394,52 @@ def show_advanced_analysis(df, merged_df):
     df['codigo_cliente_display'] = df['codigo_cliente'].apply(lambda x: f"Cliente-{str(x).zfill(6)}")    # === FILTROS PARA ANÁLISIS DE CLIENTES ===
     st.markdown("#### 🔍 Filtros de Análisis")
     st.markdown("Utilice los siguientes filtros para refinar el análisis de clientes según sus necesidades.")
+    
+    # Información de ayuda para la selección múltiple
+    st.info("💡 **Nuevo:** Ahora puedes seleccionar múltiples opciones en los filtros de Tipo de Reporte y Motivo. Usa Ctrl+Click para seleccionar varios elementos.")
+    
+    # Botón para limpiar todos los filtros
+    if st.button("🧹 Limpiar todos los filtros", key="clear_all_filters_clientes"):
+        st.session_state["cliente_tipo_reporte_filtro"] = []
+        st.session_state["cliente_motivo_filtro"] = []
+        st.rerun()
+    
     # Cambiamos de 3 a 4 columnas para agregar el nuevo filtro
     col_filtro1, col_filtro2, col_filtro3, col_filtro4 = st.columns(4)
     
     with col_filtro1:
-        # Filtro por Tipo de Reporte (antes llamado Motivo) - usa motivo_retro
-        tipos_reporte_disp = ['Todos']
+        # Filtro por Tipo de Reporte (antes llamado Motivo) - usa motivo_retro - AHORA CON SELECCIÓN MÚLTIPLE
+        tipos_reporte_disp = []
         if 'motivo_retro' in df.columns:
-            tipos_reporte_disp += sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
-        tipo_reporte_filtro = st.selectbox("📋 Filtrar por Tipo de Reporte:", tipos_reporte_disp, key="cliente_tipo_reporte_filtro")
+            tipos_reporte_disp = sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
+        
+        # Botones de control para Tipo de Reporte
+        col_tr1, col_tr2 = st.columns(2)
+        with col_tr1:
+            if st.button("Seleccionar todos TR", key="select_all_tipo_reporte"):
+                st.session_state["cliente_tipo_reporte_filtro"] = tipos_reporte_disp
+        with col_tr2:
+            if st.button("Limpiar TR", key="clear_tipo_reporte"):
+                st.session_state["cliente_tipo_reporte_filtro"] = []
+        
+        tipo_reporte_filtro = st.multiselect("📋 Filtrar por Tipo de Reporte (Multi-selección):", tipos_reporte_disp, key="cliente_tipo_reporte_filtro")
     
     with col_filtro2:
-        # Filtro por Motivo (nuevo) - usa respuesta_sub
-        motivos_disp = ['Todos']
+        # Filtro por Motivo (nuevo) - usa respuesta_sub - AHORA CON SELECCIÓN MÚLTIPLE
+        motivos_disp = []
         if 'respuesta_sub' in df.columns:
-            motivos_disp += sorted([str(m) for m in df['respuesta_sub'].dropna().unique().tolist()])
-        motivo_filtro = st.selectbox("🎯 Filtrar por Motivo:", motivos_disp, key="cliente_motivo_filtro")
+            motivos_disp = sorted([str(m) for m in df['respuesta_sub'].dropna().unique().tolist()])
+        
+        # Botones de control para Motivos
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            if st.button("Seleccionar todos", key="select_all_motivo"):
+                st.session_state["cliente_motivo_filtro"] = motivos_disp
+        with col_m2:
+            if st.button("Limpiar", key="clear_motivo"):
+                st.session_state["cliente_motivo_filtro"] = []
+        
+        motivo_filtro = st.multiselect("🎯 Filtrar por Motivo (Multi-selección):", motivos_disp, key="cliente_motivo_filtro")
     
     with col_filtro3:
         # Filtro por Cliente
@@ -4428,20 +4458,144 @@ def show_advanced_analysis(df, merged_df):
         ]
         frecuencia_filtro = st.selectbox("📊 Filtrar por Frecuencia de Reportes:", 
                                          frecuencia_options, key="cliente_frecuencia_filtro")
+
+    # Mostrar resumen de filtros aplicados de forma más limpia
+    filtros_activos = []
+    if tipo_reporte_filtro and len(tipo_reporte_filtro) > 0:
+        filtros_activos.append(f"📋 {len(tipo_reporte_filtro)} Tipo(s) de Reporte")
+    if motivo_filtro and len(motivo_filtro) > 0:
+        filtros_activos.append(f"🎯 {len(motivo_filtro)} Motivo(s)")
+    if cliente_filtro != 'Todos':
+        filtros_activos.append(f"👥 {cliente_filtro}")
+    if frecuencia_filtro != 'Todos':
+        filtros_activos.append(f"📊 {frecuencia_filtro}")
+    
+    if filtros_activos:
+        st.success(f"🔍 **Filtros activos:** {' | '.join(filtros_activos)}")
+    else:
+        st.info("📊 **Mostrando todos los datos** (sin filtros aplicados)")
       # Aplicar filtros
     df_filtrado = df.copy()
     
-    # Filtro por Tipo de Reporte (motivo_retro)
-    if tipo_reporte_filtro != 'Todos' and 'motivo_retro' in df_filtrado.columns:
-        df_filtrado = df_filtrado[df_filtrado['motivo_retro'] == tipo_reporte_filtro]
+    # Filtro por Tipo de Reporte (motivo_retro) - Selección múltiple
+    if tipo_reporte_filtro and len(tipo_reporte_filtro) > 0 and 'motivo_retro' in df_filtrado.columns:
+        df_filtrado = df_filtrado[df_filtrado['motivo_retro'].isin(tipo_reporte_filtro)]
     
-    # Filtro por Motivo (respuesta_sub)
-    if motivo_filtro != 'Todos' and 'respuesta_sub' in df_filtrado.columns:
-        df_filtrado = df_filtrado[df_filtrado['respuesta_sub'] == motivo_filtro]
+    # Filtro por Motivo (respuesta_sub) - Selección múltiple
+    if motivo_filtro and len(motivo_filtro) > 0 and 'respuesta_sub' in df_filtrado.columns:
+        df_filtrado = df_filtrado[df_filtrado['respuesta_sub'].isin(motivo_filtro)]
     
     # Filtro por Cliente
     if cliente_filtro != 'Todos':
         df_filtrado = df_filtrado[df_filtrado['codigo_cliente_display'] == cliente_filtro]
+
+    # === NUEVA SECCIÓN: GRÁFICO DE PASTEL DE MOTIVOS ===
+    st.markdown(
+        """
+        <div class="analysis-card">
+            <h3 style="color: white; margin: 0;">🥧 Distribución de Motivos de Reporte</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Análisis de distribución de motivos
+    if not df_filtrado.empty and 'respuesta_sub' in df_filtrado.columns:
+        motivos_distribucion_pie = df_filtrado['respuesta_sub'].value_counts().head(10).reset_index()
+        motivos_distribucion_pie.columns = ['motivo', 'cantidad']
+        
+        # Calcular porcentajes
+        total_reportes_pie = motivos_distribucion_pie['cantidad'].sum()
+        motivos_distribucion_pie['porcentaje'] = (motivos_distribucion_pie['cantidad'] / total_reportes_pie * 100).round(1)
+        
+        # Crear gráfico de pastel
+        fig_pie_motivos = px.pie(
+            motivos_distribucion_pie,
+            values='cantidad',
+            names='motivo',
+            title=f"🥧 Distribución de Motivos de Reporte (Top 10)<br><sub>Total: {total_reportes_pie:,} reportes</sub>",
+            height=600,
+            color_discrete_sequence=[
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', 
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+            ],
+            hover_data=['porcentaje']
+        )
+        
+        fig_pie_motivos.update_traces(
+            textposition='inside',
+            textinfo='percent+label',
+            textfont=dict(size=12, color='black', family='Arial Black'),
+            marker=dict(line=dict(color='white', width=3)),
+            hovertemplate='<b>%{label}</b><br>' +
+                         'Cantidad: %{value}<br>' +
+                         'Porcentaje: %{percent}<br>' +
+                         '<extra></extra>'
+        )
+        
+        fig_pie_motivos.update_layout(
+            showlegend=True,
+            legend=dict(
+                orientation="v",
+                yanchor="middle",
+                y=0.5,
+                xanchor="left",
+                x=1.05,
+                font=dict(size=11, color='white', family='Arial'),
+                bgcolor='rgba(0,0,0,0.8)',
+                bordercolor='white',
+                borderwidth=1
+            ),
+            margin=dict(l=20, r=180, t=80, b=20),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white', size=13),
+            title_x=0.3,
+            title_font=dict(size=16, color='white', family='Arial Black')
+        )
+        
+        # Mostrar gráfico en dos columnas para mejor aprovechamiento del espacio
+        col_pie1, col_pie2 = st.columns([2, 1])
+        
+        with col_pie1:
+            st.plotly_chart(fig_pie_motivos, use_container_width=True)
+        
+        with col_pie2:
+            st.markdown("#### 📊 Resumen del Gráfico")
+            st.markdown("*Datos actualizados en tiempo real según filtros aplicados*")
+            
+            # Mostrar tabla con los datos
+            tabla_motivos = motivos_distribucion_pie[['motivo', 'cantidad', 'porcentaje']].copy()
+            tabla_motivos.columns = ['Motivo', 'Cantidad', '%']
+            tabla_motivos['Motivo'] = tabla_motivos['Motivo'].apply(lambda x: x[:30] + '...' if len(x) > 30 else x)
+            
+            st.dataframe(
+                tabla_motivos, 
+                use_container_width=True, 
+                hide_index=True,
+                height=400
+            )
+            
+            # Mostrar insights rápidos
+            motivo_principal = motivos_distribucion_pie.iloc[0]
+            otros_motivos = len(df_filtrado['respuesta_sub'].unique()) - 10
+            
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 10px; margin: 10px 0; border: 2px solid white;">
+                <h5 style="color: white; margin: 0; text-shadow: 1px 1px 2px black;">🎯 Insights Rápidos</h5>
+                <p style="color: white; margin: 5px 0; font-size: 14px; text-shadow: 1px 1px 2px black;">
+                    🥇 <strong>Motivo principal:</strong> {motivo_principal['porcentaje']:.1f}%<br>
+                    📊 <strong>Top 3 representa:</strong> {motivos_distribucion_pie.head(3)['porcentaje'].sum():.1f}%<br>
+                    📈 <strong>Otros motivos:</strong> {otros_motivos if otros_motivos > 0 else 0} adicionales
+                </p>
+                <p style="color: #FFFF99; margin: 5px 0; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 2px black;">
+                    💡 Enfócate en los 3 motivos principales para un 90% de impacto
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ No hay datos de motivos disponibles para mostrar con los filtros actuales.")
+
       # === SECCIÓN 1: TOP CLIENTES PROBLEMÁTICOS ===
     st.markdown(
         """
@@ -4482,22 +4636,11 @@ def show_advanced_analysis(df, merged_df):
     clientes_analysis['categoria_riesgo'] = clientes_analysis.apply(lambda x: 
         'Alto Riesgo' if x['total_reportes'] >= 10 and x['tasa_cierre'] < 50 else
         'Riesgo Medio' if x['total_reportes'] >= 5 and x['tasa_cierre'] < 70 else
-        'Bajo Riesgo', axis=1)      # Mostrar info de clientes en los filtros actuales
+        'Bajo Riesgo', axis=1)      # Mostrar info de clientes encontrados (simplificado)
     total_clientes_filtrados = len(clientes_analysis)
     
-    # Crear mensaje descriptivo de filtros aplicados
-    filtros_aplicados = []
-    if tipo_reporte_filtro != 'Todos':
-        filtros_aplicados.append(f"Tipo de Reporte: {tipo_reporte_filtro}")
-    if motivo_filtro != 'Todos':
-        filtros_aplicados.append(f"Motivo: {motivo_filtro}")
-    if cliente_filtro != 'Todos':
-        filtros_aplicados.append(f"Cliente: {cliente_filtro}")
-    if frecuencia_filtro != 'Todos':
-        filtros_aplicados.append(f"Frecuencia: {frecuencia_filtro}")
-    
-    filtros_mensaje = ", ".join(filtros_aplicados) if filtros_aplicados else "ninguno"
-    st.info(f"📊 Se encontraron {total_clientes_filtrados} clientes con los filtros seleccionados. Filtros aplicados: {filtros_mensaje}.")
+    if total_clientes_filtrados > 0:
+        st.info(f"📊 Se encontraron **{total_clientes_filtrados} clientes** que cumplen con los filtros seleccionados.")
     
     # Top 20 clientes problemáticos o todos si hay menos de 20
     if total_clientes_filtrados == 0:
@@ -5345,17 +5488,43 @@ def show_detailed_data(df, merged_df):
     if df.empty:
         st.warning("⚠️ No hay datos disponibles para mostrar con los filtros actuales.")
         return
+
+    # Botón para limpiar todos los filtros en datos detallados
+    if st.button("🧹 Limpiar todos los filtros", key="clear_all_filters_detailed"):
+        st.session_state["detailed_tipo_reporte_filtro"] = []
+        st.session_state["detailed_motivo_filtro"] = []
+        st.rerun()
     
     # Filtros básicos
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        tipos_reporte_unicos = ['Todos'] + sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
-        tipo_reporte_filtro = st.selectbox("📋 Filtrar por Tipo de Reporte", tipos_reporte_unicos, key="detailed_tipo_reporte_filtro")
+        tipos_reporte_unicos = sorted([str(m) for m in df['motivo_retro'].dropna().unique().tolist()])
+        
+        # Botones de control para Tipo de Reporte en datos detallados
+        col_tr1_det, col_tr2_det = st.columns(2)
+        with col_tr1_det:
+            if st.button("Sel. todos TR", key="select_all_tipo_reporte_detailed"):
+                st.session_state["detailed_tipo_reporte_filtro"] = tipos_reporte_unicos
+        with col_tr2_det:
+            if st.button("Limpiar TR", key="clear_tipo_reporte_detailed"):
+                st.session_state["detailed_tipo_reporte_filtro"] = []
+        
+        tipo_reporte_filtro = st.multiselect("📋 Filtrar por Tipo de Reporte (Multi-selección)", tipos_reporte_unicos, key="detailed_tipo_reporte_filtro")
     
     with col2:
-        motivos_unicos = ['Todos'] + sorted([str(m) for m in df['respuesta_sub'].dropna().unique().tolist()])
-        motivo_filtro = st.selectbox("🎯 Filtrar por Motivo", motivos_unicos, key="detailed_motivo_filtro")
+        motivos_unicos = sorted([str(m) for m in df['respuesta_sub'].dropna().unique().tolist()])
+        
+        # Botones de control para Motivos en datos detallados
+        col_m1_det, col_m2_det = st.columns(2)
+        with col_m1_det:
+            if st.button("Sel. todos", key="select_all_motivo_detailed"):
+                st.session_state["detailed_motivo_filtro"] = motivos_unicos
+        with col_m2_det:
+            if st.button("Limpiar", key="clear_motivo_detailed"):
+                st.session_state["detailed_motivo_filtro"] = []
+        
+        motivo_filtro = st.multiselect("🎯 Filtrar por Motivo (Multi-selección)", motivos_unicos, key="detailed_motivo_filtro")
     with col3:
         min_tiempo = int(df['tiempo_cierre_dias'].min()) if not df.empty and not df['tiempo_cierre_dias'].isna().all() else 0
         max_tiempo = int(df['tiempo_cierre_dias'].max()) if not df.empty and not df['tiempo_cierre_dias'].isna().all() else 30
@@ -5367,14 +5536,28 @@ def show_detailed_data(df, merged_df):
         tiempo_filtro = st.slider("⏱️ Rango de Tiempo de Cierre (días)", min_tiempo, max_tiempo, (min_tiempo, max_tiempo), key="detailed_tiempo_filtro")
     with col4:
         solo_cerrados = st.checkbox("📋 Solo mostrar registros cerrados", key="detailed_solo_cerrados")
+
+    # Mostrar resumen de filtros aplicados en datos detallados de forma más limpia
+    filtros_detallados = []
+    if tipo_reporte_filtro and len(tipo_reporte_filtro) > 0:
+        filtros_detallados.append(f"📋 {len(tipo_reporte_filtro)} Tipo(s)")
+    if motivo_filtro and len(motivo_filtro) > 0:
+        filtros_detallados.append(f"🎯 {len(motivo_filtro)} Motivo(s)")
+    if solo_cerrados:
+        filtros_detallados.append("✅ Solo cerrados")
+    
+    if filtros_detallados:
+        st.success(f"🔍 **Filtros activos:** {' | '.join(filtros_detallados)}")
+    else:
+        st.info("📊 **Mostrando todos los datos detallados** (sin filtros aplicados)")
       # Aplicar filtros
     df_tabla = df.copy()
     
-    if tipo_reporte_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['motivo_retro'] == tipo_reporte_filtro]
+    if tipo_reporte_filtro and len(tipo_reporte_filtro) > 0:
+        df_tabla = df_tabla[df_tabla['motivo_retro'].isin(tipo_reporte_filtro)]
         
-    if motivo_filtro != 'Todos':
-        df_tabla = df_tabla[df_tabla['respuesta_sub'] == motivo_filtro]
+    if motivo_filtro and len(motivo_filtro) > 0:
+        df_tabla = df_tabla[df_tabla['respuesta_sub'].isin(motivo_filtro)]
     
     # Filtrar por tiempo de cierre solo si hay datos disponibles
     if not df_tabla['tiempo_cierre_dias'].isna().all():
@@ -5385,21 +5568,8 @@ def show_detailed_data(df, merged_df):
     
     if solo_cerrados:
         df_tabla = df_tabla[df_tabla['fecha_cierre'].notna()]
-      # Crear mensaje descriptivo de filtros aplicados
-    filtros_aplicados = []
-    if tipo_reporte_filtro != 'Todos':
-        filtros_aplicados.append(f"Tipo de Reporte: {tipo_reporte_filtro}")
-    if motivo_filtro != 'Todos':
-        filtros_aplicados.append(f"Motivo: {motivo_filtro}")
-    if tiempo_filtro != (min_tiempo, max_tiempo):
-        filtros_aplicados.append(f"Tiempo de cierre: entre {tiempo_filtro[0]} y {tiempo_filtro[1]} días")
-    if solo_cerrados:
-        filtros_aplicados.append("Solo registros cerrados")
     
-    filtros_mensaje = ", ".join(filtros_aplicados) if filtros_aplicados else "ninguno"
-    st.info(f"🔍 Filtros aplicados: {filtros_mensaje}")
-    
-    # Mostrar estadísticas
+    # Mostrar estadísticas directamente
     col_stats1, col_stats2, col_stats3 = st.columns(3)
     
     with col_stats1:
