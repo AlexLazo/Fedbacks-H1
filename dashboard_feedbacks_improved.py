@@ -44,10 +44,8 @@ st.markdown("""
         font-weight: 900;
         text-align: center;
         margin-bottom: 2rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        color: #FFFFFF;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
     /* Tarjetas de métricas mejoradas */
@@ -1238,7 +1236,7 @@ def generate_excel_report(df, merged_df, filtros_aplicados=None):
 # Función principal mejorada
 def main():
     # Título principal
-    st.markdown('<h1 class="main-header">Seguimiento Feedbacks - DS00</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">📊 Seguimiento de Feedbacks - DS00</h1>', unsafe_allow_html=True)
       # Cargar datos
     with st.spinner('🔄 Cargando datos...'):
         load_result = load_data()
@@ -1398,42 +1396,205 @@ def main():
       # Más filtros en sidebar
     st.sidebar.markdown("### 🎯 Filtros de Datos")
     
-    rutas_disponibles = ['Todas'] + sorted(feedbacks_df['ruta'].unique().tolist())
-    ruta_seleccionada = st.sidebar.selectbox("🚚 Seleccionar Ruta", rutas_disponibles)
+    # Información de ayuda para la selección múltiple
+    st.sidebar.info("💡 **Nuevo:** Selección múltiple disponible. Usa Ctrl+Click para seleccionar varios elementos.")
     
-    usuarios_disponibles = ['Todos'] + sorted(feedbacks_df['usuario'].unique().tolist())    
-    usuario_seleccionado = st.sidebar.selectbox("👤 Seleccionar Usuario", usuarios_disponibles)
+    # Botón para limpiar todos los filtros del sidebar
+    if st.sidebar.button("🧹 Limpiar TODOS los Filtros", key="clear_all_sidebar_filters"):
+        st.session_state["sidebar_rutas_filtro"] = []
+        st.session_state["sidebar_usuarios_filtro"] = []
+        st.session_state["sidebar_meses_filtro"] = []
+        st.session_state["sidebar_semanas_filtro"] = []
+        st.session_state["sidebar_trimestres_filtro"] = []
+        st.session_state["sidebar_supervisores_filtro"] = []
+        st.session_state["sidebar_contratistas_filtro"] = []
+        st.rerun()
     
-    # NUEVOS FILTROS: Mes y Semana - Ordenar meses cronológicamente
+    # FILTRO DE RUTAS - SELECCIÓN MÚLTIPLE
+    rutas_disponibles = sorted(feedbacks_df['ruta'].unique().tolist())
+    
+    # Botones de control para rutas
+    col_r1, col_r2 = st.sidebar.columns(2)
+    with col_r1:
+        if st.sidebar.button("Sel. todas", key="select_all_rutas_sidebar"):
+            st.session_state["sidebar_rutas_filtro"] = rutas_disponibles
+            st.rerun()
+    with col_r2:
+        if st.sidebar.button("Limpiar", key="clear_rutas_sidebar"):
+            st.session_state["sidebar_rutas_filtro"] = []
+            st.rerun()
+    
+    rutas_seleccionadas = st.sidebar.multiselect(
+        "🚚 Seleccionar Ruta(s) (Multi-selección):",
+        options=rutas_disponibles,
+        default=st.session_state.get("sidebar_rutas_filtro", []),
+        key="sidebar_rutas_filtro"
+    )
+    
+    # FILTRO DE USUARIOS - SELECCIÓN MÚLTIPLE
+    usuarios_disponibles = sorted(feedbacks_df['usuario'].unique().tolist())
+    
+    # Botones de control para usuarios
+    col_u1, col_u2 = st.sidebar.columns(2)
+    with col_u1:
+        if st.sidebar.button("Sel. todos", key="select_all_usuarios_sidebar"):
+            st.session_state["sidebar_usuarios_filtro"] = usuarios_disponibles
+            st.rerun()
+    with col_u2:
+        if st.sidebar.button("Limpiar", key="clear_usuarios_sidebar"):
+            st.session_state["sidebar_usuarios_filtro"] = []
+            st.rerun()
+    
+    usuarios_seleccionados = st.sidebar.multiselect(
+        "👤 Seleccionar Usuario(s) (Multi-selección):",
+        options=usuarios_disponibles,
+        default=st.session_state.get("sidebar_usuarios_filtro", []),
+        key="sidebar_usuarios_filtro"
+    )
+    
+    # FILTRO DE MESES - SELECCIÓN MÚLTIPLE
     meses_ordenados = feedbacks_df.groupby(['mes', 'mes_nombre']).size().reset_index().sort_values('mes')['mes_nombre'].tolist()
-    meses_disponibles = ['Todos'] + meses_ordenados
-    mes_seleccionado = st.sidebar.selectbox("📆 Filtrar por Mes", meses_disponibles)
     
-    semanas_disponibles = ['Todas'] + sorted([f"Semana {s}" for s in feedbacks_df['semana'].unique()])
-    semana_seleccionada = st.sidebar.selectbox("📅 Filtrar por Semana", semanas_disponibles)
+    # Botones de control para meses
+    col_m1, col_m2 = st.sidebar.columns(2)
+    with col_m1:
+        if st.sidebar.button("Sel. todos", key="select_all_meses_sidebar"):
+            st.session_state["sidebar_meses_filtro"] = meses_ordenados
+            st.rerun()
+    with col_m2:
+        if st.sidebar.button("Limpiar", key="clear_meses_sidebar"):
+            st.session_state["sidebar_meses_filtro"] = []
+            st.rerun()
     
-    trimestres_disponibles = ['Todos'] + sorted(feedbacks_df['trimestre_nombre'].unique().tolist())
-    trimestre_seleccionado = st.sidebar.selectbox("📊 Seleccionar Trimestre", trimestres_disponibles)
+    meses_seleccionados = st.sidebar.multiselect(
+        "📆 Filtrar por Mes(es) (Multi-selección):",
+        options=meses_ordenados,
+        default=st.session_state.get("sidebar_meses_filtro", []),
+        key="sidebar_meses_filtro"
+    )
     
-    # Supervisores y Contratistas si están disponibles
+    # FILTRO DE SEMANAS - SELECCIÓN MÚLTIPLE
+    semanas_disponibles = sorted([f"Semana {s}" for s in feedbacks_df['semana'].unique()])
+    
+    # Botones de control para semanas
+    col_s1, col_s2 = st.sidebar.columns(2)
+    with col_s1:
+        if st.sidebar.button("Sel. todas", key="select_all_semanas_sidebar"):
+            st.session_state["sidebar_semanas_filtro"] = semanas_disponibles
+            st.rerun()
+    with col_s2:
+        if st.sidebar.button("Limpiar", key="clear_semanas_sidebar"):
+            st.session_state["sidebar_semanas_filtro"] = []
+            st.rerun()
+    
+    semanas_seleccionadas = st.sidebar.multiselect(
+        "📅 Filtrar por Semana(s) (Multi-selección):",
+        options=semanas_disponibles,
+        default=st.session_state.get("sidebar_semanas_filtro", []),
+        key="sidebar_semanas_filtro"
+    )
+    
+    # FILTRO DE TRIMESTRES - SELECCIÓN MÚLTIPLE
+    trimestres_disponibles = sorted(feedbacks_df['trimestre_nombre'].unique().tolist())
+    
+    # Botones de control para trimestres
+    col_t1, col_t2 = st.sidebar.columns(2)
+    with col_t1:
+        if st.sidebar.button("Sel. todos", key="select_all_trimestres_sidebar"):
+            st.session_state["sidebar_trimestres_filtro"] = trimestres_disponibles
+            st.rerun()
+    with col_t2:
+        if st.sidebar.button("Limpiar", key="clear_trimestres_sidebar"):
+            st.session_state["sidebar_trimestres_filtro"] = []
+            st.rerun()
+    
+    trimestres_seleccionados = st.sidebar.multiselect(
+        "📊 Seleccionar Trimestre(s) (Multi-selección):",
+        options=trimestres_disponibles,
+        default=st.session_state.get("sidebar_trimestres_filtro", []),
+        key="sidebar_trimestres_filtro"
+    )
+    
+    # FILTRO DE SUPERVISORES - SELECCIÓN MÚLTIPLE
     if 'SUPERVISOR' in merged_df.columns:
-        supervisores_disponibles = ['Todos'] + sorted([str(s) for s in merged_df['SUPERVISOR'].dropna().unique()])
-        supervisor_seleccionado = st.sidebar.selectbox("👨‍💼 Seleccionar Supervisor", supervisores_disponibles)
+        supervisores_disponibles = sorted([str(s) for s in merged_df['SUPERVISOR'].dropna().unique()])
+        
+        # Botones de control para supervisores
+        col_sv1, col_sv2 = st.sidebar.columns(2)
+        with col_sv1:
+            if st.sidebar.button("Sel. todos", key="select_all_supervisores_sidebar"):
+                st.session_state["sidebar_supervisores_filtro"] = supervisores_disponibles
+                st.rerun()
+        with col_sv2:
+            if st.sidebar.button("Limpiar", key="clear_supervisores_sidebar"):
+                st.session_state["sidebar_supervisores_filtro"] = []
+                st.rerun()
+        
+        supervisores_seleccionados = st.sidebar.multiselect(
+            "👨‍💼 Seleccionar Supervisor(es) (Multi-selección):",
+            options=supervisores_disponibles,
+            default=st.session_state.get("sidebar_supervisores_filtro", []),
+            key="sidebar_supervisores_filtro"
+        )
     else:
-        supervisor_seleccionado = 'Todos'
+        supervisores_seleccionados = []
     
+    # FILTRO DE CONTRATISTAS - SELECCIÓN MÚLTIPLE
     if 'CONTRATISTA' in merged_df.columns:
-        contratistas_disponibles = ['Todos'] + sorted([str(c) for c in merged_df['CONTRATISTA'].dropna().unique()])
-        contratista_seleccionado = st.sidebar.selectbox("🏢 Seleccionar Contratista", contratistas_disponibles)
-    else:        contratista_seleccionado = 'Todos'
+        contratistas_disponibles = sorted([str(c) for c in merged_df['CONTRATISTA'].dropna().unique()])
+        
+        # Botones de control para contratistas
+        col_c1, col_c2 = st.sidebar.columns(2)
+        with col_c1:
+            if st.sidebar.button("Sel. todos", key="select_all_contratistas_sidebar"):
+                st.session_state["sidebar_contratistas_filtro"] = contratistas_disponibles
+                st.rerun()
+        with col_c2:
+            if st.sidebar.button("Limpiar", key="clear_contratistas_sidebar"):
+                st.session_state["sidebar_contratistas_filtro"] = []
+                st.rerun()
+        
+        contratistas_seleccionados = st.sidebar.multiselect(
+            "🏢 Seleccionar Contratista(s) (Multi-selección):",
+            options=contratistas_disponibles,
+            default=st.session_state.get("sidebar_contratistas_filtro", []),
+            key="sidebar_contratistas_filtro"
+        )
+    else:
+        contratistas_seleccionados = []
+    
+    # === RESUMEN DE FILTROS ACTIVOS ===
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("🔍 **Filtros Activos:**")
+    
+    filtros_activos_sidebar = []
+    if rutas_seleccionadas:
+        filtros_activos_sidebar.append(f"🚚 {len(rutas_seleccionadas)} Ruta(s)")
+    if usuarios_seleccionados:
+        filtros_activos_sidebar.append(f"👤 {len(usuarios_seleccionados)} Usuario(s)")
+    if meses_seleccionados:
+        filtros_activos_sidebar.append(f"📆 {len(meses_seleccionados)} Mes(es)")
+    if semanas_seleccionadas:
+        filtros_activos_sidebar.append(f"📅 {len(semanas_seleccionadas)} Semana(s)")
+    if trimestres_seleccionados:
+        filtros_activos_sidebar.append(f"📊 {len(trimestres_seleccionados)} Trimestre(s)")
+    if supervisores_seleccionados:
+        filtros_activos_sidebar.append(f"👨‍💼 {len(supervisores_seleccionados)} Supervisor(es)")
+    if contratistas_seleccionados:
+        filtros_activos_sidebar.append(f"🏢 {len(contratistas_seleccionados)} Contratista(s)")
+    
+    if filtros_activos_sidebar:
+        st.sidebar.success("✅ " + " | ".join(filtros_activos_sidebar))
+    else:
+        st.sidebar.info("🔍 Sin filtros aplicados (mostrando todos los datos)")
       # === SELECCIÓN AUTOMÁTICA DE BD DE RUTAS BASADA EN FILTROS (MEJORADA) ===
-    def get_optimal_rutas_db(df_filtrado, mes_seleccionado):
+    def get_optimal_rutas_db(df_filtrado, mes_predominante):
         """
         Selecciona la BD de rutas más apropiada basada en los filtros aplicados
         Ahora usa el sistema automático de carga de BDs
         """
         # Si el usuario seleccionó un mes específico, usar esa BD si está disponible
-        if mes_seleccionado != 'Todos':
+        if mes_predominante != 'Todos':
             # Mapear nombres de meses a claves
             mes_map = {
                 'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo',
@@ -1442,16 +1603,16 @@ def main():
                 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
             }
             
-            mes_esp = mes_map.get(mes_seleccionado, mes_seleccionado)
+            mes_esp = mes_map.get(mes_predominante, mes_predominante)
             if f'rutas_df_{mes_esp}' in st.session_state:
                 st.sidebar.info(f"🎯 Usando BD Rutas específica para {mes_esp}")
                 return st.session_state[f'rutas_df_{mes_esp}'].copy()
         
         # Auto-detectar el mes predominante en los datos filtrados
         if not df_filtrado.empty:
-            mes_predominante = df_filtrado['mes_nombre'].mode()
-            if not mes_predominante.empty:
-                mes_pred = mes_predominante.iloc[0]
+            mes_pred_modo = df_filtrado['mes_nombre'].mode()
+            if not mes_pred_modo.empty:
+                mes_pred = mes_pred_modo.iloc[0]
                 mes_map = {
                     'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo',
                     'April': 'Abril', 'May': 'Mayo', 'June': 'Junio',
@@ -1472,22 +1633,24 @@ def main():
         (feedbacks_df['fecha_registro'].dt.date >= fecha_inicio) &
         (feedbacks_df['fecha_registro'].dt.date <= fecha_fin)
     ]
-    if ruta_seleccionada != 'Todas':
-        df_filtrado = df_filtrado[df_filtrado['ruta'] == ruta_seleccionada]
     
-    if usuario_seleccionado != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado['usuario'] == usuario_seleccionado]
+    # APLICAR FILTROS DE SELECCIÓN MÚLTIPLE
+    if rutas_seleccionadas:
+        df_filtrado = df_filtrado[df_filtrado['ruta'].isin(rutas_seleccionadas)]
     
-    # APLICAR NUEVOS FILTROS
-    if mes_seleccionado != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado['mes_nombre'] == mes_seleccionado]
+    if usuarios_seleccionados:
+        df_filtrado = df_filtrado[df_filtrado['usuario'].isin(usuarios_seleccionados)]
     
-    if semana_seleccionada != 'Todas':
-        semana_numero = int(semana_seleccionada.split()[1])  # Extraer número de "Semana X"
-        df_filtrado = df_filtrado[df_filtrado['semana'] == semana_numero]
+    if meses_seleccionados:
+        df_filtrado = df_filtrado[df_filtrado['mes_nombre'].isin(meses_seleccionados)]
     
-    if trimestre_seleccionado != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado['trimestre_nombre'] == trimestre_seleccionado]
+    if semanas_seleccionadas:
+        # Extraer números de semana de "Semana X"
+        semanas_numeros = [int(s.split()[1]) for s in semanas_seleccionadas]
+        df_filtrado = df_filtrado[df_filtrado['semana'].isin(semanas_numeros)]
+    
+    if trimestres_seleccionados:
+        df_filtrado = df_filtrado[df_filtrado['trimestre_nombre'].isin(trimestres_seleccionados)]
     
     # Filtrar merged_df también con los mismos criterios de df_filtrado
     merged_df_filtrado = merged_df[
@@ -1495,26 +1658,33 @@ def main():
         (merged_df['fecha_registro'].dt.date <= fecha_fin)
     ]
     
-    # Aplicar TODOS los filtros a merged_df_filtrado también
-    if ruta_seleccionada != 'Todas':
-        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['ruta'] == ruta_seleccionada]
+    # Aplicar TODOS los filtros de selección múltiple a merged_df_filtrado también
+    if rutas_seleccionadas:
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['ruta'].isin(rutas_seleccionadas)]
     
-    if usuario_seleccionado != 'Todos':
-        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['usuario'] == usuario_seleccionado]
-        # También aplicar al df_filtrado principal si hay SUPERVISOR o CONTRATISTA seleccionados
+    if usuarios_seleccionados:
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['usuario'].isin(usuarios_seleccionados)]
         
-    # Aplicar filtros de mes y semana a merged_df también
-    if mes_seleccionado != 'Todos':
-        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['mes_nombre'] == mes_seleccionado]
+    if meses_seleccionados:
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['mes_nombre'].isin(meses_seleccionados)]
     
-    if semana_seleccionada != 'Todas':
-        semana_numero = int(semana_seleccionada.split()[1])
-        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['semana'] == semana_numero]
-    if trimestre_seleccionado != 'Todos':
-        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['trimestre_nombre'] == trimestre_seleccionado]
+    if semanas_seleccionadas:
+        semanas_numeros = [int(s.split()[1]) for s in semanas_seleccionadas]
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['semana'].isin(semanas_numeros)]
+        
+    if trimestres_seleccionados:
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['trimestre_nombre'].isin(trimestres_seleccionados)]
+    
+    # Aplicar filtros de supervisores y contratistas
+    if supervisores_seleccionados:
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['SUPERVISOR'].isin(supervisores_seleccionados)]
+    
+    if contratistas_seleccionados:
+        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['CONTRATISTA'].isin(contratistas_seleccionados)]
       # ========== SELECCIÓN INTELIGENTE DE BD RUTAS ==========
     # Obtener la BD de rutas óptima basada en los filtros aplicados
-    rutas_df_optimizada = get_optimal_rutas_db(df_filtrado, mes_seleccionado)
+    mes_predominante = meses_seleccionados[0] if meses_seleccionados else 'Todos'
+    rutas_df_optimizada = get_optimal_rutas_db(df_filtrado, mes_predominante)
       # Mostrar información de la BD de rutas activa
     with st.sidebar.expander("📊 BD Rutas Activa", expanded=False):
         st.metric("🗂️ Total Rutas", rutas_df_optimizada['RUTA'].nunique())
@@ -1562,16 +1732,13 @@ def main():
             except Exception as e:
                 st.error(f"❌ Error al exportar: {str(e)}")
     
-    # FILTROS CRÍTICOS: Aplicar filtros de supervisor y contratista a AMBOS DataFrames
-    if supervisor_seleccionado != 'Todos':
-        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['SUPERVISOR'] == supervisor_seleccionado]
-        # También filtrar df_filtrado basado en las rutas que tienen ese supervisor
+    # FILTROS CRÍTICOS: Los filtros de supervisor y contratista ya se aplicaron arriba
+    # Si hay supervisores seleccionados, también filtrar df_filtrado basado en las rutas
+    if supervisores_seleccionados:
         rutas_supervisor = merged_df_filtrado['ruta'].unique()
         df_filtrado = df_filtrado[df_filtrado['ruta'].isin(rutas_supervisor)]
     
-    if contratista_seleccionado != 'Todos':
-        merged_df_filtrado = merged_df_filtrado[merged_df_filtrado['CONTRATISTA'] == contratista_seleccionado]
-        # También filtrar df_filtrado basado en las rutas que tienen ese contratista
+    if contratistas_seleccionados:
         rutas_contratista = merged_df_filtrado['ruta'].unique()
         df_filtrado = df_filtrado[df_filtrado['ruta'].isin(rutas_contratista)]
     
@@ -1622,13 +1789,13 @@ def main():
                 filtros_info = {
                     'fecha_inicio': str(fecha_inicio),
                     'fecha_fin': str(fecha_fin),
-                    'ruta': ruta_seleccionada,
-                    'usuario': usuario_seleccionado,
-                    'mes': mes_seleccionado,
-                    'semana': semana_seleccionada,
-                    'trimestre': trimestre_seleccionado,
-                    'supervisor': supervisor_seleccionado,
-                    'contratista': contratista_seleccionado
+                    'rutas': ', '.join(rutas_seleccionadas) if rutas_seleccionadas else 'Todas',
+                    'usuarios': ', '.join(usuarios_seleccionados) if usuarios_seleccionados else 'Todos',
+                    'meses': ', '.join(meses_seleccionados) if meses_seleccionados else 'Todos',
+                    'semanas': ', '.join(semanas_seleccionadas) if semanas_seleccionadas else 'Todas',
+                    'trimestres': ', '.join(trimestres_seleccionados) if trimestres_seleccionados else 'Todos',
+                    'supervisores': ', '.join(supervisores_seleccionados) if supervisores_seleccionados else 'Todos',
+                    'contratistas': ', '.join(contratistas_seleccionados) if contratistas_seleccionados else 'Todos'
                 }
                 
                 xlsx_data = generate_excel_report(df_filtrado, merged_df_filtrado, filtros_info)
@@ -3295,7 +3462,166 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             font=dict(color='white')
         )
         
-        st.plotly_chart(fig_table, use_container_width=True)        # KPIs por supervisor - Calcular basado en datos filtrados de la tabla
+        st.plotly_chart(fig_table, use_container_width=True)
+        
+        # === BOTONES DE DESCARGA PARA SUPERVISORES ===
+        st.markdown("#### 📥 Exportar Datos de Supervisores")
+        
+        col_export1, col_export2, col_export3 = st.columns(3)
+        
+        with col_export1:
+            if st.button("💾 Descargar Todos los Datos", key="export_all_supervisores"):
+                try:
+                    export_data = supervisor_table_data.copy()
+                    export_data.columns = ['Supervisor', 'Ruta', 'Registros', 'Estado', 'Mes']
+                    
+                    # Limpiar emojis del estado
+                    export_data['Estado'] = export_data['Estado'].str.replace('✅ ', '', regex=False).str.replace('❌ ', '', regex=False)
+                    
+                    # Crear archivo Excel en memoria
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                        export_data.to_excel(writer, index=False, sheet_name='Supervisores_Todos')
+                        
+                        # Obtener el workbook y worksheet para formato
+                        workbook = writer.book
+                        worksheet = writer.sheets['Supervisores_Todos']
+                        
+                        # Formato de encabezados
+                        header_format = workbook.add_format({
+                            'bold': True,
+                            'text_wrap': True,
+                            'valign': 'top',
+                            'fg_color': '#4472C4',
+                            'font_color': 'white'
+                        })
+                        
+                        # Aplicar formato a encabezados
+                        for col_num, value in enumerate(export_data.columns.values):
+                            worksheet.write(0, col_num, value, header_format)
+                        
+                        # Ajustar ancho de columnas
+                        worksheet.set_column('A:A', 25)  # Supervisor
+                        worksheet.set_column('B:B', 15)  # Ruta
+                        worksheet.set_column('C:C', 12)  # Registros
+                        worksheet.set_column('D:D', 15)  # Estado
+                        worksheet.set_column('E:E', 12)  # Mes
+                    
+                    st.download_button(
+                        label="📥 Descargar Excel - Todos",
+                        data=output.getvalue(),
+                        file_name=f"supervisores_todos_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                    st.success("✅ Archivo Excel preparado para descarga")
+                except Exception as e:
+                    st.error(f"❌ Error al preparar exportación: {str(e)}")
+        
+        with col_export2:
+            if st.button("✅ Descargar Solo Completados", key="export_completados_supervisores"):
+                try:
+                    completados = supervisor_table_data[supervisor_table_data['Estado'] == '✅ Cumple'].copy()
+                    completados.columns = ['Supervisor', 'Ruta', 'Registros', 'Estado', 'Mes']
+                    
+                    # Limpiar emojis del estado
+                    completados['Estado'] = completados['Estado'].str.replace('✅ ', '', regex=False).str.replace('❌ ', '', regex=False)
+                    
+                    if not completados.empty:
+                        # Crear archivo Excel en memoria
+                        output = io.BytesIO()
+                        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                            completados.to_excel(writer, index=False, sheet_name='Supervisores_Completados')
+                            
+                            # Obtener el workbook y worksheet para formato
+                            workbook = writer.book
+                            worksheet = writer.sheets['Supervisores_Completados']
+                            
+                            # Formato de encabezados (verde para completados)
+                            header_format = workbook.add_format({
+                                'bold': True,
+                                'text_wrap': True,
+                                'valign': 'top',
+                                'fg_color': '#70AD47',
+                                'font_color': 'white'
+                            })
+                            
+                            # Aplicar formato a encabezados
+                            for col_num, value in enumerate(completados.columns.values):
+                                worksheet.write(0, col_num, value, header_format)
+                            
+                            # Ajustar ancho de columnas
+                            worksheet.set_column('A:A', 25)
+                            worksheet.set_column('B:B', 15)
+                            worksheet.set_column('C:C', 12)
+                            worksheet.set_column('D:D', 15)
+                            worksheet.set_column('E:E', 12)
+                        
+                        st.download_button(
+                            label="📥 Descargar Excel - Completados",
+                            data=output.getvalue(),
+                            file_name=f"supervisores_completados_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        st.success(f"✅ {len(completados)} registros completados en Excel")
+                    else:
+                        st.info("ℹ️ No hay registros completados para exportar")
+                except Exception as e:
+                    st.error(f"❌ Error al preparar exportación: {str(e)}")
+        
+        with col_export3:
+            if st.button("❌ Descargar Solo Pendientes", key="export_pendientes_supervisores"):
+                try:
+                    pendientes = supervisor_table_data[supervisor_table_data['Estado'] == '❌ No Cumple'].copy()
+                    pendientes.columns = ['Supervisor', 'Ruta', 'Registros', 'Estado', 'Mes']
+                    
+                    # Limpiar emojis del estado
+                    pendientes['Estado'] = pendientes['Estado'].str.replace('✅ ', '', regex=False).str.replace('❌ ', '', regex=False)
+                    
+                    if not pendientes.empty:
+                        # Crear archivo Excel en memoria
+                        output = io.BytesIO()
+                        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                            pendientes.to_excel(writer, index=False, sheet_name='Supervisores_Pendientes')
+                            
+                            # Obtener el workbook y worksheet para formato
+                            workbook = writer.book
+                            worksheet = writer.sheets['Supervisores_Pendientes']
+                            
+                            # Formato de encabezados (rojo para pendientes)
+                            header_format = workbook.add_format({
+                                'bold': True,
+                                'text_wrap': True,
+                                'valign': 'top',
+                                'fg_color': '#C5504B',
+                                'font_color': 'white'
+                            })
+                            
+                            # Aplicar formato a encabezados
+                            for col_num, value in enumerate(pendientes.columns.values):
+                                worksheet.write(0, col_num, value, header_format)
+                            
+                            # Ajustar ancho de columnas
+                            worksheet.set_column('A:A', 25)
+                            worksheet.set_column('B:B', 15)
+                            worksheet.set_column('C:C', 12)
+                            worksheet.set_column('D:D', 15)
+                            worksheet.set_column('E:E', 12)
+                        
+                        st.download_button(
+                            label="📥 Descargar Excel - Pendientes",
+                            data=output.getvalue(),
+                            file_name=f"supervisores_pendientes_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        st.success(f"⚠️ {len(pendientes)} registros pendientes en Excel")
+                    else:
+                        st.info("✅ No hay registros pendientes")
+                except Exception as e:
+                    st.error(f"❌ Error al preparar exportación: {str(e)}")
+        
+        st.markdown("---")
+        
+        # KPIs por supervisor - Calcular basado en datos filtrados de la tabla
         col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
         with col_kpi1:
             # Usar los datos filtrados de la tabla (supervisor_table_data)
@@ -3490,7 +3816,166 @@ def show_supervisors_contractors_analysis(df, merged_df, rutas_df):
             font=dict(color='white')
         )
         
-        st.plotly_chart(fig_table_contratista, use_container_width=True)        # KPIs por contratista - Calcular basado en datos filtrados de la tabla
+        st.plotly_chart(fig_table_contratista, use_container_width=True)
+        
+        # === BOTONES DE DESCARGA PARA CONTRATISTAS ===
+        st.markdown("#### 📥 Exportar Datos de Contratistas")
+        
+        col_export4, col_export5, col_export6 = st.columns(3)
+        
+        with col_export4:
+            if st.button("💾 Descargar Todos los Datos", key="export_all_contratistas"):
+                try:
+                    export_data = contratista_table_data.copy()
+                    export_data.columns = ['Contratista', 'Ruta', 'Registros', 'Estado', 'Mes']
+                    
+                    # Limpiar emojis del estado
+                    export_data['Estado'] = export_data['Estado'].str.replace('✅ ', '', regex=False).str.replace('❌ ', '', regex=False)
+                    
+                    # Crear archivo Excel en memoria
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                        export_data.to_excel(writer, index=False, sheet_name='Contratistas_Todos')
+                        
+                        # Obtener el workbook y worksheet para formato
+                        workbook = writer.book
+                        worksheet = writer.sheets['Contratistas_Todos']
+                        
+                        # Formato de encabezados
+                        header_format = workbook.add_format({
+                            'bold': True,
+                            'text_wrap': True,
+                            'valign': 'top',
+                            'fg_color': '#7030A0',
+                            'font_color': 'white'
+                        })
+                        
+                        # Aplicar formato a encabezados
+                        for col_num, value in enumerate(export_data.columns.values):
+                            worksheet.write(0, col_num, value, header_format)
+                        
+                        # Ajustar ancho de columnas
+                        worksheet.set_column('A:A', 30)  # Contratista
+                        worksheet.set_column('B:B', 15)  # Ruta
+                        worksheet.set_column('C:C', 12)  # Registros
+                        worksheet.set_column('D:D', 15)  # Estado
+                        worksheet.set_column('E:E', 12)  # Mes
+                    
+                    st.download_button(
+                        label="📥 Descargar Excel - Todos",
+                        data=output.getvalue(),
+                        file_name=f"contratistas_todos_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                    st.success("✅ Archivo Excel preparado para descarga")
+                except Exception as e:
+                    st.error(f"❌ Error al preparar exportación: {str(e)}")
+        
+        with col_export5:
+            if st.button("✅ Descargar Solo Completados", key="export_completados_contratistas"):
+                try:
+                    completados = contratista_table_data[contratista_table_data['Estado'] == '✅ Cumple'].copy()
+                    completados.columns = ['Contratista', 'Ruta', 'Registros', 'Estado', 'Mes']
+                    
+                    # Limpiar emojis del estado
+                    completados['Estado'] = completados['Estado'].str.replace('✅ ', '', regex=False).str.replace('❌ ', '', regex=False)
+                    
+                    if not completados.empty:
+                        # Crear archivo Excel en memoria
+                        output = io.BytesIO()
+                        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                            completados.to_excel(writer, index=False, sheet_name='Contratistas_Completados')
+                            
+                            # Obtener el workbook y worksheet para formato
+                            workbook = writer.book
+                            worksheet = writer.sheets['Contratistas_Completados']
+                            
+                            # Formato de encabezados (verde para completados)
+                            header_format = workbook.add_format({
+                                'bold': True,
+                                'text_wrap': True,
+                                'valign': 'top',
+                                'fg_color': '#70AD47',
+                                'font_color': 'white'
+                            })
+                            
+                            # Aplicar formato a encabezados
+                            for col_num, value in enumerate(completados.columns.values):
+                                worksheet.write(0, col_num, value, header_format)
+                            
+                            # Ajustar ancho de columnas
+                            worksheet.set_column('A:A', 30)
+                            worksheet.set_column('B:B', 15)
+                            worksheet.set_column('C:C', 12)
+                            worksheet.set_column('D:D', 15)
+                            worksheet.set_column('E:E', 12)
+                        
+                        st.download_button(
+                            label="📥 Descargar Excel - Completados",
+                            data=output.getvalue(),
+                            file_name=f"contratistas_completados_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        st.success(f"✅ {len(completados)} registros completados en Excel")
+                    else:
+                        st.info("ℹ️ No hay registros completados para exportar")
+                except Exception as e:
+                    st.error(f"❌ Error al preparar exportación: {str(e)}")
+        
+        with col_export6:
+            if st.button("❌ Descargar Solo Pendientes", key="export_pendientes_contratistas"):
+                try:
+                    pendientes = contratista_table_data[contratista_table_data['Estado'] == '❌ No Cumple'].copy()
+                    pendientes.columns = ['Contratista', 'Ruta', 'Registros', 'Estado', 'Mes']
+                    
+                    # Limpiar emojis del estado
+                    pendientes['Estado'] = pendientes['Estado'].str.replace('✅ ', '', regex=False).str.replace('❌ ', '', regex=False)
+                    
+                    if not pendientes.empty:
+                        # Crear archivo Excel en memoria
+                        output = io.BytesIO()
+                        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                            pendientes.to_excel(writer, index=False, sheet_name='Contratistas_Pendientes')
+                            
+                            # Obtener el workbook y worksheet para formato
+                            workbook = writer.book
+                            worksheet = writer.sheets['Contratistas_Pendientes']
+                            
+                            # Formato de encabezados (rojo para pendientes)
+                            header_format = workbook.add_format({
+                                'bold': True,
+                                'text_wrap': True,
+                                'valign': 'top',
+                                'fg_color': '#C5504B',
+                                'font_color': 'white'
+                            })
+                            
+                            # Aplicar formato a encabezados
+                            for col_num, value in enumerate(pendientes.columns.values):
+                                worksheet.write(0, col_num, value, header_format)
+                            
+                            # Ajustar ancho de columnas
+                            worksheet.set_column('A:A', 30)
+                            worksheet.set_column('B:B', 15)
+                            worksheet.set_column('C:C', 12)
+                            worksheet.set_column('D:D', 15)
+                            worksheet.set_column('E:E', 12)
+                        
+                        st.download_button(
+                            label="📥 Descargar Excel - Pendientes",
+                            data=output.getvalue(),
+                            file_name=f"contratistas_pendientes_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                        st.success(f"⚠️ {len(pendientes)} registros pendientes en Excel")
+                    else:
+                        st.info("✅ No hay registros pendientes")
+                except Exception as e:
+                    st.error(f"❌ Error al preparar exportación: {str(e)}")
+        
+        st.markdown("---")
+        
+        # KPIs por contratista - Calcular basado en datos filtrados de la tabla
         col_kpi4, col_kpi5, col_kpi6 = st.columns(3)
         with col_kpi4:
             # Usar los datos filtrados de la tabla (contratista_table_data)
