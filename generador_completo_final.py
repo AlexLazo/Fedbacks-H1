@@ -14,7 +14,7 @@ def load_headcount_data():
     Carga la base de datos de HEADCOUNT para obtener nombres completos y supervisores
     """
     try:        # Intentar cargar el archivo HEADCOUNT con header correcto
-        headcount_file = "BASE HEADCOUNT JUNIO - 2025.xlsm"
+        headcount_file = "BASE HEADCOUNT OCTUBRE - 2025.xlsm"
         headcount_df = pd.read_excel(headcount_file, header=1, engine='openpyxl')  # header=1 para usar fila 1 como headers
         
         # Limpiar nombres de columnas (quitar espacios extra)

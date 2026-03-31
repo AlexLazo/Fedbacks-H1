@@ -14,28 +14,32 @@ def load_headcount_data():
     Carga la base de datos de HEADCOUNT para obtener nombres completos y supervisores
     """
     try:
-        # Intentar cargar el archivo HEADCOUNT con header correcto
-        headcount_file = "BASE HEADCOUNT JUNIO - 2025.xlsm"
-        headcount_df = pd.read_excel(headcount_file, header=1, engine='openpyxl')  # header=1 para usar fila 1 como headers
+        # Cargar el archivo HEADCOUNT de Octubre - HOJA BASE con datos individuales
+        headcount_file = "BASE HEADCOUNT OCTUBRE - 2025.xlsm"
+        headcount_df = pd.read_excel(headcount_file, sheet_name='BASE', header=0, engine='openpyxl')
         
         # Limpiar nombres de columnas (quitar espacios extra)
         headcount_df.columns = headcount_df.columns.str.strip()
         
-        print(f"✅ BASE HEADCOUNT cargada: {len(headcount_df)} empleados")
+        print(f"✅ BASE HEADCOUNT OCTUBRE cargada: {len(headcount_df)} registros")
         
         # Mostrar las columnas disponibles para verificar
         print(f"📋 Columnas disponibles: {list(headcount_df.columns)}")
         
         # Mostrar una muestra de datos para verificar
         print("📋 Muestra de datos HEADCOUNT:")
-        if len(headcount_df) > 0 and 'RUTA' in headcount_df.columns:
+        if len(headcount_df) > 0:
             cols_to_show = []
             if 'RUTA' in headcount_df.columns:
                 cols_to_show.append('RUTA')
             if 'NOMBRE COMPLETO EMPLEADO' in headcount_df.columns:
                 cols_to_show.append('NOMBRE COMPLETO EMPLEADO')
+            if 'NOMBRE - SUPERVISOR' in headcount_df.columns:
+                cols_to_show.append('NOMBRE - SUPERVISOR')
             if 'CONTRATISTA' in headcount_df.columns:
                 cols_to_show.append('CONTRATISTA')
+            if 'PUESTO' in headcount_df.columns:
+                cols_to_show.append('PUESTO')
             
             if cols_to_show:
                 print(headcount_df[cols_to_show].head(3))
@@ -44,6 +48,8 @@ def load_headcount_data():
         
     except Exception as e:
         print(f"❌ Error cargando BASE HEADCOUNT: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_signatures_for_date():
@@ -143,69 +149,84 @@ def generar_flujo_consecuencias_con_cartas(mes=5, año=2025):
         
         # Crear lista de rutas para consecuencias con datos completos
         rutas_consecuencias = []
+        rutas_sin_datos_headcount = []
         
         for ruta in sorted(rutas_sin_feedback):
             # Buscar información en la base de rutas
             info_ruta = rutas_df[rutas_df['RUTA'] == ruta]
             
-            reparto_nombre = 'Reparto no identificado'
-            supervisor_nombre = 'Supervisor no identificado'
-            contratista_nombre = 'Contratista no identificado'
-            
-            if not info_ruta.empty:
-                # Intentar obtener el nombre del reparto de diferentes columnas posibles
-                for col in ['NOMBRE_VENDEDOR', 'VENDEDOR', 'REPARTO', 'NOMBRE_REPARTO', 'NOMBRE']:
-                    if col in info_ruta.columns and pd.notna(info_ruta[col].iloc[0]):
-                        reparto_nombre = info_ruta[col].iloc[0]
-                        break
+            reparto_nombre = None
+            supervisor_nombre = None
+            contratista_nombre = None
+            datos_encontrados = False
             
             # Buscar en HEADCOUNT para obtener datos completos
-            if headcount_df is not None:
+            if headcount_df is not None and 'RUTA' in headcount_df.columns:
                 try:
                     # Buscar por ruta exacta
                     headcount_match = headcount_df[headcount_df['RUTA'] == ruta]
                     
                     if not headcount_match.empty:
-                        # Tomar el primer empleado de la ruta (principal)
-                        empleado_principal = headcount_match.iloc[0]
+                        # Tomar el primer empleado de la ruta (CONDUCTOR, que es el principal)
+                        # Filtrar por CONDUCTOR si es posible
+                        conductores = headcount_match[headcount_match['PUESTO'].str.contains('CONDUCTOR', case=False, na=False)]
+                        if not conductores.empty:
+                            empleado_principal = conductores.iloc[0]
+                        else:
+                            empleado_principal = headcount_match.iloc[0]
                         
                         # Obtener nombre completo del empleado
-                        if 'NOMBRE COMPLETO EMPLEADO' in headcount_match.columns:
-                            reparto_nombre = empleado_principal['NOMBRE COMPLETO EMPLEADO']
+                        if 'NOMBRE COMPLETO EMPLEADO' in headcount_match.columns and pd.notna(empleado_principal['NOMBRE COMPLETO EMPLEADO']):
+                            reparto_nombre = str(empleado_principal['NOMBRE COMPLETO EMPLEADO']).strip()
                         
-                        # Obtener supervisor del nombre (no de la posición)
+                        # Obtener supervisor del nombre
                         if 'NOMBRE - SUPERVISOR' in headcount_match.columns and pd.notna(empleado_principal['NOMBRE - SUPERVISOR']):
-                            supervisor_nombre = empleado_principal['NOMBRE - SUPERVISOR']
-                        elif 'POSICION - SUPERVISOR' in headcount_match.columns:
-                            # Si no hay nombre del supervisor, usar la posición como fallback
-                            supervisor_nombre = empleado_principal['POSICION - SUPERVISOR']
+                            supervisor_nombre = str(empleado_principal['NOMBRE - SUPERVISOR']).strip()
                         
                         # Obtener contratista
                         if 'CONTRATISTA' in headcount_match.columns and pd.notna(empleado_principal['CONTRATISTA']):
-                            contratista_nombre = empleado_principal['CONTRATISTA']
+                            contratista_nombre = str(empleado_principal['CONTRATISTA']).strip()
                         
-                        print(f"✅ Datos encontrados para {ruta}: {reparto_nombre} - Supervisor: {supervisor_nombre} - Contratista: {contratista_nombre}")
+                        # Verificar que al menos tengamos el nombre del reparto
+                        if reparto_nombre:
+                            datos_encontrados = True
+                            print(f"✅ Datos encontrados para {ruta}: {reparto_nombre} - Supervisor: {supervisor_nombre} - Contratista: {contratista_nombre}")
+                        else:
+                            print(f"⚠️ Datos incompletos en HEADCOUNT para ruta {ruta} - No se generará carta")
+                            rutas_sin_datos_headcount.append(ruta)
                     else:
-                        print(f"⚠️ No se encontraron datos en HEADCOUNT para ruta {ruta}")
+                        print(f"⚠️ Ruta {ruta} no encontrada en HEADCOUNT - No se generará carta")
+                        rutas_sin_datos_headcount.append(ruta)
                         
                 except Exception as e:
-                    print(f"⚠️ Error buscando en HEADCOUNT para {ruta}: {e}")
+                    print(f"❌ Error buscando en HEADCOUNT para {ruta}: {e}")
+                    rutas_sin_datos_headcount.append(ruta)
+            else:
+                print(f"❌ HEADCOUNT no disponible para ruta {ruta} - No se generará carta")
+                rutas_sin_datos_headcount.append(ruta)
             
-            rutas_consecuencias.append({
-                'RUTA': ruta,
-                'REPARTO': reparto_nombre,
-                'SUPERVISOR': supervisor_nombre,
-                'CONTRATISTA': contratista_nombre,
-                'MES_INCUMPLIMIENTO': f'{mes_nombre} {año}',
-                'NIVEL_CONSECUENCIA': '',  # Para llenar manualmente
-                'ACCION_REQUERIDA': '',    # Para llenar manualmente
-                'RESPONSABLE': '',         # Para llenar manualmente
-                'FECHA_LIMITE': '',        # Para llenar manualmente
-                'FECHA_EJECUTADA': '',     # Para llenar al ejecutar
-                'ESTADO': 'PENDIENTE',
-                'OBSERVACIONES': '',
-                'DOCUMENTO_EVIDENCIA': ''
-            })
+            # Solo agregar a la lista si se encontraron datos válidos
+            if datos_encontrados and reparto_nombre:
+                rutas_consecuencias.append({
+                    'RUTA': ruta,
+                    'REPARTO': reparto_nombre,
+                    'SUPERVISOR': supervisor_nombre if supervisor_nombre else 'No especificado',
+                    'CONTRATISTA': contratista_nombre if contratista_nombre else 'No especificado',
+                    'MES_INCUMPLIMIENTO': f'{mes_nombre} {año}',
+                    'NIVEL_CONSECUENCIA': '',  # Para llenar manualmente
+                    'ACCION_REQUERIDA': '',    # Para llenar manualmente
+                    'RESPONSABLE': '',         # Para llenar manualmente
+                    'FECHA_LIMITE': '',        # Para llenar manualmente
+                    'FECHA_EJECUTADA': '',     # Para llenar al ejecutar
+                    'ESTADO': 'PENDIENTE',
+                    'OBSERVACIONES': '',
+                    'DOCUMENTO_EVIDENCIA': ''
+                })
+        
+        # Mostrar resumen de rutas sin datos
+        if rutas_sin_datos_headcount:
+            print(f"\n⚠️ RUTAS SIN DATOS EN HEADCOUNT (no se generarán cartas): {len(rutas_sin_datos_headcount)}")
+            print(f"   Rutas: {', '.join(sorted(rutas_sin_datos_headcount))}")
         
         # Crear DataFrame
         df_consecuencias = pd.DataFrame(rutas_consecuencias)
@@ -250,6 +271,9 @@ def generar_flujo_consecuencias_con_cartas(mes=5, año=2025):
             'TOTAL_RUTAS': len(todas_las_rutas),
             'CUMPLIERON': len(rutas_con_feedback),
             'NO_CUMPLIERON': len(rutas_sin_feedback),
+            'CON_DATOS_HEADCOUNT': len(rutas_consecuencias),
+            'SIN_DATOS_HEADCOUNT': len(rutas_sin_datos_headcount),
+            'CARTAS_GENERADAS': len(rutas_consecuencias),
             'PORCENTAJE_CUMPLIMIENTO': round((len(rutas_con_feedback) / len(todas_las_rutas)) * 100, 1),
             'ARCHIVO_RUTAS_USADO': archivo_usado,
             'FECHA_GENERACION': datetime.now().strftime('%Y-%m-%d %H:%M')
@@ -631,10 +655,10 @@ Monitoreo mensual para verificar efectividad y ajustar el sistema según resulta
 
 def main():
     """
-    Función principal - CAMBIAR AQUÍ EL MES Y AÑO
+    Función principal - Genera cartas para múltiples meses
     """
     # 🔧 CONFIGURACIÓN - Cambiar estos valores según necesites:
-    MES = 5      # 1=Enero, 2=Febrero, ..., 5=Mayo, 6=Junio, etc.
+    MESES = [5, 6, 7, 8, 9]  # Mayo a Septiembre
     AÑO = 2025   # Año a analizar
     
     print("🎯 GENERADOR DE FLUJO DE CONSECUENCIAS CON CARTAS PDF")
@@ -642,31 +666,65 @@ def main():
     print("📋 CORREGIDO: Repartos, sin Comité, con Supervisor de Distribución")
     print("📄 Cartas PDF + Manual PDF + Excel completo")
     print("📅 FECHA EN CARTAS: Primer día del mes siguiente al incumplimiento")
+    print(f"📅 GENERANDO PARA MESES: {MESES} del año {AÑO}")
     print("=" * 80)
     
-    archivo, total_rutas = generar_flujo_consecuencias_con_cartas(MES, AÑO)
+    # Contador de resultados
+    total_archivos = 0
+    total_rutas_accion = 0
+    resultados = []
     
-    if archivo:
-        print("\n" + "=" * 80)
-        print("✅ PROCESO COMPLETADO EXITOSAMENTE")
-        print(f"📁 Archivo Excel: {archivo}")
-        print(f"📊 Rutas para acción: {total_rutas}")
-        print(f"📄 Cartas PDF individuales generadas")
-        print(f"📋 Manual PDF del flujo completo generado")
+    # Generar para cada mes
+    for mes in MESES:
+        meses_nombres = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
         
-        print(f"\n🎯 ARCHIVOS GENERADOS:")
-        print(f"   • Excel completo con datos HEADCOUNT")
-        print(f"   • Cartas PDF personalizadas por ruta")
-        print(f"   • Manual PDF explicativo del flujo")
+        print(f"\n{'='*80}")
+        print(f"📅 PROCESANDO: {meses_nombres[mes]} {AÑO}")
+        print(f"{'='*80}")
         
-        print(f"\n📋 SIGUIENTES PASOS:")
-        print(f"1. Revisar el Excel con datos completos")
-        print(f"2. Asignar niveles según historial de cada ruta")
-        print(f"3. Entregar cartas PDF a supervisores correspondientes")
-        print(f"4. Aplicar acciones según jerarquía corregida")
-        print(f"5. Documentar ejecución en el Excel")
+        archivo, total_rutas = generar_flujo_consecuencias_con_cartas(mes, AÑO)
         
-        print(f"\n✅ SISTEMA LISTO PARA IMPLEMENTACIÓN")
+        if archivo:
+            total_archivos += 1
+            total_rutas_accion += total_rutas
+            resultados.append({
+                'mes': meses_nombres[mes],
+                'archivo': archivo,
+                'rutas': total_rutas
+            })
+            print(f"✅ {meses_nombres[mes]}: {total_rutas} rutas procesadas")
+        else:
+            print(f"❌ {meses_nombres[mes]}: Error al procesar")
+    
+    # Resumen final
+    print("\n" + "=" * 80)
+    print("✅ PROCESO COMPLETADO PARA TODOS LOS MESES")
+    print("=" * 80)
+    print(f"� RESUMEN GENERAL:")
+    print(f"   • Meses procesados: {total_archivos}/{len(MESES)}")
+    print(f"   • Total de rutas para acción: {total_rutas_accion}")
+    print(f"\n� ARCHIVOS GENERADOS POR MES:")
+    
+    for resultado in resultados:
+        print(f"\n   📅 {resultado['mes']}:")
+        print(f"      • Excel: {resultado['archivo']}")
+        print(f"      • Cartas PDF: {resultado['rutas']} archivos")
+        print(f"      • Directorio: Cartas_{resultado['mes']}_{AÑO}/")
+    
+    print(f"\n🎯 ARCHIVOS GENERADOS PARA CADA MES:")
+    print(f"   • Excel completo con datos HEADCOUNT")
+    print(f"   • Cartas PDF personalizadas por ruta")
+    print(f"   • Manual PDF explicativo del flujo")
+    
+    print(f"\n📋 SIGUIENTES PASOS:")
+    print(f"1. Revisar los Excel de cada mes con datos completos")
+    print(f"2. Asignar niveles según historial de cada ruta")
+    print(f"3. Entregar cartas PDF a supervisores correspondientes")
+    print(f"4. Aplicar acciones según jerarquía corregida")
+    print(f"5. Documentar ejecución en los Excel")
+    
+    print(f"\n✅ SISTEMA LISTO PARA IMPLEMENTACIÓN")
 
 if __name__ == "__main__":
     main()

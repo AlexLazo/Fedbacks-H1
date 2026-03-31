@@ -524,7 +524,7 @@ def generate_weekly_report(offenders_data, week, year, output_file="weekly_offen
     
     # Add title - centered and bold with reduced spacing
     most_reported_issue = offenders_data.iloc[0]['most_reported_issue']
-    story.append(Paragraph("REPORTE DE CLIENTES OFENSORES", title_style))
+    story.append(Paragraph("REPORTE DE CLIENTES TOP OFFENDER", title_style))
     story.append(Spacer(1, 0.03*inch))  # Minimal spacing
     story.append(Paragraph(f"Semana {week} del {year} - Problema: {most_reported_issue}", subtitle_style))
     story.append(Spacer(1, 0.15*inch))  # Reduce spacing
