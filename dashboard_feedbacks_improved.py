@@ -2649,124 +2649,129 @@ def show_temporal_analysis(df, merged_df, rutas_df):
 
 def show_routes_analysis(df, merged_df):
     """Análisis completo por rutas con supervisores y contratistas"""
-    st.subheader("🚚 Análisis Completo por Rutas, Supervisores y Contratistas")    # Primera fila - Top 3 rutas por contratista (fila completa)
-    if 'CONTRATISTA' in merged_df.columns and 'SUPERVISOR' in merged_df.columns:
-        st.markdown(
-            """
-            <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(250, 112, 154, 0.3);">
-                <h3 style="color: white; margin: 0; text-align: center;">🏆 Top 3 Rutas por Contratista</h3>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
-        
-        # --- Análisis por contratista ---
-        contratista_rutas = merged_df.groupby(['CONTRATISTA', 'ruta']).size().reset_index()
-        contratista_rutas.columns = ['contratista', 'ruta', 'registros']
+    st.subheader("🚚 Análisis Completo por Rutas, Supervisores y Contratistas")
+    
+    # --- VALIDACIÓN INICIAL ---
+    if merged_df.empty:
+        st.warning("⚠️ No hay datos para el análisis de rutas. Ajusta los filtros para incluir registros con supervisores o contratistas.")
+        return
 
-        if not contratista_rutas.empty:
-            top_rutas_contratista = contratista_rutas.groupby('contratista').apply(
-                lambda x: x.nlargest(1, 'registros')
-            ).reset_index(drop=True)
-            top_rutas_contratista = top_rutas_contratista.sort_values(
-                ['contratista', 'registros'], ascending=[True, False]
-            )        
-        fig_contratista_rutas = px.bar(
-            top_rutas_contratista,
-            x='registros',
-            y='etiqueta_completa',
-            title="🏢 Mejor Ruta por Contratista - Análisis Detallado",
-            orientation='h',
-            height=900,  # Aumentar altura
-            text='registros',
-            color='registros',
-            color_continuous_scale='Plasma'        )        
-        fig_contratista_rutas.update_traces(
-            texttemplate='<b>%{text}</b>',
-            textposition='outside',
-            marker_line_width=0,
-            textfont_size=14,
-            textfont_color='white',
-            textfont_family='Arial Black'
-        )
-        fig_contratista_rutas.update_layout(
-            yaxis={
-                'categoryorder': 'total ascending',
-                'tickfont_size': 12,
-                'tickfont_color': 'white'  # Cambiado a blanco para mejor visibilidad
-            },
-            margin=dict(l=350, r=100, t=100, b=80),  # Más espacio para etiquetas descriptivas
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(size=12, color='white'),  # Asegurar que todos los textos sean blancos
-            title_font_size=16,
-            xaxis_title="<b>Número de Registros</b>",
-            yaxis_title="<b>Ruta</b>"
-        )
-        
-    else:
-        st.info("ℹ️ No hay datos de contratistas para mostrar.")
-    # Opcional: puedes mostrar un mensaje y continuar sin generar la gráfica
-    st.plotly_chart(fig_contratista_rutas, use_container_width=True)
-          # Segunda fila - Top 3 rutas por supervisor (fila completa)        
+    # ... (el resto de tu código, incluyendo los st.markdown de las tarjetas, etc.)
+    
+    # ========== ANÁLISIS POR CONTRATISTA ==========
     st.markdown(
-            """
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);">
-                <h3 style="color: white; margin: 0; text-align: center;">🏆 Top 3 Rutas por Supervisor</h3>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )      # Análisis por supervisor
-    supervisor_rutas = merged_df.groupby(['SUPERVISOR', 'ruta']).size().reset_index()
-    supervisor_rutas.columns = ['supervisor', 'ruta', 'registros']
-    
-    # Top 3 rutas por cada supervisor
-    top_rutas_supervisor = supervisor_rutas.groupby('supervisor').apply(
-        lambda x: x.nlargest(3, 'registros')
-    ).reset_index(drop=True)
-      # Ordenar por supervisor para mejor visualización
-    top_rutas_supervisor = top_rutas_supervisor.sort_values(['supervisor', 'registros'], ascending=[True, False])
-    
-    # Crear etiquetas más descriptivas para mejor organización
-    top_rutas_supervisor['etiqueta_completa'] = (
-        top_rutas_supervisor['supervisor'].astype(str) + ' → ' + 
-        top_rutas_supervisor['ruta'].astype(str)
-    )          
-    fig_supervisor_rutas = px.bar(
-        top_rutas_supervisor,
-        x='registros',
-        y='etiqueta_completa',
-        title="👨‍💼 Top 3 Rutas por Supervisor - Análisis Detallado",
-        orientation='h',
-        height=900,  # Aumentar altura
-        text='registros',
-        color='registros',
-        color_continuous_scale='Plasma'
-    )        
-    fig_supervisor_rutas.update_traces(
-        texttemplate='<b>%{text}</b>',
-        textposition='outside',
-        marker_line_width=0,
-        textfont_size=14,
-        textfont_color='white',
-        textfont_family='Arial Black'
-    )          
-    fig_supervisor_rutas.update_layout(
-        yaxis={
-            'categoryorder': 'total ascending',
-            'tickfont_size': 12,
-            'tickfont_color': 'white'  # Cambiado a blanco para mejor visibilidad
-        },
-        margin=dict(l=350, r=100, t=100, b=80),  # Más espacio para etiquetas descriptivas
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(size=12, color='white'),
-        title_font_size=16,
-        xaxis_title="<b>Número de Registros</b>",
-        yaxis_title="<b>Ruta</b>"
+        """
+        <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(250, 112, 154, 0.3);">
+            <h3 style="color: white; margin: 0; text-align: center;">🏆 Top 3 Rutas por Contratista</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
     )
-    st.plotly_chart(fig_supervisor_rutas, use_container_width=True)
-    # Cuarta fila - Top rutas con más registros generales (fila completa)
+
+    contratista_rutas = merged_df.groupby(['CONTRATISTA', 'ruta']).size().reset_index()
+    if contratista_rutas.empty:
+        st.info("ℹ️ No hay datos de contratistas para mostrar.")
+    else:
+        contratista_rutas.columns = ['contratista', 'ruta', 'registros']
+        top_rutas_contratista = contratista_rutas.groupby('contratista').apply(
+            lambda x: x.nlargest(1, 'registros')
+        ).reset_index(drop=True)
+        if not top_rutas_contratista.empty and all(col in top_rutas_contratista.columns for col in ['contratista', 'registros']):
+            top_rutas_contratista = top_rutas_contratista.sort_values(['contratista', 'registros'], ascending=[True, False])
+            top_rutas_contratista['etiqueta_completa'] = (
+                top_rutas_contratista['contratista'].astype(str) + ' → ' + 
+                top_rutas_contratista['ruta'].astype(str)
+            )
+            fig_contratista_rutas = px.bar(
+                top_rutas_contratista,
+                x='registros',
+                y='etiqueta_completa',
+                title="🏢 Mejor Ruta por Contratista - Análisis Detallado",
+                orientation='h',
+                height=900,
+                text='registros',
+                color='registros',
+                color_continuous_scale='Plasma'
+            )
+            fig_contratista_rutas.update_traces(
+                texttemplate='<b>%{text}</b>',
+                textposition='outside',
+                marker_line_width=0,
+                textfont_size=14,
+                textfont_color='white',
+                textfont_family='Arial Black'
+            )
+            fig_contratista_rutas.update_layout(
+                yaxis={'categoryorder': 'total ascending', 'tickfont_size': 12, 'tickfont_color': 'white'},
+                margin=dict(l=350, r=100, t=100, b=80),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(size=12, color='white'),
+                title_font_size=16,
+                xaxis_title="<b>Número de Registros</b>",
+                yaxis_title="<b>Ruta</b>"
+            )
+            st.plotly_chart(fig_contratista_rutas, use_container_width=True)
+        else:
+            st.info("ℹ️ No se pudo generar el análisis de contratistas (datos insuficientes).")
+
+    # ========== ANÁLISIS POR SUPERVISOR ==========
+    st.markdown(
+        """
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 20px; margin: 20px 0; color: white; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);">
+            <h3 style="color: white; margin: 0; text-align: center;">🏆 Top 3 Rutas por Supervisor</h3>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
+    supervisor_rutas = merged_df.groupby(['SUPERVISOR', 'ruta']).size().reset_index()
+    if supervisor_rutas.empty:
+        st.info("ℹ️ No hay datos de supervisores para mostrar.")
+    else:
+        supervisor_rutas.columns = ['supervisor', 'ruta', 'registros']
+        top_rutas_supervisor = supervisor_rutas.groupby('supervisor').apply(
+            lambda x: x.nlargest(3, 'registros')
+        ).reset_index(drop=True)
+        if not top_rutas_supervisor.empty and all(col in top_rutas_supervisor.columns for col in ['supervisor', 'registros']):
+            top_rutas_supervisor = top_rutas_supervisor.sort_values(['supervisor', 'registros'], ascending=[True, False])
+            top_rutas_supervisor['etiqueta_completa'] = (
+                top_rutas_supervisor['supervisor'].astype(str) + ' → ' + 
+                top_rutas_supervisor['ruta'].astype(str)
+            )
+            fig_supervisor_rutas = px.bar(
+                top_rutas_supervisor,
+                x='registros',
+                y='etiqueta_completa',
+                title="👨‍💼 Top 3 Rutas por Supervisor - Análisis Detallado",
+                orientation='h',
+                height=900,
+                text='registros',
+                color='registros',
+                color_continuous_scale='Plasma'
+            )
+            fig_supervisor_rutas.update_traces(
+                texttemplate='<b>%{text}</b>',
+                textposition='outside',
+                marker_line_width=0,
+                textfont_size=14,
+                textfont_color='white',
+                textfont_family='Arial Black'
+            )
+            fig_supervisor_rutas.update_layout(
+                yaxis={'categoryorder': 'total ascending', 'tickfont_size': 12, 'tickfont_color': 'white'},
+                margin=dict(l=350, r=100, t=100, b=80),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(size=12, color='white'),
+                title_font_size=16,
+                xaxis_title="<b>Número de Registros</b>",
+                yaxis_title="<b>Ruta</b>"
+            )
+            st.plotly_chart(fig_supervisor_rutas, use_container_width=True)
+        else:
+            st.info("ℹ️ No se pudo generar el análisis de supervisores (datos insuficientes).")
+
     st.markdown(
         """
         <div class="analysis-card">
