@@ -15,10 +15,10 @@ import io
 
 # Define the required signatures for the report - exactly matching the example names
 SIGNATURES = [
-    {"name": "Roney Rivas", "title": "TL de Ventas"},
+    {"name": "Roberto Escolero", "title": "Team Leader"},
     {"name": "Félix Chávez", "title": "Gerente CD Soyapango"},
-    {"name": "Óscar Portillo", "title": "Jefe de Distribución"},
-    {"name": "Brian Lazo", "title": "Supervisor de Distribución"}
+    {"name": "Óscar Cuellar", "title": "Jefe de Distribución"},
+    {"name": "Brian Lazo", "title": "Coordinador de Distribución"}
 ]
 
 def load_data():

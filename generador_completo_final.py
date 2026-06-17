@@ -632,8 +632,8 @@ def main():
     """
     Función principal - CAMBIAR AQUÍ EL MES Y AÑO
     """    # 🔧 CONFIGURACIÓN - Cambiar estos valores según necesites:
-    MES = 4      # 1=Enero, 2=Febrero, ..., 4=Abril, 5=Mayo, 6=Junio, etc.
-    AÑO = 2025   # Año a analizar
+    MES = 1     # 1=Enero, 2=Febrero, ..., 4=Abril, 5=Mayo, 6=Junio, etc.
+    AÑO = 2026   # Año a analizar
     
     print("🎯 GENERADOR DE FLUJO DE CONSECUENCIAS CON CARTAS PDF")
     print("=" * 80)

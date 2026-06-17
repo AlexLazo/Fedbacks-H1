@@ -61,7 +61,7 @@ def get_signatures_for_date():
         {"name": "Óscar Cuellar", "title": "Coordinador de Distribución"}
     ]
 
-def generar_flujo_consecuencias_con_cartas(mes=5, año=2025):
+def generar_flujo_consecuencias_con_cartas(mes=5, año=2026):
     """
     Genera el flujo de consecuencias mensual con cartas PDF personalizadas
     """
@@ -658,8 +658,8 @@ def main():
     Función principal - Genera cartas para múltiples meses
     """
     # 🔧 CONFIGURACIÓN - Cambiar estos valores según necesites:
-    MESES = [5, 6, 7, 8, 9]  # Mayo a Septiembre
-    AÑO = 2025   # Año a analizar
+    MESES = [1, 2, 3, 4, 5]  # Mayo a Septiembre
+    AÑO = 2026   # Año a analizar
     
     print("🎯 GENERADOR DE FLUJO DE CONSECUENCIAS CON CARTAS PDF")
     print("=" * 80)

@@ -26,26 +26,26 @@ def get_signatures_for_date(week, year):
     if date_obj < cutoff_date:
         # Firmas antes del 14 de marzo
         return [
-            {"name": "Roney Rivas", "title": "TL de Ventas"},
-            {"name": "Rafael Osorio", "title": "Gerente CD Soyapango"},
-            {"name": "Manuel Elías", "title": "Coordinador de Distribución"},
-            {"name": "Elías Montesinos", "title": "Supervisor de Distribución"}
+            {"name": "Roberto Escolero", "title": "Team Leader"},
+            {"name": "Félix Chávez", "title": "Gerente CD Soyapango"},
+            {"name": "Óscar Cuellar", "title": "Jefe de Distribución"},
+            {"name": "Brian Lazo", "title": "Coordinador de Distribución"}
         ]
     else:
         # Firmas después del 14 de marzo (actuales)
         return [
-            {"name": "Roney Rivas", "title": "TL de Ventas"},
+            {"name": "Roberto Escolero", "title": "Team Leader"},
             {"name": "Félix Chávez", "title": "Gerente CD Soyapango"},
-            {"name": "Óscar Portillo", "title": "Jefe de Distribución"},
-            {"name": "Óscar Cuellar", "title": "Coordinador de Distribución"}
+            {"name": "Óscar Cuellar", "title": "Jefe de Distribución"},
+            {"name": "Brian Lazo", "title": "Coordinador de Distribución"}
         ]
 
 # Define the default signatures for backward compatibility
 SIGNATURES = [
-    {"name": "Roney Rivas", "title": "TL de Ventas"},
+    {"name": "Roberto Escolero", "title": "Team Leader"},
     {"name": "Félix Chávez", "title": "Gerente CD Soyapango"},
-    {"name": "Óscar Portillo", "title": "Jefe de Distribución"},
-    {"name": "Óscar Cuellar", "title": "Supervisor de Distribución"}
+    {"name": "Óscar Cuellar", "title": "Jefe de Distribución"},
+    {"name": "Brian Lazo", "title": "Coordinador de Distribución"}
 ]
 
 # Planes de acción simplificados y escalables
