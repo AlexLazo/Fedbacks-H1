@@ -2660,23 +2660,17 @@ def show_routes_analysis(df, merged_df):
             unsafe_allow_html=True
         )
         
-        # Análisis por contratista
+        # --- Análisis por contratista ---
         contratista_rutas = merged_df.groupby(['CONTRATISTA', 'ruta']).size().reset_index()
         contratista_rutas.columns = ['contratista', 'ruta', 'registros']
-        
-        # Mejor ruta por cada contratista
-        top_rutas_contratista = contratista_rutas.groupby('contratista').apply(
-            lambda x: x.nlargest(1, 'registros')
-        ).reset_index(drop=True)
-        
-        # Ordenar por contratista para mejor visualización
-        top_rutas_contratista = top_rutas_contratista.sort_values(['contratista', 'registros'], ascending=[True, False])
-        
-        # Crear etiquetas más descriptivas para mejor organización
-        top_rutas_contratista['etiqueta_completa'] = (
-            top_rutas_contratista['contratista'].astype(str) + ' → ' + 
-            top_rutas_contratista['ruta'].astype(str)
-        )        
+
+        if not contratista_rutas.empty:
+            top_rutas_contratista = contratista_rutas.groupby('contratista').apply(
+                lambda x: x.nlargest(1, 'registros')
+            ).reset_index(drop=True)
+            top_rutas_contratista = top_rutas_contratista.sort_values(
+                ['contratista', 'registros'], ascending=[True, False]
+            )        
         fig_contratista_rutas = px.bar(
             top_rutas_contratista,
             x='registros',
@@ -2709,6 +2703,10 @@ def show_routes_analysis(df, merged_df):
             xaxis_title="<b>Número de Registros</b>",
             yaxis_title="<b>Ruta</b>"
         )
+        
+    else:
+        st.info("ℹ️ No hay datos de contratistas para mostrar.")
+    # Opcional: puedes mostrar un mensaje y continuar sin generar la gráfica
     st.plotly_chart(fig_contratista_rutas, use_container_width=True)
           # Segunda fila - Top 3 rutas por supervisor (fila completa)        
     st.markdown(
